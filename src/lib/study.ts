@@ -21,13 +21,40 @@ export function progressDocumentId(cardId: string, direction: StudyDirection): s
 
 export function createStudyUnits(cards: Flashcard[]): StudyUnit[] {
   return cards.flatMap((card) =>
-    STUDY_DIRECTIONS.map((direction) => ({
+    (card.tipo === "concepto" ? STUDY_DIRECTIONS.slice(0, 1) : STUDY_DIRECTIONS).map((direction) => ({
       key: unitKey(card.id, direction),
       cardId: card.id,
       direction,
       card,
     })),
   );
+}
+
+export function progressForStudyUnits(
+  cards: Flashcard[],
+  progress: ProgressMap,
+): ProgressMap {
+  let compatible = progress;
+
+  for (const card of cards) {
+    if (card.tipo !== "concepto") continue;
+    const canonicalKey = unitKey(card.id, "hanzi-es");
+    const legacyKey = unitKey(card.id, "es-hanzi");
+    const canonical = progress[canonicalKey];
+    const legacy = progress[legacyKey];
+    if (
+      legacy &&
+      (!canonical || legacy.clientUpdatedAt > canonical.clientUpdatedAt)
+    ) {
+      if (compatible === progress) compatible = { ...progress };
+      compatible[canonicalKey] = {
+        ...legacy,
+        direction: "hanzi-es",
+      };
+    }
+  }
+
+  return compatible;
 }
 
 export function tagsFor(card: Flashcard): string[] {

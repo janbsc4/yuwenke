@@ -23,6 +23,38 @@ describe("flashcard CSV", () => {
     ]);
   });
 
+  it("expresses every concept as a direct Spanish question and answer", () => {
+    const concepts = loadFlashcards().filter((card) => card.tipo === "concepto");
+
+    expect(concepts).toHaveLength(31);
+    expect(
+      concepts.every(
+        (card) => card.espanol.startsWith("¿") && card.espanol.endsWith("?"),
+      ),
+    ).toBe(true);
+    expect(concepts.every((card) => card.explicacion.trim().length > 0)).toBe(true);
+    expect(concepts.find((card) => card.id === "FC133")).toMatchObject({
+      espanol: "¿Cuántas marcas tonales puede haber por sílaba?",
+      explicacion:
+        "Solo puede haber una, aunque la sílaba tenga varias vocales.",
+    });
+  });
+
+  it("does not include expressions that have not been introduced", () => {
+    const content = loadFlashcards()
+      .flatMap((card) => Object.values(card))
+      .join("\n");
+
+    expect(content).not.toMatch(
+      /请问|qǐngwèn|qingwen|hěn gāoxìng rènshi dàjiā|很高兴认识大家/i,
+    );
+    expect(loadFlashcards().find((card) => card.id === "FC079")).toMatchObject({
+      hanzi: "大家好！我叫Dani。",
+      pinyin: "Dàjiā hǎo! Wǒ jiào Dani.",
+      espanol: "¡Hola a todos! Me llamo Dani.",
+    });
+  });
+
   it("rejects duplicate IDs", () => {
     const row =
       "FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,";

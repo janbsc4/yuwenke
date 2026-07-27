@@ -10,8 +10,8 @@ Before tackling these tasks, group them by what would make sense to do in the sa
 - [x] Make sure status and progress of cards in estudiar, descubrir, dominadas and favoritas is also stored in Firebase.
 
 Flashcard Content:
-- [ ] Add this on a new content guidelines sections on AGENTS.md implement it: The conceptos cards should only be in spanish to spanish and be made into questions to memorize the rule itself, not the translation of the rule. A correct example is: Cuantas marcas tonales puede haber por silaba? - Solo puede haber una.
-- [ ] Remove mentions of the following words that we haven't learned yet (adjust the flashcards so they still make sense afterwards):
+- [x] Add this on a new content guidelines sections on AGENTS.md implement it: The conceptos cards should only be in spanish to spanish and be made into questions to memorize the rule itself, not the translation of the rule. A correct example is: Cuantas marcas tonales puede haber por silaba? - Solo puede haber una.
+- [x] Remove mentions of the following words that we haven't learned yet (adjust the flashcards so they still make sense afterwards):
 	- qingwen
 	- hěn gāoxìng rènshi dàjiā.
 - [x] Nombres propios deberian ser lilas (en todas las lenguas). Explicar esto en la nueva seccion de "Como funciona?""

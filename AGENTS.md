@@ -12,7 +12,7 @@ The application is a static Astro website with a single React study interface. I
 
 The flashcard dataset is generated during the build process from `chino_flashcards.csv`.
 
-Firestore **does not** store flashcard content. It stores **only user progress**, allowing the application to work completely offline or as a guest without any backend configuration.
+Firestore **does not** store flashcard content. It stores **only user progress and card-level favorites**, allowing the application to work completely offline or as a guest without any backend configuration.
 
 The main project areas are:
 
@@ -38,6 +38,19 @@ If a change requires modifying card identities, treat it as a migration rather t
 The `nombres_propios` CSV field contains semicolon-separated exact forms of proper names that the interface renders in lilac. This includes people, surnames, countries, and places across Hanzi, pinyin, and Spanish.
 
 Keep the study text itself plain. When adding or changing a proper name, update `properNamesById` in `scripts/build_flashcards.mjs` with every displayed form instead of adding markup to the card text.
+
+## Content guidelines
+
+Review every card as a complete learning unit: prompt, answer, explanation, and examples must remain natural and mutually consistent in Mandarin and Spanish.
+
+Cards with `tipo: concepto` test the rule itself rather than its translation:
+
+* Write the prompt as a direct Spanish question in the `espanol` field.
+* Write the answer as a concise Spanish explanation in the `explicacion` field.
+* Keep Hanzi, pinyin, and examples as supporting reference material, not as a reverse translation exercise.
+* Concept cards produce one Spanish-to-Spanish study unit. Do not add a duplicate reverse direction.
+
+For example: `¿Cuántas marcas tonales puede haber por sílaba?` → `Solo puede haber una.`
 
 ## Development
 

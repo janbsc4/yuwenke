@@ -19,6 +19,7 @@ import type {
 import {
   createStudyUnits,
   matchesFilters,
+  progressForStudyUnits,
   shuffle,
   unitBelongsToView,
   visibleUnits,
@@ -144,23 +145,33 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const loginDialogRef = useRef<HTMLElement>(null);
   const helpDialogRef = useRef<HTMLElement>(null);
   const helpTriggerRef = useRef<HTMLButtonElement>(null);
+  const studyProgress = useMemo(
+    () => progressForStudyUnits(cards, progress),
+    [cards, progress],
+  );
 
   const counts = useMemo(() => {
     const filtered = units.filter((unit) => matchesFilters(unit.card, filters));
     return {
-      study: filtered.filter((unit) => unitBelongsToView(unit, "study", progress)).length,
-      discover: filtered.filter((unit) => unitBelongsToView(unit, "discover", progress)).length,
-      mastered: filtered.filter((unit) => unitBelongsToView(unit, "mastered", progress)).length,
+      study: filtered.filter((unit) =>
+        unitBelongsToView(unit, "study", studyProgress),
+      ).length,
+      discover: filtered.filter((unit) =>
+        unitBelongsToView(unit, "discover", studyProgress),
+      ).length,
+      mastered: filtered.filter((unit) =>
+        unitBelongsToView(unit, "mastered", studyProgress),
+      ).length,
       favorites: filtered.filter((unit) =>
-        unitBelongsToView(unit, "favorites", progress, favorites),
+        unitBelongsToView(unit, "favorites", studyProgress, favorites),
       ).length,
     };
-  }, [favorites, filters, progress, units]);
+  }, [favorites, filters, studyProgress, units]);
 
   const hasFilters = filters.query.trim() !== "" || filters.topic !== "all" || filters.type !== "all";
   const filterCount = Number(filters.topic !== "all") + Number(filters.type !== "all");
   const current = queue[queueIndex];
-  const currentStatus = current ? progress[current.key]?.status : undefined;
+  const currentStatus = current ? studyProgress[current.key]?.status : undefined;
   const currentFavorite = current
     ? favorites[current.cardId]?.favorite === true
     : false;
@@ -201,7 +212,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     if (!ready || !viewInitialized) return;
     writePreference("yuwenke:last-view:v1", activeView);
     const nextQueue = shuffle(
-      visibleUnits(units, activeView, progress, filters, favorites),
+      visibleUnits(units, activeView, studyProgress, filters, favorites),
     );
     setQueue(nextQueue);
     setQueueIndex(0);
@@ -282,7 +293,12 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     let nextIndex = queueIndex + 1;
     while (
       nextIndex < queue.length &&
-      !unitBelongsToView(queue[nextIndex], activeView, progress, favorites)
+      !unitBelongsToView(
+        queue[nextIndex],
+        activeView,
+        studyProgress,
+        favorites,
+      )
     ) {
       nextIndex += 1;
     }
@@ -296,11 +312,15 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     setQueueIndex(nextIndex);
     setRevealed(false);
     window.setTimeout(() => promptRef.current?.focus(), 0);
-  }, [activeView, favorites, progress, queue, queueIndex]);
+  }, [activeView, favorites, queue, queueIndex, studyProgress]);
 
   useEffect(() => {
     if (!queueReady || completed || !current) return;
-    if (unitBelongsToView(current, activeView, progress, favorites)) return;
+    if (
+      unitBelongsToView(current, activeView, studyProgress, favorites)
+    ) {
+      return;
+    }
     if (activeView === "favorites" && counts.favorites === 0) {
       setQueue([]);
       setQueueIndex(0);
@@ -316,8 +336,8 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     counts.favorites,
     current,
     favorites,
-    progress,
     queueReady,
+    studyProgress,
   ]);
 
   const choosePrimary = useCallback(() => {
@@ -637,7 +657,11 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
                     Tarjeta {queueIndex + 1} de {queue.length}
                   </span>
                   <span className="direction-badge">
-                    {current.direction === "hanzi-es" ? "Chino → Español" : "Español → Chino"}
+                    {current.card.tipo === "concepto"
+                      ? "Concepto · Español"
+                      : current.direction === "hanzi-es"
+                        ? "Chino → Español"
+                        : "Español → Chino"}
                   </span>
                 </div>
                 <div
@@ -809,7 +833,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               <li>
                 <strong>Favoritas</strong>
                 <p>
-                  Marca una tarjeta con la estrella para tener sus dos sentidos
+                  Marca una tarjeta con la estrella para tener sus prácticas
                   siempre disponibles en una cola personal.
                 </p>
               </li>
@@ -817,9 +841,10 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
 
             <div className="help-details">
               <p>
-                Cada ficha se practica por separado en chino → español y español →
-                chino. La búsqueda y los filtros solo cambian qué fichas ves en la
-                cola actual.
+                Las palabras y frases se practican por separado en chino → español
+                y español → chino. Los conceptos plantean una sola pregunta en
+                español para recordar la regla. La búsqueda y los filtros solo
+                cambian qué fichas ves en la cola actual.
               </p>
               <p>
                 Los nombres propios se muestran en{" "}

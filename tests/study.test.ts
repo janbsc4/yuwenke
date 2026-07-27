@@ -5,6 +5,7 @@ import {
   mergeFavorites,
   mergeProgress,
   nextClientTimestamp,
+  progressForStudyUnits,
   shuffle,
   unitBelongsToView,
   unitKey,
@@ -41,13 +42,48 @@ function favoriteEntry(timestamp: number, favorite = true): FavoriteEntry {
 describe("study domain", () => {
   const cards = loadFlashcards();
 
-  it("creates one independent unit per direction", () => {
+  it("creates two units for language cards and one Spanish unit for concepts", () => {
     const units = createStudyUnits(cards);
-    expect(units).toHaveLength(278);
+    expect(units).toHaveLength(247);
     expect(units.slice(0, 2).map((unit) => unit.direction)).toEqual([
       "hanzi-es",
       "es-hanzi",
     ]);
+    const concept = cards.find((card) => card.tipo === "concepto")!;
+    expect(units.filter((unit) => unit.cardId === concept.id)).toMatchObject([
+      { direction: "hanzi-es" },
+    ]);
+  });
+
+  it("honors newer legacy reverse-direction progress for concepts", () => {
+    const concept = cards.find((card) => card.tipo === "concepto")!;
+    const canonicalKey = unitKey(concept.id, "hanzi-es");
+    const legacyKey = unitKey(concept.id, "es-hanzi");
+    const legacy: ProgressEntry = {
+      ...entry(20, "known"),
+      cardId: concept.id,
+      direction: "es-hanzi",
+    };
+
+    expect(
+      progressForStudyUnits([concept], { [legacyKey]: legacy })[canonicalKey],
+    ).toMatchObject({
+      cardId: concept.id,
+      direction: "hanzi-es",
+      status: "known",
+      clientUpdatedAt: 20,
+    });
+
+    const canonical: ProgressEntry = {
+      ...entry(21, "learning"),
+      cardId: concept.id,
+    };
+    expect(
+      progressForStudyUnits([concept], {
+        [canonicalKey]: canonical,
+        [legacyKey]: legacy,
+      })[canonicalKey],
+    ).toEqual(canonical);
   });
 
   it("searches pinyin without requiring tone marks", () => {

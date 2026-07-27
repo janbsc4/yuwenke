@@ -37,7 +37,19 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
   answerRef,
 ) {
   const { card, direction } = unit;
-  const hanziPrompt = direction === "hanzi-es";
+  const conceptCard = card.tipo === "concepto";
+  const hanziPrompt = !conceptCard && direction === "hanzi-es";
+  const hanziAnswer = !conceptCard && direction === "es-hanzi";
+  const promptText = conceptCard
+    ? card.espanol
+    : hanziPrompt
+      ? card.hanzi
+      : card.espanol;
+  const answerText = conceptCard
+    ? card.explicacion
+    : hanziPrompt
+      ? card.espanol
+      : card.hanzi;
 
   return (
     <article className={`study-card ${revealed ? "is-revealed" : ""}`}>
@@ -61,7 +73,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
           tabIndex={-1}
         >
           <HighlightedText
-            text={hanziPrompt ? card.hanzi : card.espanol}
+            text={promptText}
             properNames={card.nombres_propios}
           />
         </h2>
@@ -73,29 +85,31 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
             Respuesta
           </h3>
           <p
-            className={hanziPrompt ? "answer-spanish" : "answer-hanzi"}
-            lang={hanziPrompt ? "es" : "zh-Hans"}
+            className={hanziAnswer ? "answer-hanzi" : "answer-spanish"}
+            lang={hanziAnswer ? "zh-Hans" : "es"}
           >
             <HighlightedText
-              text={hanziPrompt ? card.espanol : card.hanzi}
+              text={answerText}
               properNames={card.nombres_propios}
             />
           </p>
 
-          <dl className="answer-details">
-            <div>
-              <dt>Pinyin</dt>
-              <dd lang="zh-Latn">
-                <HighlightedText text={card.pinyin} properNames={card.nombres_propios} />
-              </dd>
-            </div>
-            <div>
-              <dt>Explicación</dt>
-              <dd lang="es">
-                <HighlightedText text={card.explicacion} properNames={card.nombres_propios} />
-              </dd>
-            </div>
-          </dl>
+          {!conceptCard ? (
+            <dl className="answer-details">
+              <div>
+                <dt>Pinyin</dt>
+                <dd lang="zh-Latn">
+                  <HighlightedText text={card.pinyin} properNames={card.nombres_propios} />
+                </dd>
+              </div>
+              <div>
+                <dt>Explicación</dt>
+                <dd lang="es">
+                  <HighlightedText text={card.explicacion} properNames={card.nombres_propios} />
+                </dd>
+              </div>
+            </dl>
+          ) : null}
 
           <div className="example-block">
             <h3>Ejemplo</h3>

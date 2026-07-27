@@ -83,6 +83,40 @@ describe("FlashcardApp", () => {
     expect(container.querySelector(".tag-list")).not.toBeInTheDocument();
   });
 
+  it("studies a concept as one Spanish question with a Spanish answer", async () => {
+    const user = userEvent.setup();
+    const conceptCard: Flashcard = {
+      ...card,
+      id: "FC133",
+      tipo: "concepto",
+      tema: "pronunciacion",
+      hanzi: "每个音节最多一个声调符号",
+      pinyin: "měi ge yīnjié zuìduō yí ge shēngdiào fúhào",
+      espanol: "¿Cuántas marcas tonales puede haber por sílaba?",
+      explicacion: "Solo puede haber una.",
+      ejemplo_hanzi: "好",
+      ejemplo_pinyin: "hǎo",
+      ejemplo_espanol: "bien",
+    };
+
+    render(<FlashcardApp cards={[conceptCard]} />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "¿Cuántas marcas tonales puede haber por sílaba?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Concepto · Español")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("button", { name: /Descubrir/ })).getByText("1"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Mostrar respuesta/ }));
+    expect(screen.getByText("Solo puede haber una.")).toBeInTheDocument();
+    expect(screen.queryByText("Pinyin")).not.toBeInTheDocument();
+    expect(screen.queryByText("Explicación")).not.toBeInTheDocument();
+  });
+
   it("prioritizes Estudiar over a saved Descubrir preference", async () => {
     const progress: ProgressEntry = {
       cardId: card.id,
@@ -259,7 +293,9 @@ describe("FlashcardApp", () => {
     await user.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" });
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText(/Cada ficha se practica por separado/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Los conceptos plantean una sola pregunta en español/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/nombres propios se muestran/)).toBeInTheDocument();
     expect(screen.getByText(/Marca una tarjeta con la estrella/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cerrar explicación" })).toHaveFocus();
