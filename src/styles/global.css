@@ -1339,6 +1339,43 @@ kbd {
     width: calc(100% - 24px);
   }
 
+  .view-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 252, 245, 0.58);
+  }
+
+  .view-tabs button {
+    min-height: 48px;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: 0.86rem;
+  }
+
+  .view-tabs button::after {
+    display: none;
+  }
+
+  .view-tabs button:hover {
+    background: var(--surface-warm);
+  }
+
+  .view-tabs button.is-active {
+    border-color: rgba(166, 61, 50, 0.24);
+    background: var(--cinnabar-soft);
+  }
+
+  .view-tabs .count-pill,
+  .view-tabs .is-active .count-pill {
+    background: rgba(102, 112, 105, 0.1);
+  }
+
   .brand-mark {
     width: 42px;
     height: 42px;
@@ -1467,12 +1504,6 @@ kbd {
   .brand strong {
     max-width: 88px;
     line-height: 1.1;
-  }
-
-  .view-tabs button {
-    flex-direction: column;
-    gap: 1px;
-    font-size: 0.78rem;
   }
 
   .search-field input {
