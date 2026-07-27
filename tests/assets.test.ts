@@ -25,6 +25,8 @@ describe("Yuwenke identity assets", () => {
     expect(pngSize("apple-touch-icon.png")).toEqual([180, 180]);
     expect(pngSize("icon-192.png")).toEqual([192, 192]);
     expect(pngSize("icon-512.png")).toEqual([512, 512]);
+    expect(pngSize("yuwenke-mark.png")).toEqual([96, 96]);
+    expect(pngSize("favicon-32.png")).toEqual([32, 32]);
     expect(pngSize("og.png")).toEqual([1200, 630]);
     expect(icoSizes("favicon.ico")).toEqual([16, 32, 48]);
   });

@@ -450,7 +450,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         <a className="brand" href={import.meta.env.BASE_URL} aria-label="Yuwenke, inicio">
           <img
             className="brand-mark"
-            src={`${import.meta.env.BASE_URL}yuwenke-mark.svg`}
+            src={`${import.meta.env.BASE_URL}yuwenke-mark.png`}
             alt=""
             width="48"
             height="48"
