@@ -134,4 +134,4 @@ Small, localized complexity that clearly improves correctness or performance is 
 * Minimize dependencies.
 * Ensure new functionality includes appropriate tests.
 * Do not break guest mode when working on Firebase synchronization.
-* Remember that the app is deployed to GitHub Pages and runs under the configured `/Yuwenke/` base path.
+* Remember that the app is deployed to GitHub Pages and runs under the configured `/yuwenke/` base path.

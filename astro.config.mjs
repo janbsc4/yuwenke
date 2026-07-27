@@ -3,7 +3,7 @@ import react from "@astrojs/react";
 
 export default defineConfig({
   site: "https://janbsc4.github.io",
-  base: "/Yuwenke",
+  base: "/yuwenke",
   trailingSlash: "always",
   integrations: [react()],
   vite: {

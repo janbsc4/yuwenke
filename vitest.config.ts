@@ -8,7 +8,7 @@ export default defineConfig({
     css: true,
     environmentOptions: {
       jsdom: {
-        url: "http://localhost/Yuwenke/",
+        url: "http://localhost/yuwenke/",
       },
     },
   },

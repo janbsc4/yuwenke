@@ -50,7 +50,7 @@ Google Sheets will not be used in v1. The existing 139-card CSV is small, versio
 - Treat Firebase web configuration as public project identification; authorization relies on Authentication and Security Rules, not hiding the Firebase API key. [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys), [Firebase rules basics](https://firebase.google.com/docs/rules/basics)
 - Configure Astro with:
   - `site: "https://janbsc4.github.io"`
-  - `base: "/Yuwenke"`
+  - `base: "/yuwenke"`
 - Add Firebase settings through `PUBLIC_FIREBASE_*` variables, document them in `.env.example`, and configure the same GitHub repository variables for deployment.
 - Add an official Astro/GitHub Pages workflow triggered by pushes to `main` and manual dispatch. It must install from the committed lockfile, run tests, build, and deploy `dist`.
 - Firebase setup must enable Google Authentication, create Firestore, and authorize `janbsc4.github.io` plus the local development origin.
@@ -61,7 +61,7 @@ Google Sheets will not be used in v1. The existing 139-card CSV is small, versio
 - Unit-test CSV parsing, schema failures, filters, search normalization, shuffle uniqueness, direction generation, state transitions, and timestamp-based merging.
 - Component-test both card directions, flip/rating controls, empty learning queues, Discover behavior, Spanish labels, authentication states, and responsive keyboard interaction.
 - Test Firestore rules with the emulator: unauthenticated denial, own-user access, cross-user denial, invalid payload denial, and valid progress writes.
-- Add end-to-end tests for guest persistence, Discover → Learning → Known flow, reload behavior, filters, `/Yuwenke` asset paths, sign-in merge, sign-out cleanup, and mobile layout.
+- Add end-to-end tests for guest persistence, Discover → Learning → Known flow, reload behavior, filters, `/yuwenke` asset paths, sign-in merge, sign-out cleanup, and mobile layout.
 - Acceptance requires all 139 cards to load, guest study to work without Firebase, authenticated progress to synchronize across two sessions, and the deployed Pages URL to load without broken assets or routes.
 
 ## Assumptions

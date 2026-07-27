@@ -8,7 +8,7 @@ The content combines Mandarin characters, pinyin, Spanish meanings, explanations
 
 The site is a static Astro app with one React study interface. It can be hosted for free on GitHub Pages at:
 
-`https://janbsc4.github.io/Yuwenke/`
+`https://janbsc4.github.io/yuwenke/`
 
 It includes:
 
@@ -45,7 +45,7 @@ npm install
 npm run dev
 ```
 
-Astro serves the project under its configured `/Yuwenke/` base path. Useful checks are:
+Astro serves the project under its configured `/yuwenke/` base path. Useful checks are:
 
 ```sh
 npm test
