@@ -51,6 +51,14 @@ describe("study domain", () => {
     ).toBe(false);
   });
 
+  it("keeps tags searchable even though they are not rendered on cards", () => {
+    const card = cards.find((candidate) => candidate.id === "FC134");
+    expect(card).toBeDefined();
+    expect(
+      matchesFilters(card!, { query: "u_dieresis", topic: "all", type: "all" }),
+    ).toBe(true);
+  });
+
   it("shuffles without adding or removing units", () => {
     const result = shuffle([1, 2, 3, 4], () => 0);
     expect(result).toEqual([2, 3, 4, 1]);

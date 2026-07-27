@@ -101,6 +101,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [queue, setQueue] = useState<StudyUnit[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
@@ -116,6 +117,8 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const loginButtonRef = useRef<HTMLButtonElement>(null);
   const filterDialogRef = useRef<HTMLElement>(null);
   const loginDialogRef = useRef<HTMLElement>(null);
+  const helpDialogRef = useRef<HTMLElement>(null);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
 
   const counts = useMemo(() => {
     const filtered = units.filter((unit) => matchesFilters(unit.card, filters));
@@ -135,12 +138,9 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     const stored = readPreference("yuwenke:last-view:v1") as StudyView | null;
     const candidate = stored && counts[stored] > 0 ? stored : null;
     const initial =
-      candidate ??
-      (counts.study > 0
+      counts.study > 0
         ? "study"
-        : counts.discover > 0
-          ? "discover"
-          : "mastered");
+        : candidate ?? (counts.discover > 0 ? "discover" : "mastered");
     setActiveView(initial);
     setViewInitialized(true);
   }, [counts, ready, viewInitialized]);
@@ -167,7 +167,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   }, [clearNotice, notice]);
 
   useEffect(() => {
-    const dialog = loginOpen ? loginDialogRef.current : filterSheetOpen ? filterDialogRef.current : null;
+    const dialog = helpOpen
+      ? helpDialogRef.current
+      : loginOpen
+        ? loginDialogRef.current
+        : filterSheetOpen
+          ? filterDialogRef.current
+          : null;
     if (!dialog) return;
     const focusable = Array.from(
       dialog.querySelectorAll<HTMLElement>(
@@ -190,7 +196,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     };
     dialog.addEventListener("keydown", trapFocus);
     return () => dialog.removeEventListener("keydown", trapFocus);
-  }, [filterSheetOpen, loginOpen]);
+  }, [filterSheetOpen, helpOpen, loginOpen]);
 
   const closeFilterSheet = useCallback(() => {
     setFilterSheetOpen(false);
@@ -200,6 +206,21 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const closeLogin = useCallback(() => {
     setLoginOpen(false);
     window.setTimeout(() => loginButtonRef.current?.focus(), 0);
+  }, []);
+
+  const openHelp = useCallback((trigger: HTMLButtonElement) => {
+    helpTriggerRef.current = trigger;
+    setFilterSheetOpen(false);
+    setHelpOpen(true);
+  }, []);
+
+  const closeHelp = useCallback(() => {
+    setHelpOpen(false);
+    window.setTimeout(() => {
+      const trigger = helpTriggerRef.current;
+      if (trigger?.isConnected) trigger.focus();
+      else filterButtonRef.current?.focus();
+    }, 0);
   }, []);
 
   const advance = useCallback(() => {
@@ -251,12 +272,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         target instanceof Element &&
         target.matches("input, select, textarea, button, [contenteditable='true']");
       if (event.key === "Escape") {
-        if (filterSheetOpen) closeFilterSheet();
+        if (helpOpen) closeHelp();
+        else if (filterSheetOpen) closeFilterSheet();
         else if (loginOpen) closeLogin();
         else if (accountOpen) setAccountOpen(false);
         return;
       }
-      if (filterSheetOpen || loginOpen || accountOpen) return;
+      if (filterSheetOpen || helpOpen || loginOpen || accountOpen) return;
       if (event.key === "/" && !inField) {
         event.preventDefault();
         searchRef.current?.focus();
@@ -282,10 +304,12 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     choosePrimary,
     chooseSecondary,
     closeFilterSheet,
+    closeHelp,
     closeLogin,
     completed,
     current,
     filterSheetOpen,
+    helpOpen,
     loginOpen,
     revealed,
     skip,
@@ -318,12 +342,16 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Notas de chino, inicio">
-          <span className="brand-seal" lang="zh-Hans" aria-hidden="true">
-            中文
-          </span>
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Yuwenke, inicio">
+          <img
+            className="brand-mark"
+            src={`${import.meta.env.BASE_URL}yuwenke-mark.svg`}
+            alt=""
+            width="48"
+            height="48"
+          />
           <span>
-            <strong>Notas de chino</strong>
+            <strong>Yuwenke</strong>
             <small>Aprende Mucho Chino</small>
           </span>
         </a>
@@ -496,7 +524,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
           <div className="direction-legend">
             <span>中 → ES</span>
             <span>ES → 中</span>
-            <p>Cada ficha aparece una vez en cada sentido.</p>
+            <button
+              type="button"
+              className="text-button how-it-works"
+              onClick={(event) => openHelp(event.currentTarget)}
+            >
+              ¿Cómo funciona?
+            </button>
           </div>
         </aside>
 
@@ -625,6 +659,76 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
             <button type="button" className="text-button" onClick={resetFilters}>
               Limpiar filtros
             </button>
+            <div className="direction-legend sheet-direction-legend">
+              <span>中 → ES</span>
+              <span>ES → 中</span>
+              <button
+                type="button"
+                className="text-button how-it-works"
+                onClick={(event) => openHelp(event.currentTarget)}
+              >
+                ¿Cómo funciona?
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {helpOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeHelp}>
+          <section
+            className="help-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+            ref={helpDialogRef}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-heading">
+              <h2 id="help-title">Cómo funciona Yuwenke</h2>
+              <button type="button" aria-label="Cerrar explicación" onClick={closeHelp}>×</button>
+            </div>
+
+            <ol className="help-steps">
+              <li>
+                <strong>Descubrir</strong>
+                <p>
+                  Mira tarjetas nuevas y decide si quieres añadirlas a aprendizaje,
+                  marcarlas como dominadas o saltarlas por ahora.
+                </p>
+              </li>
+              <li>
+                <strong>Estudiar</strong>
+                <p>
+                  Practica lo que estás aprendiendo. Después de ver la respuesta,
+                  mantenlo en estudio o pásalo a Dominadas.
+                </p>
+              </li>
+              <li>
+                <strong>Dominadas</strong>
+                <p>
+                  Repasa lo que ya sabes y devuelve a Estudiar cualquier ficha que
+                  quieras reforzar.
+                </p>
+              </li>
+            </ol>
+
+            <div className="help-details">
+              <p>
+                Cada ficha se practica por separado en chino → español y español →
+                chino. La búsqueda y los filtros solo cambian qué fichas ves en la
+                cola actual.
+              </p>
+              <p>
+                Los nombres propios se muestran en{" "}
+                <span className="proper-name">lila</span> en caracteres chinos,
+                pinyin y español.
+              </p>
+              <p>
+                Como invitado, el progreso se guarda en este dispositivo. Si inicias
+                sesión con Google, también podrás sincronizarlo entre dispositivos.
+              </p>
+            </div>
           </section>
         </div>
       ) : null}

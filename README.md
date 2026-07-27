@@ -1,6 +1,6 @@
-# Chinese Class Notes Experiment
+# Yuwenke
 
-This repository is a personal experiment with notes from my Chinese class. I am exploring how class material can become structured study data and a small, useful flashcard app.
+Yuwenke is a personal experiment with notes from my Chinese class. It explores how class material can become structured study data and a small, useful flashcard app.
 
 The content combines Mandarin characters, pinyin, Spanish meanings, explanations, examples, grammar ideas, and cultural notes. It is based on personal class notes and is not intended to be an authoritative Mandarin reference.
 
@@ -18,6 +18,8 @@ It includes:
 - search by characters, pinyin, Spanish, explanations, and tags;
 - topic and card-type filters;
 - shuffled sessions without repetition;
+- lilac highlighting for proper names across Hanzi, pinyin, and Spanish;
+- an in-app guide explaining the study flow and visual conventions;
 - guest progress in local storage;
 - optional Google sign-in and Firestore synchronization.
 
@@ -64,6 +66,8 @@ node scripts/build_flashcards.mjs
 ```
 
 The script preserves the existing `FC001`–`FC139` identities because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
+
+The `nombres_propios` column contains semicolon-separated literal forms that should be highlighted as proper names. The maintained annotations live in `properNamesById` inside the build script; the underlying study text stays unchanged so search and card identity remain stable.
 
 ## Optional Firebase synchronization
 

@@ -14,6 +14,8 @@
   --jade-soft: #dfece5;
   --amber: #8b5e1a;
   --amber-soft: #f4e8ce;
+  --proper-name: #75428f;
+  --proper-name-soft: #eee3f4;
   --focus: #1d4ed8;
   --shadow: 0 24px 70px rgba(64, 50, 32, 0.08), 0 3px 12px rgba(64, 50, 32, 0.05);
   --font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -103,19 +105,11 @@ a {
   text-decoration: none;
 }
 
-.brand-seal {
-  display: grid;
+.brand-mark {
+  display: block;
   width: 48px;
   height: 48px;
-  place-items: center;
-  border: 1.5px solid var(--cinnabar);
-  border-radius: 10px;
-  color: var(--cinnabar);
-  font-family: var(--font-hanzi);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.08em;
-  transform: rotate(-1.5deg);
+  flex: 0 0 auto;
 }
 
 .brand strong,
@@ -527,12 +521,12 @@ select {
   text-align: center;
 }
 
-.direction-legend p {
+.direction-legend .how-it-works {
   grid-column: 1 / -1;
-  margin: 3px 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.45;
+  justify-self: center;
+  margin-top: 3px;
+  padding-right: 4px;
+  padding-left: 4px;
 }
 
 .session-panel {
@@ -753,32 +747,9 @@ select {
   color: var(--muted);
 }
 
-.card-meta {
-  margin-top: 28px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.74rem;
-}
-
-.card-meta > p {
-  margin: 0 0 12px;
-}
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.tag-list li {
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
+.proper-name {
+  color: var(--proper-name);
+  font-weight: 750;
 }
 
 .decision-area {
@@ -945,6 +916,7 @@ kbd {
 }
 
 .login-dialog,
+.help-dialog,
 .sheet {
   width: min(440px, 100%);
   padding: 32px;
@@ -958,6 +930,75 @@ kbd {
   display: grid;
   justify-items: center;
   text-align: center;
+}
+
+.help-dialog {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow-y: auto;
+}
+
+.help-steps {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: help-step;
+}
+
+.help-steps li {
+  position: relative;
+  padding: 16px 18px 16px 56px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-warm);
+  counter-increment: help-step;
+}
+
+.help-steps li::before {
+  position: absolute;
+  top: 15px;
+  left: 17px;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cinnabar-soft);
+  color: var(--cinnabar-dark);
+  content: counter(help-step);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.help-steps p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.help-details {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.help-details p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.help-details p:nth-child(2) {
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--proper-name-soft);
+  color: var(--ink);
+}
+
+.sheet-direction-legend {
+  margin-top: 2px;
 }
 
 .dialog-mark {
@@ -1246,10 +1287,9 @@ kbd {
     width: calc(100% - 24px);
   }
 
-  .brand-seal {
+  .brand-mark {
     width: 42px;
     height: 42px;
-    font-size: 0.88rem;
   }
 
   .brand strong {
@@ -1359,6 +1399,15 @@ kbd {
 
   .login-dialog {
     padding: 28px 22px;
+  }
+
+  .help-dialog {
+    max-height: calc(100vh - 24px);
+    padding: 26px 20px;
+  }
+
+  .help-steps li {
+    padding: 14px 14px 14px 50px;
   }
 }
 

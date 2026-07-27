@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="lines" width="1200" height="38" patternUnits="userSpaceOnUse">
+      <path d="M0 37.5h1200" stroke="#d8d0c3" stroke-width="1" opacity=".48"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#403220" flood-opacity=".14"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#f5f0e6"/>
+  <rect width="1200" height="630" fill="url(#lines)"/>
+  <circle cx="995" cy="265" r="240" fill="#dfece5" opacity=".72"/>
+  <path d="M67 0v630" stroke="#a63d32" stroke-width="4" opacity=".72"/>
+
+  <g transform="translate(118 92)">
+    <rect width="86" height="86" rx="22" fill="#fffcf5" stroke="#a63d32" stroke-width="4"/>
+    <path d="M23 23 43 45v21" fill="none" stroke="#a63d32" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M63 23 43 45" fill="none" stroke="#2f6656" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <text x="118" y="304" fill="#20251f" font-family="Avenir Next, Segoe UI, sans-serif" font-size="106" font-weight="750" letter-spacing="-5">Yuwenke</text>
+  <text x="124" y="371" fill="#2f6656" font-family="Georgia, Songti SC, serif" font-size="40">Mandarín ↔ Español</text>
+  <path d="M124 402h390" stroke="#a63d32" stroke-width="5" stroke-linecap="round"/>
+  <text x="124" y="456" fill="#667069" font-family="Avenir Next, Segoe UI, sans-serif" font-size="25">Flashcards de mis notas de clase</text>
+
+  <g filter="url(#shadow)" transform="translate(760 91) rotate(-6 156 216)">
+    <rect width="312" height="432" rx="34" fill="#fffcf5" stroke="#d8d0c3" stroke-width="3"/>
+    <path d="M50 55h212" stroke="#a63d32" stroke-width="3" opacity=".22"/>
+    <path d="M50 93h212M50 131h212M50 169h212M50 207h212M50 245h212M50 283h212M50 321h212M50 359h212" stroke="#d8d0c3" stroke-width="2" opacity=".55"/>
+    <path d="M87 127 156 203v90" fill="none" stroke="#a63d32" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M225 127 156 203" fill="none" stroke="#2f6656" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g filter="url(#shadow)" transform="translate(914 272) rotate(8 118 155)">
+    <rect width="236" height="310" rx="28" fill="#faf5ea" stroke="#d8d0c3" stroke-width="3"/>
+    <text x="118" y="180" text-anchor="middle" fill="#2f6656" font-family="Songti SC, STSong, serif" font-size="104" font-weight="700">学</text>
+  </g>
+</svg>

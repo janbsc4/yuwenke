@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This project is a personal experiment that transforms Chinese class notes into a structured flashcard application.
+Yuwenke is a personal experiment that transforms Chinese class notes into a structured flashcard application.
 
 The source material contains Mandarin characters, pinyin, Spanish meanings, grammar notes, explanations, examples, and cultural context. It is based on personal notes rather than being an authoritative Mandarin reference.
 
@@ -32,6 +32,12 @@ Card IDs (`FC001`, `FC002`, ...) are stable identifiers.
 New cards must always be appended to the end of the dataset. Existing IDs are referenced by saved user progress.
 
 If a change requires modifying card identities, treat it as a migration rather than a normal edit.
+
+## Dataset annotations
+
+The `nombres_propios` CSV field contains semicolon-separated exact forms of proper names that the interface renders in lilac. This includes people, surnames, countries, and places across Hanzi, pinyin, and Spanish.
+
+Keep the study text itself plain. When adding or changing a proper name, update `properNamesById` in `scripts/build_flashcards.mjs` with every displayed form instead of adding markup to the card text.
 
 ## Development
 

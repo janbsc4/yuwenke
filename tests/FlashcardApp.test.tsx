@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import FlashcardApp from "../src/components/FlashcardApp";
+import { unitKey } from "../src/lib/study";
+import type { ProgressEntry } from "../src/types";
 import type { Flashcard } from "../src/types";
 
 const card: Flashcard = {
@@ -17,6 +19,7 @@ const card: Flashcard = {
   ejemplo_espanol: "¡Hola!",
   pagina: "1",
   etiquetas: "saludo;basico",
+  nombres_propios: "",
 };
 
 describe("FlashcardApp", () => {
@@ -39,6 +42,45 @@ describe("FlashcardApp", () => {
     });
   });
 
+  it("does not render card metadata while retaining the study content", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FlashcardApp cards={[card]} />);
+
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+
+    expect(screen.getByText("Un saludo básico.")).toBeInTheDocument();
+    expect(screen.queryByText(/Notas:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Etiquetas" })).not.toBeInTheDocument();
+    expect(container.querySelector(".card-meta")).not.toBeInTheDocument();
+    expect(container.querySelector(".tag-list")).not.toBeInTheDocument();
+  });
+
+  it("prioritizes Estudiar over a saved Descubrir preference", async () => {
+    const progress: ProgressEntry = {
+      cardId: card.id,
+      direction: "hanzi-es",
+      status: "learning",
+      clientUpdatedAt: 123,
+      serverUpdatedAt: null,
+      schemaVersion: 1,
+    };
+    window.localStorage.setItem(
+      "yuwenke:guest-progress:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        entries: { [unitKey(card.id, "hanzi-es")]: progress },
+      }),
+    );
+    window.localStorage.setItem("yuwenke:last-view:v1", "discover");
+
+    render(<FlashcardApp cards={[card]} />);
+
+    expect(await screen.findByRole("button", { name: /Estudiar/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("shows a useful empty state for a view without cards", async () => {
     const user = userEvent.setup();
     render(<FlashcardApp cards={[card]} />);
@@ -52,5 +94,63 @@ describe("FlashcardApp", () => {
     await screen.findByRole("button", { name: /Mostrar respuesta/ });
     fireEvent.keyDown(window, { code: "Space", key: " " });
     expect(await screen.findByText("Un saludo básico.")).toBeInTheDocument();
+  });
+
+  it("explains the study flow in an accessible dialog and restores focus", async () => {
+    const user = userEvent.setup();
+    render(<FlashcardApp cards={[card]} />);
+    const trigger = await screen.findByRole("button", { name: "¿Cómo funciona?" });
+
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText(/Cada ficha se practica por separado/)).toBeInTheDocument();
+    expect(screen.getByText(/nombres propios se muestran/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cerrar explicación" })).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(dialog).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("opens help from the mobile filter sheet without leaving two dialogs open", async () => {
+    const user = userEvent.setup();
+    render(<FlashcardApp cards={[card]} />);
+
+    const filterButton = await screen.findByRole("button", { name: "Filtros" });
+    await user.click(filterButton);
+    const filters = screen.getByRole("dialog", { name: "Filtrar tarjetas" });
+    await user.click(
+      within(filters).getByRole("button", { name: "¿Cómo funciona?" }),
+    );
+
+    expect(screen.queryByRole("dialog", { name: "Filtrar tarjetas" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(filterButton).toHaveFocus();
+  });
+
+  it("highlights proper names in Hanzi, pinyin, and Spanish", async () => {
+    const user = userEvent.setup();
+    const namedCard: Flashcard = {
+      ...card,
+      hanzi: "我叫小明。",
+      pinyin: "Wǒ jiào Xiǎomíng.",
+      espanol: "Me llamo Xiaoming.",
+      ejemplo_hanzi: "小明",
+      ejemplo_pinyin: "Xiǎomíng",
+      ejemplo_espanol: "Xiaoming",
+      nombres_propios: "小明;Xiǎomíng;Xiaoming",
+    };
+    const { container } = render(<FlashcardApp cards={[namedCard]} />);
+
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    const highlighted = [...container.querySelectorAll(".proper-name")].map(
+      (element) => element.textContent,
+    );
+
+    expect(highlighted).toContain("小明");
+    expect(highlighted).toContain("Xiǎomíng");
+    expect(highlighted).toContain("Xiaoming");
   });
 });

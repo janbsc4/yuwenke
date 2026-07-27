@@ -18,6 +18,7 @@ export interface Flashcard {
   ejemplo_espanol: string;
   pagina: string;
   etiquetas: string;
+  nombres_propios: string;
 }
 
 export interface StudyUnit {

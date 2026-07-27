@@ -1,8 +1,7 @@
-import { forwardRef, type RefObject } from "react";
+import { Fragment, forwardRef, type RefObject } from "react";
 
 import type { StudyUnit } from "../types";
-import { topicLabel } from "../lib/labels";
-import { tagsFor } from "../lib/study";
+import { highlightProperNames } from "../lib/properNames";
 
 interface StudyCardProps {
   unit: StudyUnit;
@@ -10,11 +9,26 @@ interface StudyCardProps {
   promptRef: RefObject<HTMLHeadingElement | null>;
 }
 
-const TYPE_LABELS = {
-  palabra: "Palabra",
-  frase: "Frase",
-  concepto: "Concepto",
-} as const;
+interface HighlightedTextProps {
+  text: string;
+  properNames: string;
+}
+
+export function HighlightedText({ text, properNames }: HighlightedTextProps) {
+  return (
+    <>
+      {highlightProperNames(text, properNames).map((segment, index) =>
+        segment.properName ? (
+          <span className="proper-name" key={`${index}-${segment.text}`}>
+            {segment.text}
+          </span>
+        ) : (
+          <Fragment key={`${index}-${segment.text}`}>{segment.text}</Fragment>
+        ),
+      )}
+    </>
+  );
+}
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
   { unit, revealed, promptRef },
@@ -22,7 +36,6 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
 ) {
   const { card, direction } = unit;
   const hanziPrompt = direction === "hanzi-es";
-  const tags = tagsFor(card);
 
   return (
     <article className={`study-card ${revealed ? "is-revealed" : ""}`}>
@@ -34,7 +47,10 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
           ref={promptRef}
           tabIndex={-1}
         >
-          {hanziPrompt ? card.hanzi : card.espanol}
+          <HighlightedText
+            text={hanziPrompt ? card.hanzi : card.espanol}
+            properNames={card.nombres_propios}
+          />
         </h2>
       </div>
 
@@ -47,42 +63,39 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
             className={hanziPrompt ? "answer-spanish" : "answer-hanzi"}
             lang={hanziPrompt ? "es" : "zh-Hans"}
           >
-            {hanziPrompt ? card.espanol : card.hanzi}
+            <HighlightedText
+              text={hanziPrompt ? card.espanol : card.hanzi}
+              properNames={card.nombres_propios}
+            />
           </p>
 
           <dl className="answer-details">
             <div>
               <dt>Pinyin</dt>
-              <dd lang="zh-Latn">{card.pinyin}</dd>
+              <dd lang="zh-Latn">
+                <HighlightedText text={card.pinyin} properNames={card.nombres_propios} />
+              </dd>
             </div>
             <div>
               <dt>Explicación</dt>
-              <dd lang="es">{card.explicacion}</dd>
+              <dd lang="es">
+                <HighlightedText text={card.explicacion} properNames={card.nombres_propios} />
+              </dd>
             </div>
           </dl>
 
           <div className="example-block">
             <h3>Ejemplo</h3>
             <p className="example-hanzi" lang="zh-Hans">
-              {card.ejemplo_hanzi}
+              <HighlightedText text={card.ejemplo_hanzi} properNames={card.nombres_propios} />
             </p>
-            <p lang="zh-Latn">{card.ejemplo_pinyin}</p>
-            <p lang="es">{card.ejemplo_espanol}</p>
+            <p lang="zh-Latn">
+              <HighlightedText text={card.ejemplo_pinyin} properNames={card.nombres_propios} />
+            </p>
+            <p lang="es">
+              <HighlightedText text={card.ejemplo_espanol} properNames={card.nombres_propios} />
+            </p>
           </div>
-
-          <footer className="card-meta">
-            <p>
-              {TYPE_LABELS[card.tipo]} <span aria-hidden="true">·</span> {topicLabel(card.tema)}{" "}
-              <span aria-hidden="true">·</span> Notas: {card.pagina}
-            </p>
-            {tags.length > 0 ? (
-              <ul className="tag-list" aria-label="Etiquetas">
-                {tags.map((tag) => (
-                  <li key={tag}>{tag}</li>
-                ))}
-              </ul>
-            ) : null}
-          </footer>
         </section>
       ) : null}
     </article>

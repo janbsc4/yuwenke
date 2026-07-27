@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Yuwenke</title>
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#fffcf5" stroke="#a63d32" stroke-width="2.5"/>
+  <path d="M17.5 17.5 32 33.5V49" fill="none" stroke="#a63d32" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M46.5 17.5 32 33.5" fill="none" stroke="#2f6656" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.5 47.5h8" fill="none" stroke="#a63d32" stroke-width="2.5" stroke-linecap="round" opacity=".32"/>
+  <path d="M42.5 47.5h8" fill="none" stroke="#2f6656" stroke-width="2.5" stroke-linecap="round" opacity=".32"/>
+</svg>

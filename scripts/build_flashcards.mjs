@@ -154,6 +154,53 @@ const rows = [
   ["frase", "bebidas", "喝牛奶", "hē niúnǎi", "beber leche", "喝 significa «beber» y 牛奶 es la forma habitual de decir «leche».", "我每天早上喝牛奶。", "Wǒ měitiān zǎoshang hē niúnǎi.", "Bebo leche todas las mañanas.", "—", "bebida;verbo;rutina"],
 ];
 
+// Exact visible forms that should use the proper-name colour. Keeping this
+// annotation separate from the study text preserves search and card identity.
+const properNamesById = new Map([
+  ["FC004", "吴;Wú;Wu"],
+  ["FC005", "Fátima"],
+  ["FC065", "徐;Xú;Xu"],
+  ["FC066", "中国;Zhōngguó;China"],
+  ["FC067", "日本;Rìběn;Japón"],
+  ["FC068", "韩国;Hánguó;Corea del Sur"],
+  ["FC069", "小明;Xiǎomíng;Xiaoming"],
+  ["FC070", "吴;Wú;Wu"],
+  ["FC072", "José"],
+  ["FC073", "张欣;张;欣;Zhāng Xīn;Zhāng;Xīn;Zhang Xin;Zhang;Xin"],
+  ["FC074", "吴;刘;孙;Wú;Liú;Sūn"],
+  ["FC075", "欣;小明;Xīn;Xiǎomíng"],
+  ["FC076", "Jan"],
+  ["FC077", "小明;Xiǎomíng;Xiaoming"],
+  ["FC078", "吴;Wú;Wu"],
+  ["FC079", "Dani"],
+  ["FC080", "García;Carla"],
+  ["FC082", "José;Fátima"],
+  ["FC083", "Manuel;Pablo"],
+  ["FC084", "徐;刘;Xú;Liú;Xu;Liu"],
+  ["FC085", "陆;Lù;Lu"],
+  ["FC086", "张欣;Zhāng Xīn;Zhang Xin"],
+  ["FC087", "刘;Liú;Liu"],
+  ["FC089", "王泽;Wáng Zé;Wang Ze"],
+  ["FC090", "张华;Zhāng Huá;Zhang Hua"],
+  ["FC091", "张华;Zhāng Huá;Zhang Hua"],
+  ["FC092", "张华;Zhāng Huá;Zhang Hua"],
+  ["FC093", "张华;Zhāng Huá;Zhang Hua"],
+  ["FC096", "沈;Shěn;Shen"],
+  ["FC097", "沈;Shěn;Shen"],
+  ["FC098", "王泽;Wáng Zé;Wang Ze"],
+  ["FC099", "王泽;Wáng Zé;Wang Ze"],
+  ["FC100", "Dani"],
+  ["FC101", "王强;Wáng Qiáng;Wang Qiang"],
+  ["FC102", "王强;Wáng Qiáng;Wang Qiang"],
+  ["FC113", "王芳;Wáng Fāng;Wang Fang"],
+  ["FC115", "Taiwán;China"],
+  ["FC116", "China"],
+  ["FC120", "孙;Sūn;Sun"],
+  ["FC121", "孙;Sūn;Sun"],
+  ["FC122", "王芳;Wáng Fāng;Wang Fang"],
+  ["FC123", "王芳;Wáng Fāng;Wang Fang"],
+]);
+
 const header = [
   "id",
   "tipo",
@@ -167,11 +214,12 @@ const header = [
   "ejemplo_espanol",
   "pagina",
   "etiquetas",
+  "nombres_propios",
 ];
 
 for (const [index, row] of rows.entries()) {
-  if (row.length !== header.length - 1) {
-    throw new Error(`Fila ${index + 1}: se esperaban ${header.length - 1} campos y hay ${row.length}`);
+  if (row.length !== header.length - 2) {
+    throw new Error(`Fila ${index + 1}: se esperaban ${header.length - 2} campos y hay ${row.length}`);
   }
 }
 
@@ -207,7 +255,13 @@ const escapeCsv = (value) => {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
-const lines = [header, ...rows.map((row, index) => [`FC${String(index + 1).padStart(3, "0")}`, ...row])]
+const lines = [
+  header,
+  ...rows.map((row, index) => {
+    const id = `FC${String(index + 1).padStart(3, "0")}`;
+    return [id, ...row, properNamesById.get(id) ?? ""];
+  }),
+]
   .map((row) => row.map(escapeCsv).join(","));
 
 await fs.writeFile(outputPath, `${lines.join("\n")}\n`, "utf8");

@@ -18,6 +18,7 @@ const EXPECTED_COLUMNS = [
   "ejemplo_espanol",
   "pagina",
   "etiquetas",
+  "nombres_propios",
 ] as const;
 
 const flashcardSchema = z.object({
@@ -33,6 +34,7 @@ const flashcardSchema = z.object({
   ejemplo_espanol: z.string(),
   pagina: z.string().min(1),
   etiquetas: z.string(),
+  nombres_propios: z.string(),
 });
 
 export function parseFlashcardsCsv(csv: string): Flashcard[] {

@@ -6,6 +6,7 @@ import "../styles/global.css";
 const cards = loadFlashcards();
 const canonicalUrl = new URL(import.meta.env.BASE_URL, Astro.site);
 const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
+const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
 ---
 
 <!doctype html>
@@ -18,10 +19,20 @@ const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
       content="Tarjetas de vocabulario, frases y conceptos de mandarín con explicaciones en español."
     />
     <meta name="theme-color" content="#f5f0e6" />
+    <meta name="apple-mobile-web-app-title" content="Yuwenke" />
+    <link rel="icon" href={assetUrl("favicon.ico")} sizes="16x16 32x32 48x48" />
+    <link rel="icon" href={assetUrl("favicon.svg")} type="image/svg+xml" sizes="any" />
+    <link
+      rel="apple-touch-icon"
+      href={assetUrl("apple-touch-icon.png")}
+      sizes="180x180"
+    />
+    <link rel="manifest" href={assetUrl("site.webmanifest")} />
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="es_ES" />
-    <meta property="og:title" content="Notas de chino · Flashcards" />
+    <meta property="og:site_name" content="Yuwenke" />
+    <meta property="og:title" content="Yuwenke" />
     <meta
       property="og:description"
       content="Mandarín y español en dos sentidos, a partir de mis notas de clase."
@@ -30,16 +41,16 @@ const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
     <meta property="og:image" content={socialImageUrl} />
     <meta
       property="og:image:alt"
-      content="Notas de chino, tarjetas de mandarín y español"
+      content="Yuwenke, tarjetas de mandarín y español"
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Notas de chino · Flashcards" />
+    <meta name="twitter:title" content="Yuwenke" />
     <meta
       name="twitter:description"
       content="Mandarín y español en dos sentidos, a partir de mis notas de clase."
     />
     <meta name="twitter:image" content={socialImageUrl} />
-    <title>Notas de chino · Flashcards</title>
+    <title>Yuwenke</title>
   </head>
   <body>
     <FlashcardApp cards={cards} client:load />
