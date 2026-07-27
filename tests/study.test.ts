@@ -2,19 +2,36 @@ import { loadFlashcards } from "../src/data/loadFlashcards";
 import {
   createStudyUnits,
   matchesFilters,
+  mergeFavorites,
   mergeProgress,
   nextClientTimestamp,
   shuffle,
   unitBelongsToView,
   unitKey,
+  visibleUnits,
 } from "../src/lib/study";
-import type { ProgressEntry, ProgressMap } from "../src/types";
+import type {
+  FavoriteEntry,
+  FavoriteMap,
+  ProgressEntry,
+  ProgressMap,
+} from "../src/types";
 
 function entry(timestamp: number, status: "learning" | "known" = "learning"): ProgressEntry {
   return {
     cardId: "FC001",
     direction: "hanzi-es",
     status,
+    clientUpdatedAt: timestamp,
+    serverUpdatedAt: null,
+    schemaVersion: 1,
+  };
+}
+
+function favoriteEntry(timestamp: number, favorite = true): FavoriteEntry {
+  return {
+    cardId: "FC001",
+    favorite,
     clientUpdatedAt: timestamp,
     serverUpdatedAt: null,
     schemaVersion: 1,
@@ -72,6 +89,50 @@ describe("study domain", () => {
     expect(unitBelongsToView(units[1], "discover", progress)).toBe(true);
   });
 
+  it("includes both directions of a favorite card regardless of status", () => {
+    const units = createStudyUnits(cards.slice(0, 1));
+    const progress: ProgressMap = {
+      [units[0].key]: entry(1, "known"),
+      [units[1].key]: { ...entry(2), direction: "es-hanzi" },
+    };
+    const favorites: FavoriteMap = { FC001: favoriteEntry(3) };
+
+    expect(
+      units.every((unit) =>
+        unitBelongsToView(unit, "favorites", progress, favorites),
+      ),
+    ).toBe(true);
+    favorites.FC001 = favoriteEntry(4, false);
+    expect(
+      units.some((unit) =>
+        unitBelongsToView(unit, "favorites", progress, favorites),
+      ),
+    ).toBe(false);
+  });
+
+  it("applies the existing topic and type filters to favorite queues", () => {
+    const otherTopic = cards.find((card) => card.tema !== cards[0].tema)!;
+    const selected = [cards[0], otherTopic];
+    const units = createStudyUnits(selected);
+    const favorites: FavoriteMap = Object.fromEntries(
+      selected.map((card, index) => [
+        card.id,
+        { ...favoriteEntry(index + 1), cardId: card.id },
+      ]),
+    );
+
+    const result = visibleUnits(
+      units,
+      "favorites",
+      {},
+      { query: "", topic: cards[0].tema, type: cards[0].tipo },
+      favorites,
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result.every((unit) => unit.cardId === cards[0].id)).toBe(true);
+  });
+
   it("uses the newest client timestamp and lets cloud win exact ties", () => {
     const key = unitKey("FC001", "hanzi-es");
     const local = { [key]: entry(20, "learning") };
@@ -86,5 +147,16 @@ describe("study domain", () => {
 
   it("keeps local timestamps monotonic", () => {
     expect(nextClientTimestamp(entry(100), 20)).toBe(101);
+  });
+
+  it("merges favorite tombstones with newest-write-wins semantics", () => {
+    const local = { FC001: favoriteEntry(20, false) };
+    const olderCloud = { FC001: favoriteEntry(10, true) };
+    const tieCloud = { FC001: favoriteEntry(20, true) };
+
+    expect(mergeFavorites(local, olderCloud).merged.FC001.favorite).toBe(false);
+    expect(mergeFavorites(local, olderCloud).localWinners).toEqual(local);
+    expect(mergeFavorites(local, tieCloud).merged.FC001.favorite).toBe(true);
+    expect(mergeFavorites(local, tieCloud).localWinners).toEqual({});
   });
 });

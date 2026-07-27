@@ -6,6 +6,8 @@ import { highlightProperNames } from "../lib/properNames";
 interface StudyCardProps {
   unit: StudyUnit;
   revealed: boolean;
+  favorite: boolean;
+  onToggleFavorite: () => void;
   promptRef: RefObject<HTMLHeadingElement | null>;
 }
 
@@ -31,7 +33,7 @@ export function HighlightedText({ text, properNames }: HighlightedTextProps) {
 }
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
-  { unit, revealed, promptRef },
+  { unit, revealed, favorite, onToggleFavorite, promptRef },
   answerRef,
 ) {
   const { card, direction } = unit;
@@ -39,6 +41,17 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
 
   return (
     <article className={`study-card ${revealed ? "is-revealed" : ""}`}>
+      <button
+        type="button"
+        className={`favorite-button ${favorite ? "is-favorite" : ""}`}
+        aria-label={
+          favorite ? "Quitar tarjeta de favoritas" : "Añadir tarjeta a favoritas"
+        }
+        aria-pressed={favorite}
+        onClick={onToggleFavorite}
+      >
+        <span aria-hidden="true">{favorite ? "★" : "☆"}</span>
+      </button>
       <div className="card-prompt">
         <p className="eyebrow">Tu pregunta</p>
         <h2

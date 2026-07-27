@@ -26,7 +26,12 @@ import {
   type QuerySnapshot,
 } from "firebase/firestore";
 
-import type { ProgressEntry, ProgressMap } from "../types";
+import type {
+  FavoriteEntry,
+  FavoriteMap,
+  ProgressEntry,
+  ProgressMap,
+} from "../types";
 import { firebaseConfig, isFirebaseConfigured } from "./firebaseConfig";
 import { progressDocumentId, unitKey } from "./study";
 
@@ -87,11 +92,29 @@ function progressDoc(db: Firestore, uid: string, entry: ProgressEntry) {
   );
 }
 
+function favoritesCollection(db: Firestore, uid: string) {
+  return collection(db, "users", uid, "favorites");
+}
+
+function favoriteDoc(db: Firestore, uid: string, entry: FavoriteEntry) {
+  return doc(db, "users", uid, "favorites", entry.cardId);
+}
+
 function firestoreData(entry: ProgressEntry) {
   return {
     cardId: entry.cardId,
     direction: entry.direction,
     status: entry.status,
+    clientUpdatedAt: Timestamp.fromMillis(entry.clientUpdatedAt),
+    serverUpdatedAt: serverTimestamp(),
+    schemaVersion: 1,
+  };
+}
+
+function favoriteFirestoreData(entry: FavoriteEntry) {
+  return {
+    cardId: entry.cardId,
+    favorite: entry.favorite,
     clientUpdatedAt: Timestamp.fromMillis(entry.clientUpdatedAt),
     serverUpdatedAt: serverTimestamp(),
     schemaVersion: 1,
@@ -130,6 +153,32 @@ export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
   return progress;
 }
 
+export function snapshotFavorites(snapshot: QuerySnapshot): FavoriteMap {
+  const favorites: FavoriteMap = {};
+  for (const document of snapshot.docs) {
+    const data = document.data();
+    const clientUpdatedAt = timestampMillis(data.clientUpdatedAt);
+    if (
+      typeof data.cardId !== "string" ||
+      typeof data.favorite !== "boolean" ||
+      clientUpdatedAt === null ||
+      data.schemaVersion !== 1 ||
+      document.id !== data.cardId
+    ) {
+      continue;
+    }
+
+    favorites[data.cardId] = {
+      cardId: data.cardId,
+      favorite: data.favorite,
+      clientUpdatedAt,
+      serverUpdatedAt: timestampMillis(data.serverUpdatedAt),
+      schemaVersion: 1,
+    };
+  }
+  return favorites;
+}
+
 export function observeCloudProgress(
   uid: string,
   onProgress: (progress: ProgressMap, serverConfirmed: boolean, pending: boolean) => void,
@@ -151,10 +200,45 @@ export function observeCloudProgress(
   );
 }
 
+export function observeCloudFavorites(
+  uid: string,
+  onFavorites: (
+    favorites: FavoriteMap,
+    serverConfirmed: boolean,
+    pending: boolean,
+  ) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  const services = getFirebaseServices();
+  if (!services) return () => undefined;
+
+  return onSnapshot(
+    favoritesCollection(services.db, uid),
+    { includeMetadataChanges: true },
+    (snapshot) =>
+      onFavorites(
+        snapshotFavorites(snapshot),
+        !snapshot.metadata.fromCache,
+        snapshot.metadata.hasPendingWrites,
+      ),
+    onError,
+  );
+}
+
 export async function writeCloudProgress(uid: string, entry: ProgressEntry): Promise<void> {
   const services = getFirebaseServices();
   if (!services) throw new Error("Firebase no está configurado.");
   await setDoc(progressDoc(services.db, uid, entry), firestoreData(entry));
+  await waitForPendingWrites(services.db);
+}
+
+export async function writeCloudFavorite(
+  uid: string,
+  entry: FavoriteEntry,
+): Promise<void> {
+  const services = getFirebaseServices();
+  if (!services) throw new Error("Firebase no está configurado.");
+  await setDoc(favoriteDoc(services.db, uid, entry), favoriteFirestoreData(entry));
   await waitForPendingWrites(services.db);
 }
 
@@ -171,6 +255,24 @@ export async function writeCloudProgressBatch(
   const batch = writeBatch(services.db);
   for (const entry of entries) {
     batch.set(progressDoc(services.db, uid, entry), firestoreData(entry));
+  }
+  await batch.commit();
+  await waitForPendingWrites(services.db);
+}
+
+export async function writeCloudFavoritesBatch(
+  uid: string,
+  favorites: FavoriteMap,
+): Promise<void> {
+  const services = getFirebaseServices();
+  if (!services) throw new Error("Firebase no está configurado.");
+  const entries = Object.values(favorites);
+  if (entries.length === 0) return;
+  if (entries.length > 500) throw new Error("La sincronización supera el límite del lote.");
+
+  const batch = writeBatch(services.db);
+  for (const entry of entries) {
+    batch.set(favoriteDoc(services.db, uid, entry), favoriteFirestoreData(entry));
   }
   await batch.commit();
   await waitForPendingWrites(services.db);

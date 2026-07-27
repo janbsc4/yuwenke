@@ -219,7 +219,7 @@ a {
 
 .view-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 26px;
   border-bottom: 1px solid var(--border);
 }
@@ -594,7 +594,7 @@ select {
 .study-card::after {
   position: absolute;
   top: 18px;
-  right: 20px;
+  right: 70px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -669,6 +669,36 @@ select {
   box-shadow: 0 1px 0 var(--border);
   content: "";
   transform: translateX(-50%);
+}
+
+.favorite-button {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  right: 18px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(48, 40, 30, 0.08);
+}
+
+.favorite-button:hover {
+  border-color: var(--cinnabar);
+  color: var(--cinnabar);
+}
+
+.favorite-button.is-favorite {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+  color: var(--cinnabar);
 }
 
 .answer-spanish,
@@ -901,6 +931,28 @@ kbd {
 .summary-stats span {
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.summary-remaining {
+  max-width: 38ch;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.queue-loading {
+  display: grid;
+  gap: 16px;
+}
+
+.queue-loading .loading-progress {
+  margin-top: 0;
+}
+
+.queue-loading p {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
 }
 
 .modal-backdrop {

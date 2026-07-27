@@ -1,5 +1,7 @@
 import {
   STUDY_DIRECTIONS,
+  type FavoriteEntry,
+  type FavoriteMap,
   type Filters,
   type Flashcard,
   type ProgressEntry,
@@ -69,7 +71,9 @@ export function unitBelongsToView(
   unit: StudyUnit,
   view: StudyView,
   progress: ProgressMap,
+  favorites: FavoriteMap = {},
 ): boolean {
+  if (view === "favorites") return favorites[unit.cardId]?.favorite === true;
   const status = progress[unit.key]?.status;
   if (view === "study") return status === "learning";
   if (view === "mastered") return status === "known";
@@ -81,10 +85,12 @@ export function visibleUnits(
   view: StudyView,
   progress: ProgressMap,
   filters: Filters,
+  favorites: FavoriteMap = {},
 ): StudyUnit[] {
   return units.filter(
     (unit) =>
-      unitBelongsToView(unit, view, progress) && matchesFilters(unit.card, filters),
+      unitBelongsToView(unit, view, progress, favorites) &&
+      matchesFilters(unit.card, filters),
   );
 }
 
@@ -97,7 +103,10 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
   return result;
 }
 
-export function nextClientTimestamp(previous?: ProgressEntry, now = Date.now()): number {
+export function nextClientTimestamp(
+  previous?: Pick<ProgressEntry | FavoriteEntry, "clientUpdatedAt">,
+  now = Date.now(),
+): number {
   return Math.max(now, (previous?.clientUpdatedAt ?? 0) + 1);
 }
 
@@ -129,6 +138,45 @@ export function mergeProgress(
 
 export function mergeLocalProgress(...sources: ProgressMap[]): ProgressMap {
   const merged: ProgressMap = {};
+  for (const source of sources) {
+    for (const [key, entry] of Object.entries(source)) {
+      const current = merged[key];
+      if (!current || entry.clientUpdatedAt >= current.clientUpdatedAt) {
+        merged[key] = entry;
+      }
+    }
+  }
+  return merged;
+}
+
+export function mergeFavorites(
+  local: FavoriteMap,
+  cloud: FavoriteMap,
+): { merged: FavoriteMap; localWinners: FavoriteMap } {
+  const merged: FavoriteMap = {};
+  const localWinners: FavoriteMap = {};
+  const keys = new Set([...Object.keys(local), ...Object.keys(cloud)]);
+
+  for (const key of keys) {
+    const localEntry = local[key];
+    const cloudEntry = cloud[key];
+
+    if (!cloudEntry || (localEntry && localEntry.clientUpdatedAt > cloudEntry.clientUpdatedAt)) {
+      if (localEntry) {
+        merged[key] = localEntry;
+        localWinners[key] = localEntry;
+      }
+      continue;
+    }
+
+    merged[key] = cloudEntry;
+  }
+
+  return { merged, localWinners };
+}
+
+export function mergeLocalFavorites(...sources: FavoriteMap[]): FavoriteMap {
+  const merged: FavoriteMap = {};
   for (const source of sources) {
     for (const [key, entry] of Object.entries(source)) {
       const current = merged[key];

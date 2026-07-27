@@ -29,6 +29,15 @@ const validData = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const validFavoriteData = (overrides: Record<string, unknown> = {}) => ({
+  cardId: "FC001",
+  favorite: true,
+  clientUpdatedAt: Timestamp.fromMillis(1000),
+  serverUpdatedAt: serverTimestamp(),
+  schemaVersion: 1,
+  ...overrides,
+});
+
 beforeAll(async () => {
   environment = await initializeTestEnvironment({
     projectId: "demo-yuwenke",
@@ -49,6 +58,10 @@ describe("Firestore progress rules", () => {
     const db = environment.unauthenticatedContext().firestore();
     await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-es")));
     await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-es"), validData()));
+    await assertFails(getDoc(doc(db, "users/alice/favorites/FC001")));
+    await assertFails(
+      setDoc(doc(db, "users/alice/favorites/FC001"), validFavoriteData()),
+    );
   });
 
   it("allows a user to create and list their own progress", async () => {
@@ -61,6 +74,10 @@ describe("Firestore progress rules", () => {
     const db = environment.authenticatedContext("bob").firestore();
     await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-es")));
     await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-es"), validData()));
+    await assertFails(getDoc(doc(db, "users/alice/favorites/FC001")));
+    await assertFails(
+      setDoc(doc(db, "users/alice/favorites/FC001"), validFavoriteData()),
+    );
   });
 
   it("requires the document id to match card and direction", async () => {
@@ -102,5 +119,46 @@ describe("Firestore progress rules", () => {
       validData({ cardId: "FC002", direction: "invalid" }),
     );
     await assertFails(batch.commit());
+  });
+
+  it("allows owner-only favorite records and false tombstones", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    const ref = doc(db, "users/alice/favorites/FC001");
+
+    await assertSucceeds(setDoc(ref, validFavoriteData()));
+    await assertSucceeds(getDocs(collection(db, "users/alice/favorites")));
+    await assertSucceeds(
+      updateDoc(
+        ref,
+        validFavoriteData({
+          favorite: false,
+          clientUpdatedAt: Timestamp.fromMillis(1001),
+        }),
+      ),
+    );
+  });
+
+  it("validates favorite ids, fields, timestamps, and monotonic updates", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    const ref = doc(db, "users/alice/favorites/FC001");
+    await assertSucceeds(setDoc(ref, validFavoriteData()));
+
+    await assertFails(
+      setDoc(doc(db, "users/alice/favorites/wrong"), validFavoriteData()),
+    );
+    await assertFails(setDoc(ref, validFavoriteData({ favorite: "yes" })));
+    await assertFails(setDoc(ref, validFavoriteData({ extra: true })));
+    await assertFails(
+      setDoc(
+        ref,
+        validFavoriteData({ serverUpdatedAt: Timestamp.fromMillis(1000) }),
+      ),
+    );
+    await assertFails(
+      updateDoc(
+        ref,
+        validFavoriteData({ clientUpdatedAt: Timestamp.fromMillis(999) }),
+      ),
+    );
   });
 });

@@ -2,7 +2,7 @@ export const STUDY_DIRECTIONS = ["hanzi-es", "es-hanzi"] as const;
 
 export type StudyDirection = (typeof STUDY_DIRECTIONS)[number];
 export type ProgressStatus = "learning" | "known";
-export type StudyView = "study" | "discover" | "mastered";
+export type StudyView = "study" | "discover" | "mastered" | "favorites";
 export type CardType = "palabra" | "frase" | "concepto";
 
 export interface Flashcard {
@@ -38,6 +38,16 @@ export interface ProgressEntry {
 }
 
 export type ProgressMap = Record<string, ProgressEntry>;
+
+export interface FavoriteEntry {
+  cardId: string;
+  favorite: boolean;
+  clientUpdatedAt: number;
+  serverUpdatedAt: number | null;
+  schemaVersion: 1;
+}
+
+export type FavoriteMap = Record<string, FavoriteEntry>;
 
 export interface Filters {
   query: string;

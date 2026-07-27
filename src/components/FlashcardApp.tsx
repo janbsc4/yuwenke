@@ -12,6 +12,7 @@ import type {
   Filters,
   Flashcard,
   SessionTally,
+  ProgressStatus,
   StudyUnit,
   StudyView,
 } from "../types";
@@ -34,6 +35,7 @@ const VIEW_LABELS: Record<StudyView, string> = {
   study: "Estudiar",
   discover: "Descubrir",
   mastered: "Dominadas",
+  favorites: "Favoritas",
 };
 
 const TYPE_LABELS: Record<CardType, string> = {
@@ -74,6 +76,26 @@ function writePreference(key: string, value: string): void {
   }
 }
 
+function primaryDecisionLabel(
+  view: StudyView,
+  status: ProgressStatus | undefined,
+): string {
+  if (view === "study") return "Seguir aprendiendo";
+  if (view === "discover") return "Añadir a aprendizaje";
+  if (view === "mastered" || status === "known") return "Sigue dominada";
+  return status === "learning" ? "Seguir aprendiendo" : "Añadir a aprendizaje";
+}
+
+function secondaryDecisionLabel(
+  view: StudyView,
+  status: ProgressStatus | undefined,
+): string {
+  if (view === "mastered" || (view === "favorites" && status === "known")) {
+    return "Volver a aprendizaje";
+  }
+  return "Ya la sé";
+}
+
 export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const units = useMemo(() => createStudyUnits(cards), [cards]);
   const topics = useMemo(
@@ -82,6 +104,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   );
   const {
     progress,
+    favorites,
     ready,
     storageAvailable,
     user,
@@ -90,6 +113,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     firebaseReady,
     notice,
     setStatus,
+    setFavorite,
     signIn,
     signOut,
     retry,
@@ -97,7 +121,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   } = useProgressSync();
 
   const [activeView, setActiveView] = useState<StudyView>("discover");
-  const [viewInitialized, setViewInitialized] = useState(false);
+  const [initializedOwner, setInitializedOwner] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -109,6 +133,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const [completed, setCompleted] = useState(false);
   const [tally, setTally] = useState<SessionTally>(EMPTY_TALLY);
   const [sessionNonce, setSessionNonce] = useState(0);
+  const [queueContext, setQueueContext] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLHeadingElement>(null);
@@ -126,12 +151,34 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
       study: filtered.filter((unit) => unitBelongsToView(unit, "study", progress)).length,
       discover: filtered.filter((unit) => unitBelongsToView(unit, "discover", progress)).length,
       mastered: filtered.filter((unit) => unitBelongsToView(unit, "mastered", progress)).length,
+      favorites: filtered.filter((unit) =>
+        unitBelongsToView(unit, "favorites", progress, favorites),
+      ).length,
     };
-  }, [filters, progress, units]);
+  }, [favorites, filters, progress, units]);
 
   const hasFilters = filters.query.trim() !== "" || filters.topic !== "all" || filters.type !== "all";
   const filterCount = Number(filters.topic !== "all") + Number(filters.type !== "all");
   const current = queue[queueIndex];
+  const currentStatus = current ? progress[current.key]?.status : undefined;
+  const currentFavorite = current
+    ? favorites[current.cardId]?.favorite === true
+    : false;
+  const ownerKey = user?.uid ?? "guest";
+  const viewInitialized = initializedOwner === ownerKey;
+  const desiredQueueContext = useMemo(
+    () =>
+      JSON.stringify([
+        activeView,
+        filters.query,
+        filters.topic,
+        filters.type,
+        ownerKey,
+        sessionNonce,
+      ]),
+    [activeView, filters, ownerKey, sessionNonce],
+  );
+  const queueReady = queueContext === desiredQueueContext;
 
   useEffect(() => {
     if (!ready || viewInitialized) return;
@@ -140,21 +187,29 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     const initial =
       counts.study > 0
         ? "study"
-        : candidate ?? (counts.discover > 0 ? "discover" : "mastered");
+        : candidate ??
+          (counts.discover > 0
+            ? "discover"
+            : counts.favorites > 0
+              ? "favorites"
+              : "mastered");
     setActiveView(initial);
-    setViewInitialized(true);
-  }, [counts, ready, viewInitialized]);
+    setInitializedOwner(ownerKey);
+  }, [counts, ownerKey, ready, viewInitialized]);
 
   useEffect(() => {
     if (!ready || !viewInitialized) return;
     writePreference("yuwenke:last-view:v1", activeView);
-    const nextQueue = shuffle(visibleUnits(units, activeView, progress, filters));
+    const nextQueue = shuffle(
+      visibleUnits(units, activeView, progress, filters, favorites),
+    );
     setQueue(nextQueue);
     setQueueIndex(0);
     setRevealed(false);
     setCompleted(false);
     setTally(EMPTY_TALLY);
-  }, [activeView, filters, ready, sessionNonce, units, user?.uid, viewInitialized]);
+    setQueueContext(desiredQueueContext);
+  }, [desiredQueueContext, ready, units, viewInitialized]);
 
   useEffect(() => {
     if (revealed) answerRef.current?.focus();
@@ -227,7 +282,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     let nextIndex = queueIndex + 1;
     while (
       nextIndex < queue.length &&
-      !unitBelongsToView(queue[nextIndex], activeView, progress)
+      !unitBelongsToView(queue[nextIndex], activeView, progress, favorites)
     ) {
       nextIndex += 1;
     }
@@ -241,23 +296,53 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     setQueueIndex(nextIndex);
     setRevealed(false);
     window.setTimeout(() => promptRef.current?.focus(), 0);
-  }, [activeView, progress, queue, queueIndex]);
+  }, [activeView, favorites, progress, queue, queueIndex]);
+
+  useEffect(() => {
+    if (!queueReady || completed || !current) return;
+    if (unitBelongsToView(current, activeView, progress, favorites)) return;
+    if (activeView === "favorites" && counts.favorites === 0) {
+      setQueue([]);
+      setQueueIndex(0);
+      setRevealed(false);
+      setCompleted(false);
+      return;
+    }
+    advance();
+  }, [
+    activeView,
+    advance,
+    completed,
+    counts.favorites,
+    current,
+    favorites,
+    progress,
+    queueReady,
+  ]);
 
   const choosePrimary = useCallback(() => {
     if (!current || !revealed) return;
-    const status = activeView === "mastered" ? "known" : "learning";
+    const status =
+      activeView === "mastered" ||
+      (activeView === "favorites" && currentStatus === "known")
+        ? "known"
+        : "learning";
     setStatus(current.cardId, current.direction, status);
     setTally((value) => ({ ...value, primary: value.primary + 1 }));
     advance();
-  }, [activeView, advance, current, revealed, setStatus]);
+  }, [activeView, advance, current, currentStatus, revealed, setStatus]);
 
   const chooseSecondary = useCallback(() => {
     if (!current || !revealed) return;
-    const status = activeView === "mastered" ? "learning" : "known";
+    const status =
+      activeView === "mastered" ||
+      (activeView === "favorites" && currentStatus === "known")
+        ? "learning"
+        : "known";
     setStatus(current.cardId, current.direction, status);
     setTally((value) => ({ ...value, secondary: value.secondary + 1 }));
     advance();
-  }, [activeView, advance, current, revealed, setStatus]);
+  }, [activeView, advance, current, currentStatus, revealed, setStatus]);
 
   const skip = useCallback(() => {
     if (!current || activeView !== "discover") return;
@@ -427,7 +512,10 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
 
       {!user ? (
         <aside className="guest-note">
-          <p>Estás estudiando como invitado. Tu progreso se guarda en este dispositivo.</p>
+          <p>
+            Estás estudiando como invitado. Tu progreso y favoritas se guardan en
+            este dispositivo.
+          </p>
           <button type="button" className="text-button" onClick={() => setLoginOpen(true)}>
             Sincronizar con Google
           </button>
@@ -436,7 +524,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
 
       {!storageAvailable ? (
         <div className="inline-alert" role="status">
-          Tu progreso no se guardará en este dispositivo.
+          Tu progreso y favoritas no se guardarán en este dispositivo.
         </div>
       ) : null}
 
@@ -535,7 +623,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         </aside>
 
         <section className="session-panel" aria-label={`${VIEW_LABELS[activeView]} tarjetas`}>
-          {current && !completed ? (
+          {!queueReady ? (
+            <div className="queue-loading" aria-live="polite">
+              <div className="loading-progress skeleton" />
+              <div className="loading-card skeleton" />
+              <p>Preparando esta cola…</p>
+            </div>
+          ) : current && !completed ? (
             <>
               <div className="session-progress" aria-live="polite">
                 <div>
@@ -561,6 +655,10 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               <StudyCard
                 unit={current}
                 revealed={revealed}
+                favorite={currentFavorite}
+                onToggleFavorite={() =>
+                  setFavorite(current.cardId, !currentFavorite)
+                }
                 promptRef={promptRef}
                 ref={answerRef}
               />
@@ -573,15 +671,11 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
                 ) : (
                   <div className="decision-buttons">
                     <button type="button" className="button button-primary" onClick={choosePrimary}>
-                      {activeView === "study"
-                        ? "Seguir aprendiendo"
-                        : activeView === "discover"
-                          ? "Añadir a aprendizaje"
-                          : "Sigue dominada"}
+                      {primaryDecisionLabel(activeView, currentStatus)}
                       <kbd>1</kbd>
                     </button>
                     <button type="button" className="button button-secondary" onClick={chooseSecondary}>
-                      {activeView === "mastered" ? "Volver a aprendizaje" : "Ya la sé"}
+                      {secondaryDecisionLabel(activeView, currentStatus)}
                       <kbd>2</kbd>
                     </button>
                   </div>
@@ -600,6 +694,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               onRestart={startNewSession}
               onChangeView={changeView}
               learningCount={counts.study}
+              discoverRemaining={counts.discover}
             />
           ) : (
             <EmptyState
@@ -711,6 +806,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
                   quieras reforzar.
                 </p>
               </li>
+              <li>
+                <strong>Favoritas</strong>
+                <p>
+                  Marca una tarjeta con la estrella para tener sus dos sentidos
+                  siempre disponibles en una cola personal.
+                </p>
+              </li>
             </ol>
 
             <div className="help-details">
@@ -726,7 +828,8 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               </p>
               <p>
                 Como invitado, el progreso se guarda en este dispositivo. Si inicias
-                sesión con Google, también podrás sincronizarlo entre dispositivos.
+                sesión con Google, tus estados y favoritas también se sincronizan
+                entre dispositivos.
               </p>
             </div>
           </section>
@@ -746,7 +849,8 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
             <div className="dialog-mark" lang="zh-Hans" aria-hidden="true">记</div>
             <h2 id="login-title">Guarda tu progreso</h2>
             <p>
-              Inicia sesión para continuar en otros dispositivos. El progreso guardado aquí se conservará al sincronizar.
+              Inicia sesión para continuar en otros dispositivos. El progreso y las
+              favoritas guardados aquí se conservarán al sincronizar.
             </p>
             {firebaseConfigured ? (
               <button
@@ -772,7 +876,9 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
       ) : null}
 
       <div className="sr-only" aria-live="polite">
-        {current && !completed ? `Tarjeta ${queueIndex + 1} de ${queue.length}` : ""}
+        {queueReady && current && !completed
+          ? `Tarjeta ${queueIndex + 1} de ${queue.length}`
+          : ""}
       </div>
     </div>
   );
@@ -820,6 +926,22 @@ function EmptyState({ view, filtered, learningCount, onClear, onChangeView }: Em
       </div>
     );
   }
+  if (view === "favorites") {
+    return (
+      <div className="empty-state">
+        <span aria-hidden="true">★</span>
+        <h2>Aún no tienes tarjetas favoritas.</h2>
+        <p>Usa la estrella de cualquier tarjeta para añadirla a esta cola.</p>
+        <button
+          type="button"
+          className="button button-primary"
+          onClick={() => onChangeView("discover")}
+        >
+          Ir a Descubrir
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="empty-state">
       <span aria-hidden="true">熟</span>
@@ -835,10 +957,25 @@ interface SessionSummaryProps {
   onRestart: () => void;
   onChangeView: (view: StudyView) => void;
   learningCount: number;
+  discoverRemaining: number;
 }
 
-function SessionSummary({ view, tally, onRestart, onChangeView, learningCount }: SessionSummaryProps) {
-  const title = view === "study" ? "Sesión completada" : view === "discover" ? "Selección completada" : "Revisión completada";
+function SessionSummary({
+  view,
+  tally,
+  onRestart,
+  onChangeView,
+  learningCount,
+  discoverRemaining,
+}: SessionSummaryProps) {
+  const title =
+    view === "study"
+      ? "Sesión completada"
+      : view === "discover"
+        ? "Selección completada"
+        : view === "favorites"
+          ? "Repaso de favoritas completado"
+          : "Revisión completada";
   return (
     <div className="summary-card">
       <span className="summary-mark" lang="zh-Hans" aria-hidden="true">好</span>
@@ -856,6 +993,15 @@ function SessionSummary({ view, tally, onRestart, onChangeView, learningCount }:
             <p><strong>{tally.secondary}</strong><span>{tally.secondary === 1 ? "marcada como dominada" : "marcadas como dominadas"}</span></p>
             <p><strong>{tally.skipped}</strong><span>{tally.skipped === 1 ? "saltada" : "saltadas"}</span></p>
           </>
+        ) : view === "favorites" ? (
+          <p>
+            <strong>{tally.primary + tally.secondary}</strong>
+            <span>
+              {tally.primary + tally.secondary === 1
+                ? "favorita practicada"
+                : "favoritas practicadas"}
+            </span>
+          </p>
         ) : (
           <>
             <p><strong>{tally.primary}</strong><span>{tally.primary === 1 ? "sigue dominada" : "siguen dominadas"}</span></p>
@@ -863,14 +1009,52 @@ function SessionSummary({ view, tally, onRestart, onChangeView, learningCount }:
           </>
         )}
       </div>
+      {view === "discover" && discoverRemaining > 0 ? (
+        <p className="summary-remaining">
+          {plural(
+            discoverRemaining,
+            "práctica sigue sin clasificar",
+            "prácticas siguen sin clasificar",
+          )}
+          .
+        </p>
+      ) : null}
       <div className="summary-actions">
-        <button type="button" className="button button-primary" onClick={onRestart}>
-          {view === "study" ? "Nueva sesión" : view === "discover" ? "Seguir descubriendo" : "Revisar de nuevo"}
-        </button>
-        {(view !== "study" || learningCount > 0) ? (
-          <button type="button" className="button button-secondary" onClick={() => onChangeView("study")}>Ir a Estudiar</button>
+        {view !== "discover" || discoverRemaining > 0 ? (
+          <button type="button" className="button button-primary" onClick={onRestart}>
+            {view === "study"
+              ? "Nueva sesión"
+              : view === "discover"
+                ? `Seguir descubriendo (${discoverRemaining})`
+                : view === "favorites"
+                  ? "Repasar de nuevo"
+                  : "Revisar de nuevo"}
+          </button>
+        ) : null}
+        {learningCount > 0 ? (
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => onChangeView("study")}
+          >
+            Ir a Estudiar
+          </button>
+        ) : view === "discover" && discoverRemaining === 0 ? (
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => onChangeView("mastered")}
+          >
+            Ver dominadas
+          </button>
         ) : (
-          <button type="button" className="button button-secondary" onClick={() => onChangeView("discover")}>Ir a Descubrir</button>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => onChangeView("discover")}
+          >
+            Ir a Descubrir
+          </button>
         )}
       </div>
     </div>

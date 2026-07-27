@@ -36,11 +36,47 @@ service cloud.firestore {
         && progressId == data.cardId + '_' + data.direction;
     }
 
+    function validFavorite(favoriteId) {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'cardId',
+          'favorite',
+          'clientUpdatedAt',
+          'serverUpdatedAt',
+          'schemaVersion'
+        ])
+        && data.keys().hasOnly([
+          'cardId',
+          'favorite',
+          'clientUpdatedAt',
+          'serverUpdatedAt',
+          'schemaVersion'
+        ])
+        && data.cardId is string
+        && data.cardId.matches('^FC[0-9]{3}$')
+        && data.favorite is bool
+        && data.clientUpdatedAt is timestamp
+        && data.serverUpdatedAt is timestamp
+        && data.serverUpdatedAt == request.time
+        && data.schemaVersion is int
+        && data.schemaVersion == 1
+        && favoriteId == data.cardId;
+    }
+
     match /users/{uid}/progress/{progressId} {
       allow get, list: if owns(uid);
       allow create: if owns(uid) && validProgress(progressId);
       allow update: if owns(uid)
         && validProgress(progressId)
+        && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt;
+      allow delete: if owns(uid);
+    }
+
+    match /users/{uid}/favorites/{favoriteId} {
+      allow get, list: if owns(uid);
+      allow create: if owns(uid) && validFavorite(favoriteId);
+      allow update: if owns(uid)
+        && validFavorite(favoriteId)
         && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt;
       allow delete: if owns(uid);
     }
