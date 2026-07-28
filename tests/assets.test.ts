@@ -11,6 +11,12 @@ function pngSize(name: string): [number, number] {
   return [image.readUInt32BE(16), image.readUInt32BE(20)];
 }
 
+function pngColorType(name: string): number {
+  const image = publicFile(name);
+  expect(image.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+  return image[25];
+}
+
 function icoSizes(name: string): number[] {
   const icon = publicFile(name);
   const count = icon.readUInt16LE(4);
@@ -31,11 +37,18 @@ describe("Yuwenke identity assets", () => {
     expect(icoSizes("favicon.ico")).toEqual([16, 32, 48]);
   });
 
+  it("uses an alpha-capable PNG favicon", () => {
+    expect(pngColorType("favicon-32.png")).toBe(6);
+    expect(pngColorType("yuwenke-mark.png")).toBe(6);
+  });
+
   it("uses base-path-safe relative URLs in the web manifest", () => {
     const manifest = JSON.parse(publicFile("site.webmanifest").toString("utf8"));
     expect(manifest.name).toBe("Yuwenke");
     expect(manifest.start_url).toBe("./");
     expect(manifest.scope).toBe("./");
+    expect(manifest.background_color).toBe("#ffffff");
+    expect(manifest.theme_color).toBe("#ffffff");
     expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual([
       "icon-192.png",
       "icon-512.png",

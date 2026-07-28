@@ -13,11 +13,7 @@
   <circle cx="995" cy="265" r="240" fill="#dfece5" opacity=".72"/>
   <path d="M67 0v630" stroke="#a63d32" stroke-width="4" opacity=".72"/>
 
-  <g transform="translate(118 92)">
-    <rect width="86" height="86" rx="22" fill="#fffcf5" stroke="#a63d32" stroke-width="4"/>
-    <path d="M23 23 43 45v21" fill="none" stroke="#a63d32" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M63 23 43 45" fill="none" stroke="#2f6656" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
+  <image href="yuwenke-mark.png" x="118" y="92" width="86" height="86" preserveAspectRatio="xMidYMid meet"/>
 
   <text x="118" y="304" fill="#20251f" font-family="Avenir Next, Segoe UI, sans-serif" font-size="106" font-weight="750" letter-spacing="-5">Yuwenke</text>
   <text x="124" y="371" fill="#2f6656" font-family="Georgia, Songti SC, serif" font-size="40">Mandarín ↔ Español</text>
