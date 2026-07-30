@@ -1001,6 +1001,19 @@ function SessionSummary({
         : view === "favorites"
           ? "Repaso de favoritas completado"
           : "Revisión completada";
+  const secondaryView: StudyView =
+    view === "study"
+      ? "discover"
+      : view === "discover"
+        ? "study"
+        : learningCount > 0
+          ? "study"
+          : "discover";
+  const secondaryLabel =
+    secondaryView === "study"
+      ? "Ir a Estudiar"
+      : "Ir a Descubrir";
+
   return (
     <div className="summary-card">
       <span className="summary-mark" lang="zh-Hans" aria-hidden="true">好</span>
@@ -1056,31 +1069,13 @@ function SessionSummary({
                   : "Revisar de nuevo"}
           </button>
         ) : null}
-        {learningCount > 0 ? (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => onChangeView("study")}
-          >
-            Ir a Estudiar
-          </button>
-        ) : view === "discover" && discoverRemaining === 0 ? (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => onChangeView("mastered")}
-          >
-            Ver dominadas
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => onChangeView("discover")}
-          >
-            Ir a Descubrir
-          </button>
-        )}
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => onChangeView(secondaryView)}
+        >
+          {secondaryLabel}
+        </button>
       </div>
     </div>
   );

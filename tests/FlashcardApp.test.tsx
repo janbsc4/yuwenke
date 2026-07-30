@@ -272,10 +272,57 @@ describe("FlashcardApp", () => {
 
     expect(await screen.findByText("Selección completada")).toBeInTheDocument();
     expect(screen.getByText("2 prácticas siguen sin clasificar.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ir a Descubrir" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ir a Estudiar" }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Seguir descubriendo (2)" }),
     );
     expect(await screen.findByRole("button", { name: /Saltar/ })).toBeInTheDocument();
+  });
+
+  it("offers Descubrir after completing an Estudiar session", async () => {
+    const user = userEvent.setup();
+    const hanzi = savedProgress("hanzi-es", "learning");
+    const spanish = savedProgress("es-hanzi", "learning");
+    window.localStorage.setItem(
+      "yuwenke:guest-progress:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        entries: {
+          [unitKey(card.id, hanzi.direction)]: hanzi,
+          [unitKey(card.id, spanish.direction)]: spanish,
+        },
+      }),
+    );
+
+    render(<FlashcardApp cards={[card]} />);
+
+    for (let index = 0; index < 2; index += 1) {
+      await user.click(
+        await screen.findByRole("button", { name: /Mostrar respuesta/ }),
+      );
+      await user.click(
+        screen.getByRole("button", { name: /Seguir aprendiendo/ }),
+      );
+    }
+
+    expect(await screen.findByText("Sesión completada")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ir a Estudiar" }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Ir a Descubrir" }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Descubrir/ })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
   });
 
   it("supports the global reveal keyboard shortcut", async () => {
