@@ -38,6 +38,60 @@ describe("flashcard CSV", () => {
       explicacion:
         "Solo puede haber una, aunque la sílaba tenga varias vocales.",
     });
+    expect(concepts.find((card) => card.id === "FC011")).toMatchObject({
+      espanol:
+        "¿Qué indica el orden de los trazos (笔顺) al escribir un carácter chino?",
+      ejemplo_hanzi: "十",
+      ejemplo_espanol:
+        "En 十, se escribe primero el trazo horizontal y después el vertical.",
+    });
+  });
+
+  it("distinguishes formal characters from everyday family words", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.find((card) => card.id === "FC023")).toMatchObject({
+      hanzi: "父",
+      espanol: "padre (carácter formal y componente)",
+      ejemplo_hanzi: "父亲／爸爸",
+    });
+    expect(cards.find((card) => card.id === "FC056")).toMatchObject({
+      hanzi: "爸爸",
+      espanol: "papá / padre (forma habitual)",
+    });
+  });
+
+  it("does not expect different Hanzi for the same Spanish prompt", () => {
+    const cards = loadFlashcards().filter((card) => card.tipo !== "concepto");
+    const firstAnswerByPrompt = new Map<string, { id: string; hanzi: string }>();
+    const conflicts: string[] = [];
+
+    for (const card of cards) {
+      const prompt = card.espanol
+        .normalize("NFC")
+        .toLocaleLowerCase("es")
+        .replace(/\s+/g, " ")
+        .trim();
+      const previous = firstAnswerByPrompt.get(prompt);
+      if (previous && previous.hanzi !== card.hanzi) {
+        conflicts.push(
+          `${previous.id}:${previous.hanzi} y ${card.id}:${card.hanzi} comparten «${card.espanol}»`,
+        );
+      } else if (!previous) {
+        firstAnswerByPrompt.set(prompt, { id: card.id, hanzi: card.hanzi });
+      }
+    }
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it("does not reveal the Hanzi answer inside Spanish reverse prompts", () => {
+    const reversePrompts = loadFlashcards()
+      .filter((card) => card.tipo !== "concepto")
+      .map((card) => ({ id: card.id, prompt: card.espanol }))
+      .filter(({ prompt }) => /[\u3400-\u9fff]/u.test(prompt));
+
+    expect(reversePrompts).toEqual([]);
   });
 
   it("does not include expressions that have not been introduced", () => {
