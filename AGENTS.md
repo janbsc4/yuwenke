@@ -135,3 +135,13 @@ Small, localized complexity that clearly improves correctness or performance is 
 * Ensure new functionality includes appropriate tests.
 * Do not break guest mode when working on Firebase synchronization.
 * Remember that the app is deployed to GitHub Pages and runs under the configured `/yuwenke/` base path.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked with GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This repository uses a single-context domain documentation layout. See `docs/agents/domain.md`.
