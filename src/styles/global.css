@@ -1445,15 +1445,15 @@ kbd {
 }
 
 .booster-pack--opening .booster-pack__tear-strip {
-  animation: booster-tear-strip 310ms ease-in both;
+  animation: booster-tear-strip 380ms ease-in both;
 }
 
 .booster-pack--opening .booster-pack__wrapper {
-  animation: booster-wrapper-open 850ms ease-in-out both;
+  animation: booster-wrapper-open 1050ms ease-in-out both;
 }
 
 .booster-pack--opening .booster-pack__cards span {
-  animation: booster-cards-rise 850ms ease-out both;
+  animation: booster-cards-rise 1050ms ease-out both;
 }
 
 .booster-pack--compact {
@@ -1821,7 +1821,7 @@ kbd {
 }
 
 @keyframes booster-cards-rise {
-  0%, 38% { transform: translateY(32px) rotate(var(--card-rotation)); }
+  0%, 38% { transform: translateY(0) rotate(var(--card-rotation)); }
   100% { transform: translateY(-48px) rotate(var(--card-rotation)); }
 }
 

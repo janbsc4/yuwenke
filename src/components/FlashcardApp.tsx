@@ -46,7 +46,7 @@ const VIEW_LABELS: Record<StudyView, string> = {
   favorites: "Favoritas",
 };
 
-const PACK_OPENING_DURATION_MS = 850;
+const PACK_OPENING_DURATION_MS = 1050;
 const PACK_TRIGGER_OPENING_DURATION_MS = 160;
 
 const TYPE_LABELS: Record<CardType, string> = {
