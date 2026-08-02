@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 
 import { plural } from "../lib/labels";
 import type { CardPack } from "../types";
+import { CardPackBooster } from "./CardPackBooster";
 
 interface CardPackDialogsProps {
   packs: CardPack[];
@@ -9,6 +10,7 @@ interface CardPackDialogsProps {
   openPackIds: ReadonlySet<string>;
   panelOpen: boolean;
   packToConfirm: CardPack | null;
+  packOpening: boolean;
   openedOutsideDiscover: CardPack | null;
   resetOpen: boolean;
   resetting: boolean;
@@ -32,6 +34,7 @@ export function CardPackDialogs({
   openPackIds,
   panelOpen,
   packToConfirm,
+  packOpening,
   openedOutsideDiscover,
   resetOpen,
   resetting,
@@ -48,6 +51,9 @@ export function CardPackDialogs({
   onCancelReset,
   onConfirmReset,
 }: CardPackDialogsProps) {
+  const unopenedPacks = packs.filter((pack) => !openPackIds.has(pack.id));
+  const openedPacks = packs.filter((pack) => openPackIds.has(pack.id));
+
   return (
     <>
       {panelOpen ? (
@@ -62,13 +68,14 @@ export function CardPackDialogs({
           >
             <div className="modal-heading">
               <div>
-                <p className="eyebrow">Tu recorrido</p>
+                <p className="eyebrow">Elige tu próximo pack</p>
                 <h2 id="packs-title">Packs de cartas</h2>
               </div>
               <button type="button" aria-label="Cerrar packs" onClick={onClosePanel}>×</button>
             </div>
             <p className="packs-intro">
-              Abre cualquier pack cuando quieras. Los packs ya abiertos no se cierran.
+              Elige cualquier pack para añadir sus cartas a Descubrir. Una vez abierto,
+              permanecerá en tu colección.
             </p>
             {openedOutsideDiscover ? (
               <div className="pack-opened-notice" role="status">
@@ -78,31 +85,61 @@ export function CardPackDialogs({
                 </button>
               </div>
             ) : null}
-            <div className="pack-list">
-              {packs.map((pack) => {
-                const isOpen = openPackIds.has(pack.id);
-                return (
-                  <article className={`pack-card ${isOpen ? "is-open" : ""}`} key={pack.id}>
-                    <div>
-                      <span className="pack-status">{isOpen ? "Abierto" : "Sin abrir"}</span>
-                      <h3>{pack.title}</h3>
-                      <p>{pack.description}</p>
-                      <small>{plural(packUnitCounts[pack.id] ?? 0, "carta")}</small>
-                    </div>
-                    {!isOpen ? (
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        aria-label={`Abrir ${pack.title}`}
-                        onClick={() => onRequestOpen(pack)}
-                      >
-                        Abrir
-                      </button>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
+            {unopenedPacks.length > 0 ? (
+              <section className="pack-shelf" aria-labelledby="unopened-packs-title">
+                <div className="pack-shelf__heading">
+                  <h3 id="unopened-packs-title">Por abrir</h3>
+                  <span>{unopenedPacks.length}</span>
+                </div>
+                <div className="pack-grid">
+                  {unopenedPacks.map((pack) => {
+                    const unitCount = packUnitCounts[pack.id] ?? 0;
+                    return (
+                      <article className="pack-choice" key={pack.id}>
+                        <button
+                          type="button"
+                          className="pack-choice__booster"
+                          aria-label={`Abrir ${pack.title}: ${plural(unitCount, "carta")}. ${pack.description}`}
+                          onClick={() => onRequestOpen(pack)}
+                        >
+                          <CardPackBooster pack={pack} unitCount={unitCount} />
+                        </button>
+                        <div className="pack-choice__details">
+                          <span className="pack-status">Sin abrir</span>
+                          <h4>{pack.title}</h4>
+                          <p>{pack.description}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+            <section className="pack-shelf" aria-labelledby="opened-packs-title">
+              <div className="pack-shelf__heading">
+                <h3 id="opened-packs-title">Abiertos</h3>
+                <span>{openedPacks.length}</span>
+              </div>
+              <div className="pack-grid">
+                {openedPacks.map((pack) => {
+                  const unitCount = packUnitCounts[pack.id] ?? 0;
+                  return (
+                    <article
+                      className="pack-choice pack-choice--opened"
+                      aria-label={`${pack.title}, abierto: ${plural(unitCount, "carta")}. ${pack.description}`}
+                      key={pack.id}
+                    >
+                      <CardPackBooster pack={pack} unitCount={unitCount} state="opened" />
+                      <div className="pack-choice__details">
+                        <span className="pack-status">Abierto</span>
+                        <h4>{pack.title}</h4>
+                        <p>{pack.description}</p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
             <div className="packs-footer">
               <button type="button" className="text-button destructive-text" onClick={onRequestReset}>
                 Restablecer estudio
@@ -113,28 +150,55 @@ export function CardPackDialogs({
       ) : null}
 
       {packToConfirm ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={onCancelOpen}>
+        <div
+          className="modal-backdrop pack-confirm-backdrop"
+          role="presentation"
+          onMouseDown={() => !packOpening && onCancelOpen()}
+        >
           <section
-            className="confirm-dialog"
+            className="confirm-dialog pack-opening-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="open-pack-title"
+            aria-busy={packOpening}
             ref={packConfirmRef}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <p className="eyebrow">Abrir pack</p>
-            <h2 id="open-pack-title">Abrir {packToConfirm.title}</h2>
-            <p>
-              Sus {plural(packUnitCounts[packToConfirm.id] ?? 0, "carta")} nuevas
-              estarán disponibles en Descubrir. Este pack no se podrá cerrar por separado.
-            </p>
-            <div className="confirm-actions">
-              <button type="button" className="button button-primary" onClick={onConfirmOpen}>
-                Abrir «{packToConfirm.title}»
-              </button>
-              <button type="button" className="button button-secondary" onClick={onCancelOpen}>
-                Cancelar
-              </button>
+            <div className="pack-opening-stage">
+              <CardPackBooster
+                pack={packToConfirm}
+                unitCount={packUnitCounts[packToConfirm.id] ?? 0}
+                state={packOpening ? "opening" : "sealed"}
+              />
+            </div>
+            <div className="pack-opening-copy">
+              <p className="eyebrow">{packOpening ? "Abriendo pack" : "Listo para abrir"}</p>
+              <h2 id="open-pack-title">Abrir {packToConfirm.title}</h2>
+              <p>
+                Sus {plural(packUnitCounts[packToConfirm.id] ?? 0, "carta")} nuevas
+                estarán disponibles en Descubrir. Este pack no se podrá cerrar por separado.
+              </p>
+              <p className="sr-only" role="status" aria-live="polite">
+                {packOpening ? `Abriendo ${packToConfirm.title}…` : ""}
+              </p>
+              <div className="confirm-actions">
+                <button
+                  type="button"
+                  className="button button-primary"
+                  disabled={packOpening}
+                  onClick={onConfirmOpen}
+                >
+                  {packOpening ? "Abriendo…" : `Abrir «${packToConfirm.title}»`}
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  disabled={packOpening}
+                  onClick={onCancelOpen}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </section>
         </div>

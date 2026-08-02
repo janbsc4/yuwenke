@@ -9,6 +9,8 @@ const cardPackSchema = z.object({
   id: z.string().regex(/^CP\d{3}$/, "debe tener el formato CP001"),
   title: z.string().trim().min(1),
   description: z.string().trim().min(1),
+  mark: z.string().trim().min(1).max(2),
+  theme: z.enum(["cinnabar", "jade", "amber", "lilac"]),
 });
 
 export function parseCardPackCatalog(json: string): CardPack[] {

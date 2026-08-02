@@ -22,6 +22,16 @@ describe("card pack authoring data", () => {
       "CP007",
       "CP008",
     ]);
+    expect(packs.map(({ mark, theme }) => `${mark}/${theme}`)).toEqual([
+      "启/cinnabar",
+      "礼/jade",
+      "家/lilac",
+      "名/amber",
+      "问/cinnabar",
+      "时/jade",
+      "音/lilac",
+      "数/amber",
+    ]);
     expect(Object.keys(packIdByCardId)).toHaveLength(cards.length);
     expect(packIdByCardId.FC001).toBe("CP001");
     expect(packIdByCardId.FC046).toBe("CP003");
@@ -61,11 +71,35 @@ describe("card pack authoring data", () => {
     expect(() =>
       parseCardPackCatalog(
         JSON.stringify([
-          { id: "CP001", title: "Uno", description: "Primero." },
-          { id: "CP001", title: "Dos", description: "Segundo." },
+          { id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" },
+          { id: "CP001", title: "Dos", description: "Segundo.", mark: "二", theme: "jade" },
         ]),
       ),
     ).toThrow("ID de pack duplicado: CP001");
+  });
+
+  it("rejects missing or unsupported booster artwork metadata", () => {
+    expect(() =>
+      parseCardPackCatalog(
+        JSON.stringify([
+          { id: "CP001", title: "Uno", description: "Primero.", theme: "jade" },
+        ]),
+      ),
+    ).toThrow("Catálogo de packs inválido");
+
+    expect(() =>
+      parseCardPackCatalog(
+        JSON.stringify([
+          {
+            id: "CP001",
+            title: "Uno",
+            description: "Primero.",
+            mark: "一",
+            theme: "neon",
+          },
+        ]),
+      ),
+    ).toThrow("Catálogo de packs inválido");
   });
 
   it("rejects duplicate and unknown membership references", () => {
@@ -77,7 +111,7 @@ describe("card pack authoring data", () => {
 
     expect(() =>
       validateCardPackData(
-        [{ id: "CP001", title: "Uno", description: "Primero." }],
+        [{ id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" }],
         { FC001: "CP999" },
         [loadFlashcards()[0]],
       ),
@@ -87,8 +121,8 @@ describe("card pack authoring data", () => {
   it("rejects missing memberships, unknown cards, and empty packs", () => {
     const cards = loadFlashcards().slice(0, 2);
     const packs = [
-      { id: "CP001", title: "Uno", description: "Primero." },
-      { id: "CP002", title: "Dos", description: "Segundo." },
+      { id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" as const },
+      { id: "CP002", title: "Dos", description: "Segundo.", mark: "二", theme: "jade" as const },
     ];
 
     expect(() => validateCardPackData(packs, { FC001: "CP001" }, cards)).toThrow(

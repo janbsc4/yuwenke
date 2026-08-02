@@ -36,8 +36,20 @@ const secondCard: Flashcard = {
 };
 
 const packs = [
-  { id: "CP001", title: "Primeros pasos", description: "La base." },
-  { id: "CP002", title: "Saludos", description: "Para conversar." },
+  {
+    id: "CP001",
+    title: "Primeros pasos",
+    description: "La base.",
+    mark: "启",
+    theme: "cinnabar" as const,
+  },
+  {
+    id: "CP002",
+    title: "Saludos",
+    description: "Para conversar.",
+    mark: "礼",
+    theme: "jade" as const,
+  },
 ];
 const packIdByCardId = { FC001: "CP001", FC002: "CP002" };
 
@@ -45,7 +57,13 @@ function renderApp(cards: Flashcard[]) {
   return render(
     <FlashcardApp
       cards={cards}
-      packs={[{ id: "CP001", title: "Cartas", description: "Para practicar." }]}
+      packs={[{
+        id: "CP001",
+        title: "Cartas",
+        description: "Para practicar.",
+        mark: "文",
+        theme: "cinnabar",
+      }]}
       packIdByCardId={Object.fromEntries(cards.map((item) => [item.id, "CP001"]))}
     />,
   );
@@ -434,26 +452,107 @@ describe("FlashcardApp", () => {
     const collectionSummary = screen.getByText("Tu colección").parentElement;
     expect(collectionSummary).not.toBeNull();
     expect(within(collectionSummary!).getByText("2 cartas")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Packs" }));
-    const panel = screen.getByRole("dialog", { name: "Packs de cartas" });
+    const packsButton = screen.getByRole("button", { name: "Packs" });
+    await user.click(packsButton);
+    expect(packsButton).toHaveClass("is-opening");
+    expect(packsButton).toBeDisabled();
+    const panel = await screen.findByRole("dialog", { name: "Packs de cartas" });
     expect(within(panel).getAllByText("2 cartas")).toHaveLength(2);
-    expect(within(panel).getByText("Abierto")).toBeInTheDocument();
+    expect(within(panel).getAllByText("Abierto")).toHaveLength(2);
     expect(within(panel).getByText("Sin abrir")).toBeInTheDocument();
+    expect(within(panel).getByRole("heading", { name: "Por abrir" })).toBeInTheDocument();
+    expect(within(panel).getByRole("heading", { name: "Abiertos" })).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("article", { name: /^Primeros pasos, abierto:/ }),
+    ).toBeInTheDocument();
 
-    await user.click(within(panel).getByRole("button", { name: "Abrir Saludos" }));
+    await user.click(within(panel).getByRole("button", { name: /^Abrir Saludos:/ }));
     const confirmation = screen.getByRole("dialog", { name: "Abrir Saludos" });
+    expect(confirmation.parentElement).toHaveClass("pack-confirm-backdrop");
     await user.click(
       within(confirmation).getByRole("button", { name: "Abrir «Saludos»" }),
     );
 
-    expect(
-      within(screen.getByRole("button", { name: /Descubrir/ })).getByText("4"),
-    ).toBeInTheDocument();
-    expect(within(collectionSummary!).getByText("4 cartas")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
-      "aria-valuemax",
-      "4",
+    expect(confirmation).toHaveAttribute("aria-busy", "true");
+    expect(within(confirmation).getByRole("button", { name: "Cancelar" })).toBeDisabled();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Abrir Saludos" })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("button", { name: /Descubrir/ })).getByText("4"),
+      ).toBeInTheDocument();
+      expect(within(collectionSummary!).getByText("4 cartas")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
+        "aria-valuemax",
+        "4",
+      );
+    }, { timeout: 1500 });
+  });
+
+  it("cancels a selected booster without opening it", async () => {
+    const user = userEvent.setup();
+    render(
+      <FlashcardApp
+        cards={[card, secondCard]}
+        packs={packs}
+        packIdByCardId={packIdByCardId}
+      />,
     );
+
+    await user.click(screen.getByRole("button", { name: "Packs" }));
+    await user.click(await screen.findByRole("button", { name: /^Abrir Saludos:/ }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Abrir Saludos" })).getByRole(
+        "button",
+        { name: "Cancelar" },
+      ),
+    );
+
+    expect(screen.queryByRole("dialog", { name: "Abrir Saludos" })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("yuwenke:guest-card-packs:v1") ?? "").not.toContain("CP002");
+  });
+
+  it("opens immediately when reduced motion is requested", async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }),
+    });
+
+    try {
+      const user = userEvent.setup();
+      render(
+        <FlashcardApp
+          cards={[card, secondCard]}
+          packs={packs}
+          packIdByCardId={packIdByCardId}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Packs" }));
+      await user.click(await screen.findByRole("button", { name: /^Abrir Saludos:/ }));
+      await user.click(screen.getByRole("button", { name: "Abrir «Saludos»" }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: "Abrir Saludos" })).not.toBeInTheDocument();
+      });
+      expect(window.localStorage.getItem("yuwenke:guest-card-packs:v1")).toContain("CP002");
+    } finally {
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
   });
 
   it("suggests the first unopened pack after mastering an open pack", async () => {
@@ -490,7 +589,7 @@ describe("FlashcardApp", () => {
         "aria-valuenow",
         "3",
       );
-    });
+    }, { timeout: 1500 });
   });
 
   it("preserves a non-Discover view after opening a pack and offers a direct action", async () => {
@@ -517,7 +616,7 @@ describe("FlashcardApp", () => {
       "page",
     );
     await user.click(screen.getByRole("button", { name: "Packs" }));
-    await user.click(screen.getByRole("button", { name: "Abrir Saludos" }));
+    await user.click(await screen.findByRole("button", { name: /^Abrir Saludos:/ }));
     await user.click(
       within(screen.getByRole("dialog", { name: "Abrir Saludos" })).getByRole(
         "button",
@@ -525,16 +624,18 @@ describe("FlashcardApp", () => {
       ),
     );
 
-    expect(screen.getByRole("button", { name: /Estudiar/ })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(
-      within(screen.getByRole("dialog", { name: "Packs de cartas" })).getByRole(
-        "button",
-        { name: "Ir a Descubrir" },
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Estudiar/ })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(
+        within(screen.getByRole("dialog", { name: "Packs de cartas" })).getByRole(
+          "button",
+          { name: "Ir a Descubrir" },
+        ),
+      ).toBeInTheDocument();
+    }, { timeout: 1500 });
   });
 
   it("resets guest study data locally while keeping the first pack open", async () => {
@@ -551,7 +652,7 @@ describe("FlashcardApp", () => {
     expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning");
 
     await user.click(screen.getByRole("button", { name: "Packs" }));
-    await user.click(screen.getByRole("button", { name: "Restablecer estudio" }));
+    await user.click(await screen.findByRole("button", { name: "Restablecer estudio" }));
     const dialog = screen.getByRole("dialog", { name: "Restablecer estudio" });
     await user.click(
       within(dialog).getByRole("button", { name: "Borrar progreso y restablecer" }),

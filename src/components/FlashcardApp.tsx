@@ -31,6 +31,7 @@ import { plural, topicLabel } from "../lib/labels";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
+import { CardPackBooster } from "./CardPackBooster";
 
 interface FlashcardAppProps {
   cards: Flashcard[];
@@ -45,6 +46,9 @@ const VIEW_LABELS: Record<StudyView, string> = {
   favorites: "Favoritas",
 };
 
+const PACK_OPENING_DURATION_MS = 850;
+const PACK_TRIGGER_OPENING_DURATION_MS = 160;
+
 const TYPE_LABELS: Record<CardType, string> = {
   palabra: "Palabra",
   frase: "Frase",
@@ -53,6 +57,13 @@ const TYPE_LABELS: Record<CardType, string> = {
 
 const EMPTY_FILTERS: Filters = { query: "", topic: "all", type: "all" };
 const EMPTY_TALLY: SessionTally = { primary: 0, secondary: 0, skipped: 0 };
+
+function reducedMotionRequested(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 function initials(name: string | null, email: string | null): string {
   const source = name?.trim() || email?.split("@")[0] || "Tú";
@@ -141,7 +152,9 @@ export default function FlashcardApp({
   const [helpOpen, setHelpOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
+  const [packTriggerOpening, setPackTriggerOpening] = useState(false);
   const [packToConfirm, setPackToConfirm] = useState<CardPack | null>(null);
+  const [packOpening, setPackOpening] = useState(false);
   const [openedOutsideDiscover, setOpenedOutsideDiscover] = useState<CardPack | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [queue, setQueue] = useState<StudyUnit[]>([]);
@@ -485,7 +498,7 @@ export default function FlashcardApp({
         target instanceof Element &&
         target.matches("input, select, textarea, button, [contenteditable='true']");
       if (event.key === "Escape") {
-        if (packToConfirm) setPackToConfirm(null);
+        if (packToConfirm && !packOpening) setPackToConfirm(null);
         else if (resetConfirmOpen) setResetConfirmOpen(false);
         else if (packsOpen) setPacksOpen(false);
         else if (helpOpen) closeHelp();
@@ -536,6 +549,7 @@ export default function FlashcardApp({
     helpOpen,
     loginOpen,
     packToConfirm,
+    packOpening,
     packsOpen,
     revealed,
     resetConfirmOpen,
@@ -557,18 +571,47 @@ export default function FlashcardApp({
 
   const requestOpenPack = (pack: CardPack) => {
     setPacksOpen(false);
+    setPackOpening(false);
     setPackToConfirm(pack);
   };
 
   const confirmOpenPack = () => {
-    if (!packToConfirm) return;
-    openPack(packToConfirm.id);
-    if (activeView !== "discover") {
-      setOpenedOutsideDiscover(packToConfirm);
-      setPacksOpen(true);
-    }
-    setPackToConfirm(null);
+    if (!packToConfirm || packOpening) return;
+    setPackOpening(true);
   };
+
+  const requestPacksFromTrigger = () => {
+    if (packTriggerOpening) return;
+    setOpenedOutsideDiscover(null);
+    if (reducedMotionRequested()) {
+      setPacksOpen(true);
+      return;
+    }
+    setPackTriggerOpening(true);
+  };
+
+  useEffect(() => {
+    if (!packTriggerOpening) return;
+    const timeout = window.setTimeout(() => {
+      setPackTriggerOpening(false);
+      setPacksOpen(true);
+    }, PACK_TRIGGER_OPENING_DURATION_MS);
+    return () => window.clearTimeout(timeout);
+  }, [packTriggerOpening]);
+
+  useEffect(() => {
+    if (!packOpening || !packToConfirm) return;
+    const timeout = window.setTimeout(() => {
+      openPack(packToConfirm.id);
+      if (activeView !== "discover") {
+        setOpenedOutsideDiscover(packToConfirm);
+        setPacksOpen(true);
+      }
+      setPackOpening(false);
+      setPackToConfirm(null);
+    }, reducedMotionRequested() ? 0 : PACK_OPENING_DURATION_MS);
+    return () => window.clearTimeout(timeout);
+  }, [activeView, openPack, packOpening, packToConfirm]);
 
   const confirmReset = async () => {
     if (await resetStudy()) {
@@ -736,11 +779,11 @@ export default function FlashcardApp({
         </label>
         <button
           type="button"
-          className="button pack-trigger"
-          onClick={() => {
-            setOpenedOutsideDiscover(null);
-            setPacksOpen(true);
-          }}
+          className={`button pack-trigger${packTriggerOpening ? " is-opening" : ""}`}
+          aria-haspopup="dialog"
+          aria-expanded={packsOpen}
+          disabled={packTriggerOpening}
+          onClick={requestPacksFromTrigger}
         >
           Packs
         </button>
@@ -890,6 +933,9 @@ export default function FlashcardApp({
                   ? suggestedPack
                   : null
               }
+              suggestedPackUnitCount={
+                suggestedPack ? packUnitCounts[suggestedPack.id] ?? 0 : 0
+              }
               onSuggestPack={(pack) => requestOpenPack(pack)}
               onOpenPacks={() => setPacksOpen(true)}
             />
@@ -912,6 +958,7 @@ export default function FlashcardApp({
         openPackIds={openPackIdSet}
         panelOpen={packsOpen}
         packToConfirm={packToConfirm}
+        packOpening={packOpening}
         openedOutsideDiscover={openedOutsideDiscover}
         resetOpen={resetConfirmOpen}
         resetting={resetting}
@@ -921,7 +968,9 @@ export default function FlashcardApp({
         resetRef={resetDialogRef}
         onClosePanel={() => setPacksOpen(false)}
         onRequestOpen={requestOpenPack}
-        onCancelOpen={() => setPackToConfirm(null)}
+        onCancelOpen={() => {
+          if (!packOpening) setPackToConfirm(null);
+        }}
         onConfirmOpen={confirmOpenPack}
         onGoToDiscover={() => {
           setPacksOpen(false);
@@ -1203,6 +1252,7 @@ interface SessionSummaryProps {
   learningCount: number;
   discoverRemaining: number;
   suggestedPack: CardPack | null;
+  suggestedPackUnitCount: number;
   onSuggestPack: (pack: CardPack) => void;
   onOpenPacks: () => void;
 }
@@ -1215,6 +1265,7 @@ function SessionSummary({
   learningCount,
   discoverRemaining,
   suggestedPack,
+  suggestedPackUnitCount,
   onSuggestPack,
   onOpenPacks,
 }: SessionSummaryProps) {
@@ -1284,20 +1335,27 @@ function SessionSummary({
       ) : null}
       {view === "discover" && suggestedPack ? (
         <article className="pack-suggestion">
-          <p className="eyebrow">Siguiente sugerencia</p>
-          <h3>{suggestedPack.title}</h3>
-          <p>{suggestedPack.description}</p>
-          <div className="summary-actions">
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() => onSuggestPack(suggestedPack)}
-            >
-              Abrir «{suggestedPack.title}»
-            </button>
-            <button type="button" className="text-button" onClick={onOpenPacks}>
-              Ver todos los packs
-            </button>
+          <CardPackBooster
+            pack={suggestedPack}
+            unitCount={suggestedPackUnitCount}
+            compact
+          />
+          <div className="pack-suggestion__copy">
+            <p className="eyebrow">Siguiente sugerencia</p>
+            <h3>{suggestedPack.title}</h3>
+            <p>{suggestedPack.description}</p>
+            <div className="summary-actions">
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => onSuggestPack(suggestedPack)}
+              >
+                Abrir «{suggestedPack.title}»
+              </button>
+              <button type="button" className="text-button" onClick={onOpenPacks}>
+                Ver todos los packs
+              </button>
+            </div>
           </div>
         </article>
       ) : null}

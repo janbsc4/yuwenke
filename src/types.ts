@@ -32,6 +32,8 @@ export interface CardPack {
   id: string;
   title: string;
   description: string;
+  mark: string;
+  theme: "cinnabar" | "jade" | "amber" | "lilac";
 }
 
 export type PackIdByCardId = Record<string, string>;

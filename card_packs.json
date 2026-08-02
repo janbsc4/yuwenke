@@ -2,41 +2,57 @@
   {
     "id": "CP001",
     "title": "Primeros pasos",
-    "description": "Pronombres, escritura y componentes básicos de los caracteres."
+    "description": "Pronombres, escritura y componentes básicos de los caracteres.",
+    "mark": "启",
+    "theme": "cinnabar"
   },
   {
     "id": "CP002",
     "title": "Saludos y conversación",
-    "description": "Saludos, estados, preguntas sencillas y notas culturales."
+    "description": "Saludos, estados, preguntas sencillas y notas culturales.",
+    "mark": "礼",
+    "theme": "jade"
   },
   {
     "id": "CP003",
     "title": "Familia y países",
-    "description": "La familia cercana, la posesión y tres países de Asia oriental."
+    "description": "La familia cercana, la posesión y tres países de Asia oriental.",
+    "mark": "家",
+    "theme": "lilac"
   },
   {
     "id": "CP004",
     "title": "Nombres y presentaciones",
-    "description": "Cómo decir el nombre y el apellido y presentar a otras personas."
+    "description": "Cómo decir el nombre y el apellido y presentar a otras personas.",
+    "mark": "名",
+    "theme": "amber"
   },
   {
     "id": "CP005",
     "title": "Preguntar por personas",
-    "description": "Preguntas con qué y quién sobre nombres y relaciones familiares."
+    "description": "Preguntas con qué y quién sobre nombres y relaciones familiares.",
+    "mark": "问",
+    "theme": "cinnabar"
   },
   {
     "id": "CP006",
     "title": "Momentos del día",
-    "description": "Partes del día, saludos según la hora y vocabulario de bebidas."
+    "description": "Partes del día, saludos según la hora y vocabulario de bebidas.",
+    "mark": "时",
+    "theme": "jade"
   },
   {
     "id": "CP007",
     "title": "Pronunciación y rutina",
-    "description": "Reglas de pinyin y expresiones cotidianas para seguir practicando."
+    "description": "Reglas de pinyin y expresiones cotidianas para seguir practicando.",
+    "mark": "音",
+    "theme": "lilac"
   },
   {
     "id": "CP008",
     "title": "Números",
-    "description": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve."
+    "description": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve.",
+    "mark": "数",
+    "theme": "amber"
   }
 ]
