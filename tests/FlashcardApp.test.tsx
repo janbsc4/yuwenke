@@ -431,6 +431,9 @@ describe("FlashcardApp", () => {
     expect(
       within(await screen.findByRole("button", { name: /Descubrir/ })).getByText("2"),
     ).toBeInTheDocument();
+    const collectionSummary = screen.getByText("Tu colección").parentElement;
+    expect(collectionSummary).not.toBeNull();
+    expect(within(collectionSummary!).getByText("2 cartas")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Packs" }));
     const panel = screen.getByRole("dialog", { name: "Packs de cartas" });
     expect(within(panel).getAllByText("2 cartas")).toHaveLength(2);
@@ -446,6 +449,7 @@ describe("FlashcardApp", () => {
     expect(
       within(screen.getByRole("button", { name: /Descubrir/ })).getByText("4"),
     ).toBeInTheDocument();
+    expect(within(collectionSummary!).getByText("4 cartas")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
       "aria-valuemax",
       "4",

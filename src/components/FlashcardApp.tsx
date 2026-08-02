@@ -179,6 +179,11 @@ export default function FlashcardApp({
       ),
     [packIdByCardId, packs, units],
   );
+  const openUnitCount = useMemo(
+    () =>
+      units.filter((unit) => openPackIdSet.has(packIdByCardId[unit.cardId])).length,
+    [openPackIdSet, packIdByCardId, units],
+  );
   const suggestedPack = useMemo(
     () =>
       packs.find((pack) => !openPackIdSet.has(pack.id)) ?? null,
@@ -753,7 +758,7 @@ export default function FlashcardApp({
         <aside className="filter-panel" aria-label="Filtros">
           <div className="panel-heading">
             <p className="eyebrow">Tu colección</p>
-            <p>{plural(units.length, "carta")}</p>
+            <p>{plural(openUnitCount, "carta")}</p>
           </div>
           <label>
             Tema
