@@ -12,8 +12,9 @@ const entrySchema = z.object({
   status: z.enum(["learning", "known"]),
   clientUpdatedAt: z.number().int().nonnegative(),
   serverUpdatedAt: z.number().int().nonnegative().nullable(),
-  schemaVersion: z.literal(1),
-});
+  resetAt: z.number().int().nonnegative().optional(),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
+}).refine((entry) => entry.schemaVersion === 1 || entry.resetAt !== undefined);
 
 interface StoredEnvelope {
   schemaVersion: 1;

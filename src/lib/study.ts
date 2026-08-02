@@ -2,10 +2,12 @@ import {
   STUDY_DIRECTIONS,
   type FavoriteEntry,
   type FavoriteMap,
+  type CardPackState,
   type Filters,
   type Flashcard,
   type ProgressEntry,
   type ProgressMap,
+  type PackIdByCardId,
   type StudyDirection,
   type StudyUnit,
   type StudyView,
@@ -112,13 +114,126 @@ export function visibleUnits(
   view: StudyView,
   progress: ProgressMap,
   filters: Filters,
-  favorites: FavoriteMap = {},
+  favorites: FavoriteMap,
+  openPackIds: ReadonlySet<string>,
+  packIdByCardId: PackIdByCardId,
 ): StudyUnit[] {
   return units.filter(
     (unit) =>
       unitBelongsToView(unit, view, progress, favorites) &&
+      (view !== "discover" ||
+        openPackIds.has(packIdByCardId[unit.cardId])) &&
       matchesFilters(unit.card, filters),
   );
+}
+
+export function openPackIdsForLegacyState(
+  orderedPackIds: string[],
+  packIdByCardId: PackIdByCardId,
+  progress: ProgressMap,
+  favorites: FavoriteMap,
+): string[] {
+  const inferred = new Set<string>(orderedPackIds.slice(0, 1));
+  for (const entry of Object.values(progress)) {
+    const packId = packIdByCardId[entry.cardId];
+    if (packId) inferred.add(packId);
+  }
+  for (const entry of Object.values(favorites)) {
+    if (!entry.favorite) continue;
+    const packId = packIdByCardId[entry.cardId];
+    if (packId) inferred.add(packId);
+  }
+  return orderedPackIds.filter((packId) => inferred.has(packId));
+}
+
+export function mergePackStates(
+  local: CardPackState,
+  cloud: CardPackState,
+): CardPackState {
+  if (local.resetAt !== cloud.resetAt) {
+    return local.resetAt > cloud.resetAt ? local : cloud;
+  }
+  return {
+    ...(local.clientUpdatedAt > cloud.clientUpdatedAt ? local : cloud),
+    openPackIds: [...new Set([...local.openPackIds, ...cloud.openPackIds])].sort(),
+    clientUpdatedAt: Math.max(local.clientUpdatedAt, cloud.clientUpdatedAt),
+  };
+}
+
+export function mergePackStatesWithGuest(
+  orderedPackIds: string[],
+  local: CardPackState,
+  cloud: CardPackState,
+  guestOpenPackIds: string[],
+): CardPackState {
+  const merged = mergePackStates(local, cloud);
+  return {
+    ...merged,
+    openPackIds: orderedPackIds.filter(
+      (packId) =>
+        merged.openPackIds.includes(packId) || guestOpenPackIds.includes(packId),
+    ),
+  };
+}
+
+export function mergeGuestOpenPacks(
+  orderedPackIds: string[],
+  accountState: CardPackState,
+  guestState: CardPackState | null,
+  inferredOpenPackIds: string[],
+): CardPackState {
+  return {
+    ...accountState,
+    openPackIds: orderedPackIds.filter(
+      (packId) =>
+        accountState.openPackIds.includes(packId) ||
+        guestState?.openPackIds.includes(packId) ||
+        inferredOpenPackIds.includes(packId),
+    ),
+    clientUpdatedAt: Math.max(
+      accountState.clientUpdatedAt,
+      guestState?.clientUpdatedAt ?? 0,
+    ),
+  };
+}
+
+export function packOpeningThresholdReached(
+  units: StudyUnit[],
+  openPackIds: ReadonlySet<string>,
+  packIdByCardId: PackIdByCardId,
+  progress: ProgressMap,
+): boolean {
+  const openUnits = units.filter((unit) =>
+    openPackIds.has(packIdByCardId[unit.cardId]),
+  );
+  if (openUnits.length === 0) return false;
+  const mastered = openUnits.filter(
+    (unit) => progress[unit.key]?.status === "known",
+  ).length;
+  return mastered / openUnits.length >= 0.8;
+}
+
+type ResettableMap = ProgressMap | FavoriteMap;
+
+export function entriesWithResetBoundary<T extends ResettableMap>(
+  entries: T,
+  resetAt: number,
+): T {
+  return Object.fromEntries(
+    Object.entries(entries).map(([key, entry]) => [
+      key,
+      { ...entry, resetAt, schemaVersion: 2 },
+    ]),
+  ) as T;
+}
+
+export function entriesAtResetBoundary<T extends ResettableMap>(
+  entries: T,
+  resetAt: number,
+): T {
+  return Object.fromEntries(
+    Object.entries(entries).filter(([, entry]) => (entry.resetAt ?? 0) === resetAt),
+  ) as T;
 }
 
 export function shuffle<T>(items: readonly T[], random: () => number = Math.random): T[] {

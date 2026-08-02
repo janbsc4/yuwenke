@@ -1,0 +1,37 @@
+[
+  {
+    "id": "CP001",
+    "title": "Primeros pasos",
+    "description": "Pronombres, escritura y componentes básicos de los caracteres."
+  },
+  {
+    "id": "CP002",
+    "title": "Saludos y conversación",
+    "description": "Saludos, estados, preguntas sencillas y notas culturales."
+  },
+  {
+    "id": "CP003",
+    "title": "Familia y países",
+    "description": "La familia cercana, la posesión y tres países de Asia oriental."
+  },
+  {
+    "id": "CP004",
+    "title": "Nombres y presentaciones",
+    "description": "Cómo decir el nombre y el apellido y presentar a otras personas."
+  },
+  {
+    "id": "CP005",
+    "title": "Preguntar por personas",
+    "description": "Preguntas con qué y quién sobre nombres y relaciones familiares."
+  },
+  {
+    "id": "CP006",
+    "title": "Momentos del día",
+    "description": "Partes del día, saludos según la hora y vocabulario de bebidas."
+  },
+  {
+    "id": "CP007",
+    "title": "Pronunciación y rutina",
+    "description": "Reglas de pinyin y expresiones cotidianas para seguir practicando."
+  }
+]

@@ -439,6 +439,17 @@ a {
   background: var(--jade-soft);
 }
 
+.button-danger {
+  border-color: #8f2f28;
+  background: #8f2f28;
+  color: #fffdf8;
+}
+
+.button-danger:hover {
+  border-color: #71231e;
+  background: #71231e;
+}
+
 .button-ink {
   border-color: var(--ink);
   color: var(--ink);
@@ -447,6 +458,12 @@ a {
 .filter-trigger {
   display: none;
   min-width: 110px;
+}
+
+.pack-trigger {
+  min-width: 96px;
+  border-color: var(--cinnabar);
+  color: var(--cinnabar-dark);
 }
 
 .study-layout {
@@ -928,6 +945,36 @@ kbd {
   font-size: 0.9rem;
 }
 
+.pack-suggestion {
+  width: min(100%, 520px);
+  padding: 24px;
+  margin-top: 26px;
+  border: 1px solid rgba(166, 61, 50, 0.28);
+  border-radius: 18px;
+  background: var(--cinnabar-soft);
+  text-align: left;
+}
+
+.pack-suggestion .eyebrow {
+  margin-bottom: 7px;
+}
+
+.pack-suggestion h3,
+.pack-card h3 {
+  margin: 0;
+  font-size: 1.22rem;
+}
+
+.pack-suggestion > p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+
+.pack-suggestion .summary-actions {
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
 .queue-loading {
   display: grid;
   gap: 16px;
@@ -957,6 +1004,8 @@ kbd {
 
 .login-dialog,
 .help-dialog,
+.packs-dialog,
+.confirm-dialog,
 .sheet {
   width: min(440px, 100%);
   padding: 32px;
@@ -964,6 +1013,107 @@ kbd {
   border-radius: 22px;
   background: var(--surface);
   box-shadow: 0 30px 90px rgba(18, 20, 18, 0.25);
+}
+
+.packs-dialog {
+  width: min(720px, 100%);
+  max-height: min(820px, calc(100vh - 40px));
+  overflow-y: auto;
+}
+
+.confirm-dialog {
+  width: min(480px, 100%);
+}
+
+.confirm-dialog h2 {
+  margin: 7px 0 12px;
+  font-size: 1.7rem;
+  letter-spacing: -0.03em;
+}
+
+.confirm-dialog > p:not(.eyebrow),
+.packs-intro {
+  color: var(--muted);
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pack-list {
+  display: grid;
+  gap: 12px;
+}
+
+.pack-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-warm);
+}
+
+.pack-card.is-open {
+  border-color: rgba(47, 107, 82, 0.3);
+  background: var(--jade-soft);
+}
+
+.pack-card p {
+  margin: 6px 0 10px;
+  color: var(--muted);
+}
+
+.pack-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.pack-status {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: var(--cinnabar-dark);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.is-open .pack-status {
+  color: var(--jade);
+}
+
+.pack-opened-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(47, 107, 82, 0.3);
+  border-radius: 14px;
+  background: var(--jade-soft);
+}
+
+.pack-opened-notice p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.packs-footer {
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: right;
+}
+
+.destructive-text {
+  color: #8f2f28;
 }
 
 .login-dialog {
@@ -1264,6 +1414,10 @@ kbd {
     display: inline-flex;
   }
 
+  .pack-trigger {
+    min-width: 86px;
+  }
+
   .study-layout {
     display: block;
   }
@@ -1483,6 +1637,26 @@ kbd {
     padding: 26px 20px;
   }
 
+  .packs-dialog,
+  .confirm-dialog {
+    max-height: calc(100vh - 24px);
+    padding: 26px 20px;
+  }
+
+  .pack-card {
+    align-items: flex-start;
+    padding: 17px;
+  }
+
+  .pack-card .button {
+    min-height: 42px;
+    padding: 8px 12px;
+  }
+
+  .pack-suggestion {
+    padding: 20px;
+  }
+
   .help-steps li {
     padding: 14px 14px 14px 50px;
   }
@@ -1501,6 +1675,12 @@ kbd {
 
   .filter-trigger {
     min-width: 72px;
+    font-size: 0.78rem;
+  }
+
+  .pack-trigger {
+    min-width: 66px;
+    padding: 10px;
     font-size: 0.78rem;
   }
 }

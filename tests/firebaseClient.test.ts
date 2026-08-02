@@ -1,6 +1,6 @@
-import { Timestamp, type QuerySnapshot } from "firebase/firestore";
+import { Timestamp, type DocumentSnapshot, type QuerySnapshot } from "firebase/firestore";
 
-import { snapshotFavorites } from "../src/lib/firebaseClient";
+import { snapshotCardPackState, snapshotFavorites } from "../src/lib/firebaseClient";
 
 function snapshot(
   documents: Array<{ id: string; data: Record<string, unknown> }>,
@@ -70,5 +70,46 @@ describe("Firebase favorite snapshots", () => {
     );
 
     expect(result).toEqual({});
+  });
+});
+
+describe("Firebase card pack state", () => {
+  it("parses an open-pack set and its reset boundary", () => {
+    const result = snapshotCardPackState({
+      exists: () => true,
+      data: () => ({
+        openPackIds: ["CP001", "CP003"],
+        clientUpdatedAt: Timestamp.fromMillis(10),
+        serverUpdatedAt: Timestamp.fromMillis(11),
+        resetAt: Timestamp.fromMillis(5),
+        schemaVersion: 1,
+      }),
+    } as unknown as DocumentSnapshot);
+
+    expect(result).toEqual({
+      openPackIds: ["CP001", "CP003"],
+      clientUpdatedAt: 10,
+      serverUpdatedAt: 11,
+      resetAt: 5,
+      schemaVersion: 1,
+    });
+  });
+
+  it("ignores missing and malformed pack state", () => {
+    expect(
+      snapshotCardPackState({ exists: () => false } as unknown as DocumentSnapshot),
+    ).toBeNull();
+    expect(
+      snapshotCardPackState({
+        exists: () => true,
+        data: () => ({
+          openPackIds: ["wrong"],
+          clientUpdatedAt: Timestamp.fromMillis(10),
+          serverUpdatedAt: Timestamp.fromMillis(11),
+          resetAt: Timestamp.fromMillis(0),
+          schemaVersion: 1,
+        }),
+      } as unknown as DocumentSnapshot),
+    ).toBeNull();
   });
 });

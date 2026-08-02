@@ -9,27 +9,33 @@ import {
 
 import type {
   CardType,
+  CardPack,
   Filters,
   Flashcard,
   SessionTally,
   ProgressStatus,
   StudyUnit,
   StudyView,
+  PackIdByCardId,
 } from "../types";
 import {
   createStudyUnits,
   matchesFilters,
+  packOpeningThresholdReached,
   progressForStudyUnits,
   shuffle,
   unitBelongsToView,
   visibleUnits,
 } from "../lib/study";
-import { topicLabel } from "../lib/labels";
+import { plural, topicLabel } from "../lib/labels";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { StudyCard } from "./StudyCard";
+import { CardPackDialogs } from "./CardPackDialogs";
 
 interface FlashcardAppProps {
   cards: Flashcard[];
+  packs: CardPack[];
+  packIdByCardId: PackIdByCardId;
 }
 
 const VIEW_LABELS: Record<StudyView, string> = {
@@ -55,10 +61,6 @@ function initials(name: string | null, email: string | null): string {
     .slice(0, 2)
     .map((part) => part.charAt(0).toLocaleUpperCase())
     .join("");
-}
-
-function plural(value: number, singular: string, pluralForm = `${singular}s`): string {
-  return `${value} ${value === 1 ? singular : pluralForm}`;
 }
 
 function readPreference(key: string): string | null {
@@ -97,7 +99,12 @@ function secondaryDecisionLabel(
   return "Ya la sé";
 }
 
-export default function FlashcardApp({ cards }: FlashcardAppProps) {
+export default function FlashcardApp({
+  cards,
+  packs,
+  packIdByCardId,
+}: FlashcardAppProps) {
+  const orderedPackIds = useMemo(() => packs.map((pack) => pack.id), [packs]);
   const units = useMemo(() => createStudyUnits(cards), [cards]);
   const topics = useMemo(
     () => [...new Set(cards.map((card) => card.tema))].sort((a, b) => a.localeCompare(b, "es")),
@@ -106,6 +113,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const {
     progress,
     favorites,
+    openPackIds,
     ready,
     storageAvailable,
     user,
@@ -113,13 +121,17 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     firebaseConfigured,
     firebaseReady,
     notice,
+    resetting,
     setStatus,
     setFavorite,
+    openPack,
+    resetStudy,
     signIn,
     signOut,
     retry,
     clearNotice,
-  } = useProgressSync();
+  } = useProgressSync({ orderedPackIds, packIdByCardId });
+  const openPackIdSet = useMemo(() => new Set(openPackIds), [openPackIds]);
 
   const [activeView, setActiveView] = useState<StudyView>("discover");
   const [initializedOwner, setInitializedOwner] = useState<string | null>(null);
@@ -128,6 +140,10 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
+  const [packToConfirm, setPackToConfirm] = useState<CardPack | null>(null);
+  const [openedOutsideDiscover, setOpenedOutsideDiscover] = useState<CardPack | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [queue, setQueue] = useState<StudyUnit[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -135,6 +151,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const [tally, setTally] = useState<SessionTally>(EMPTY_TALLY);
   const [sessionNonce, setSessionNonce] = useState(0);
   const [queueContext, setQueueContext] = useState<string | null>(null);
+  const previousOpenPackIdsRef = useRef(openPackIds);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLHeadingElement>(null);
@@ -144,10 +161,39 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   const filterDialogRef = useRef<HTMLElement>(null);
   const loginDialogRef = useRef<HTMLElement>(null);
   const helpDialogRef = useRef<HTMLElement>(null);
+  const packsDialogRef = useRef<HTMLElement>(null);
+  const packConfirmDialogRef = useRef<HTMLElement>(null);
+  const resetDialogRef = useRef<HTMLElement>(null);
   const helpTriggerRef = useRef<HTMLButtonElement>(null);
   const studyProgress = useMemo(
     () => progressForStudyUnits(cards, progress),
     [cards, progress],
+  );
+  const packUnitCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        packs.map((pack) => [
+          pack.id,
+          units.filter((unit) => packIdByCardId[unit.cardId] === pack.id).length,
+        ]),
+      ),
+    [packIdByCardId, packs, units],
+  );
+  const suggestedPack = useMemo(
+    () =>
+      packs.find((pack) => !openPackIdSet.has(pack.id)) ?? null,
+    [openPackIdSet, packs],
+  );
+  const suggestionEligible = useMemo(
+    () =>
+      suggestedPack !== null &&
+      packOpeningThresholdReached(
+        units,
+        openPackIdSet,
+        packIdByCardId,
+        studyProgress,
+      ),
+    [openPackIdSet, packIdByCardId, studyProgress, suggestedPack, units],
   );
 
   const counts = useMemo(() => {
@@ -157,7 +203,8 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         unitBelongsToView(unit, "study", studyProgress),
       ).length,
       discover: filtered.filter((unit) =>
-        unitBelongsToView(unit, "discover", studyProgress),
+        unitBelongsToView(unit, "discover", studyProgress) &&
+        openPackIdSet.has(packIdByCardId[unit.cardId]),
       ).length,
       mastered: filtered.filter((unit) =>
         unitBelongsToView(unit, "mastered", studyProgress),
@@ -166,7 +213,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         unitBelongsToView(unit, "favorites", studyProgress, favorites),
       ).length,
     };
-  }, [favorites, filters, studyProgress, units]);
+  }, [favorites, filters, openPackIdSet, packIdByCardId, studyProgress, units]);
 
   const hasFilters = filters.query.trim() !== "" || filters.topic !== "all" || filters.type !== "all";
   const filterCount = Number(filters.topic !== "all") + Number(filters.type !== "all");
@@ -212,7 +259,15 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     if (!ready || !viewInitialized) return;
     writePreference("yuwenke:last-view:v1", activeView);
     const nextQueue = shuffle(
-      visibleUnits(units, activeView, studyProgress, filters, favorites),
+      visibleUnits(
+        units,
+        activeView,
+        studyProgress,
+        filters,
+        favorites,
+        openPackIdSet,
+        packIdByCardId,
+      ),
     );
     setQueue(nextQueue);
     setQueueIndex(0);
@@ -221,6 +276,48 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     setTally(EMPTY_TALLY);
     setQueueContext(desiredQueueContext);
   }, [desiredQueueContext, ready, units, viewInitialized]);
+
+  useEffect(() => {
+    const previous = new Set(previousOpenPackIdsRef.current);
+    previousOpenPackIdsRef.current = openPackIds;
+    const newlyOpened = new Set(openPackIds.filter((packId) => !previous.has(packId)));
+    if (
+      newlyOpened.size === 0 ||
+      activeView !== "discover" ||
+      !queueReady
+    ) {
+      return;
+    }
+
+    setQueue((existingQueue) => {
+      const existingKeys = new Set(existingQueue.map((unit) => unit.key));
+      const additions = shuffle(
+        units.filter(
+          (unit) =>
+            newlyOpened.has(packIdByCardId[unit.cardId]) &&
+            !existingKeys.has(unit.key) &&
+            unitBelongsToView(unit, "discover", studyProgress) &&
+            matchesFilters(unit.card, filters),
+        ),
+      );
+      if (additions.length === 0) return existingQueue;
+      if (completed) {
+        setQueueIndex(existingQueue.length);
+        setCompleted(false);
+        setRevealed(false);
+      }
+      return [...existingQueue, ...additions];
+    });
+  }, [
+    activeView,
+    completed,
+    filters,
+    openPackIds,
+    packIdByCardId,
+    queueReady,
+    studyProgress,
+    units,
+  ]);
 
   useEffect(() => {
     if (revealed) answerRef.current?.focus();
@@ -233,8 +330,14 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   }, [clearNotice, notice]);
 
   useEffect(() => {
-    const dialog = helpOpen
-      ? helpDialogRef.current
+    const dialog = packToConfirm
+      ? packConfirmDialogRef.current
+      : resetConfirmOpen
+        ? resetDialogRef.current
+        : packsOpen
+          ? packsDialogRef.current
+          : helpOpen
+            ? helpDialogRef.current
       : loginOpen
         ? loginDialogRef.current
         : filterSheetOpen
@@ -262,7 +365,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     };
     dialog.addEventListener("keydown", trapFocus);
     return () => dialog.removeEventListener("keydown", trapFocus);
-  }, [filterSheetOpen, helpOpen, loginOpen]);
+  }, [filterSheetOpen, helpOpen, loginOpen, packToConfirm, packsOpen, resetConfirmOpen]);
 
   const closeFilterSheet = useCallback(() => {
     setFilterSheetOpen(false);
@@ -377,13 +480,24 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
         target instanceof Element &&
         target.matches("input, select, textarea, button, [contenteditable='true']");
       if (event.key === "Escape") {
-        if (helpOpen) closeHelp();
+        if (packToConfirm) setPackToConfirm(null);
+        else if (resetConfirmOpen) setResetConfirmOpen(false);
+        else if (packsOpen) setPacksOpen(false);
+        else if (helpOpen) closeHelp();
         else if (filterSheetOpen) closeFilterSheet();
         else if (loginOpen) closeLogin();
         else if (accountOpen) setAccountOpen(false);
         return;
       }
-      if (filterSheetOpen || helpOpen || loginOpen || accountOpen) return;
+      if (
+        filterSheetOpen ||
+        helpOpen ||
+        loginOpen ||
+        accountOpen ||
+        packsOpen ||
+        packToConfirm ||
+        resetConfirmOpen
+      ) return;
       if (event.key === "/" && !inField) {
         event.preventDefault();
         searchRef.current?.focus();
@@ -416,7 +530,10 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
     filterSheetOpen,
     helpOpen,
     loginOpen,
+    packToConfirm,
+    packsOpen,
     revealed,
+    resetConfirmOpen,
     skip,
   ]);
 
@@ -432,6 +549,30 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
   };
 
   const startNewSession = () => setSessionNonce((value) => value + 1);
+
+  const requestOpenPack = (pack: CardPack) => {
+    setPacksOpen(false);
+    setPackToConfirm(pack);
+  };
+
+  const confirmOpenPack = () => {
+    if (!packToConfirm) return;
+    openPack(packToConfirm.id);
+    if (activeView !== "discover") {
+      setOpenedOutsideDiscover(packToConfirm);
+      setPacksOpen(true);
+    }
+    setPackToConfirm(null);
+  };
+
+  const confirmReset = async () => {
+    if (await resetStudy()) {
+      setResetConfirmOpen(false);
+      setPacksOpen(false);
+      setAccountOpen(false);
+      setSessionNonce((value) => value + 1);
+    }
+  };
 
   if (!ready || !viewInitialized) {
     return (
@@ -495,6 +636,16 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
                 <div className="account-menu" role="menu">
                   <strong>{user.displayName || "Tu cuenta"}</strong>
                   <span>{user.email}</span>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      setResetConfirmOpen(true);
+                    }}
+                  >
+                    Restablecer estudio
+                  </button>
                   <button type="button" role="menuitem" onClick={() => void signOut()}>
                     Cerrar sesión
                   </button>
@@ -533,7 +684,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
       {!user ? (
         <aside className="guest-note">
           <p>
-            Estás estudiando como invitado. Tu progreso y favoritas se guardan en
+            Estás estudiando como invitado. Tu progreso, favoritas y packs se guardan en
             este dispositivo.
           </p>
           <button type="button" className="text-button" onClick={() => setLoginOpen(true)}>
@@ -544,7 +695,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
 
       {!storageAvailable ? (
         <div className="inline-alert" role="status">
-          Tu progreso y favoritas no se guardarán en este dispositivo.
+          Tu progreso, favoritas y packs no se guardarán en este dispositivo.
         </div>
       ) : null}
 
@@ -578,6 +729,16 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
             </button>
           ) : null}
         </label>
+        <button
+          type="button"
+          className="button pack-trigger"
+          onClick={() => {
+            setOpenedOutsideDiscover(null);
+            setPacksOpen(true);
+          }}
+        >
+          Packs
+        </button>
         <button
           type="button"
           className="button filter-trigger"
@@ -719,6 +880,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               onChangeView={changeView}
               learningCount={counts.study}
               discoverRemaining={counts.discover}
+              suggestedPack={
+                activeView === "discover" && suggestionEligible
+                  ? suggestedPack
+                  : null
+              }
+              onSuggestPack={(pack) => requestOpenPack(pack)}
+              onOpenPacks={() => setPacksOpen(true)}
             />
           ) : (
             <EmptyState
@@ -727,10 +895,40 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               learningCount={counts.study}
               onClear={resetFilters}
               onChangeView={changeView}
+              onOpenPacks={() => setPacksOpen(true)}
             />
           )}
         </section>
       </main>
+
+      <CardPackDialogs
+        packs={packs}
+        packUnitCounts={packUnitCounts}
+        openPackIds={openPackIdSet}
+        panelOpen={packsOpen}
+        packToConfirm={packToConfirm}
+        openedOutsideDiscover={openedOutsideDiscover}
+        resetOpen={resetConfirmOpen}
+        resetting={resetting}
+        authenticated={user !== null}
+        panelRef={packsDialogRef}
+        packConfirmRef={packConfirmDialogRef}
+        resetRef={resetDialogRef}
+        onClosePanel={() => setPacksOpen(false)}
+        onRequestOpen={requestOpenPack}
+        onCancelOpen={() => setPackToConfirm(null)}
+        onConfirmOpen={confirmOpenPack}
+        onGoToDiscover={() => {
+          setPacksOpen(false);
+          changeView("discover");
+        }}
+        onRequestReset={() => {
+          setPacksOpen(false);
+          setResetConfirmOpen(true);
+        }}
+        onCancelReset={() => setResetConfirmOpen(false)}
+        onConfirmReset={() => void confirmReset()}
+      />
 
       {filterSheetOpen ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={closeFilterSheet}>
@@ -837,6 +1035,13 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
                   siempre disponibles en una cola personal.
                 </p>
               </li>
+              <li>
+                <strong>Packs</strong>
+                <p>
+                  Abre cualquier colección cuando quieras para añadir material nuevo
+                  a Descubrir. Los packs abiertos permanecen disponibles.
+                </p>
+              </li>
             </ol>
 
             <div className="help-details">
@@ -853,7 +1058,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
               </p>
               <p>
                 Como invitado, el progreso se guarda en este dispositivo. Si inicias
-                sesión con Google, tus estados y favoritas también se sincronizan
+                sesión con Google, tus estados, favoritas y packs también se sincronizan
                 entre dispositivos.
               </p>
             </div>
@@ -875,7 +1080,7 @@ export default function FlashcardApp({ cards }: FlashcardAppProps) {
             <h2 id="login-title">Guarda tu progreso</h2>
             <p>
               Inicia sesión para continuar en otros dispositivos. El progreso y las
-              favoritas guardados aquí se conservarán al sincronizar.
+              favoritas y packs guardados aquí se conservarán al sincronizar.
             </p>
             {firebaseConfigured ? (
               <button
@@ -915,9 +1120,17 @@ interface EmptyStateProps {
   learningCount: number;
   onClear: () => void;
   onChangeView: (view: StudyView) => void;
+  onOpenPacks: () => void;
 }
 
-function EmptyState({ view, filtered, learningCount, onClear, onChangeView }: EmptyStateProps) {
+function EmptyState({
+  view,
+  filtered,
+  learningCount,
+  onClear,
+  onChangeView,
+  onOpenPacks,
+}: EmptyStateProps) {
   if (filtered) {
     return (
       <div className="empty-state">
@@ -947,6 +1160,7 @@ function EmptyState({ view, filtered, learningCount, onClear, onChangeView }: Em
             <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>Ir a Estudiar</button>
           ) : null}
           <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>Ver dominadas</button>
+          <button type="button" className="text-button" onClick={onOpenPacks}>Ver todos los packs</button>
         </div>
       </div>
     );
@@ -983,6 +1197,9 @@ interface SessionSummaryProps {
   onChangeView: (view: StudyView) => void;
   learningCount: number;
   discoverRemaining: number;
+  suggestedPack: CardPack | null;
+  onSuggestPack: (pack: CardPack) => void;
+  onOpenPacks: () => void;
 }
 
 function SessionSummary({
@@ -992,6 +1209,9 @@ function SessionSummary({
   onChangeView,
   learningCount,
   discoverRemaining,
+  suggestedPack,
+  onSuggestPack,
+  onOpenPacks,
 }: SessionSummaryProps) {
   const title =
     view === "study"
@@ -1057,13 +1277,32 @@ function SessionSummary({
           .
         </p>
       ) : null}
+      {view === "discover" && suggestedPack ? (
+        <article className="pack-suggestion">
+          <p className="eyebrow">Siguiente sugerencia</p>
+          <h3>{suggestedPack.title}</h3>
+          <p>{suggestedPack.description}</p>
+          <div className="summary-actions">
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => onSuggestPack(suggestedPack)}
+            >
+              Abrir «{suggestedPack.title}»
+            </button>
+            <button type="button" className="text-button" onClick={onOpenPacks}>
+              Ver todos los packs
+            </button>
+          </div>
+        </article>
+      ) : null}
       <div className="summary-actions">
         {view !== "discover" || discoverRemaining > 0 ? (
           <button type="button" className="button button-primary" onClick={onRestart}>
             {view === "study"
               ? "Nueva sesión"
               : view === "discover"
-                ? `Seguir descubriendo (${discoverRemaining})`
+                ? `Volver a las que saltaste (${discoverRemaining})`
                 : view === "favorites"
                   ? "Repasar de nuevo"
                   : "Revisar de nuevo"}

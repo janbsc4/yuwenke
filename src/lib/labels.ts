@@ -21,3 +21,11 @@ const TOPIC_LABELS: Record<string, string> = {
 export function topicLabel(topic: string): string {
   return TOPIC_LABELS[topic] ?? topic.charAt(0).toLocaleUpperCase("es") + topic.slice(1);
 }
+
+export function plural(
+  value: number,
+  singular: string,
+  pluralForm = `${singular}s`,
+): string {
+  return `${value} ${value === 1 ? singular : pluralForm}`;
+}

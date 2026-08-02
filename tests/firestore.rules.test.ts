@@ -38,6 +38,22 @@ const validFavoriteData = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const validPackState = (overrides: Record<string, unknown> = {}) => ({
+  openPackIds: ["CP001"],
+  clientUpdatedAt: Timestamp.fromMillis(1000),
+  serverUpdatedAt: serverTimestamp(),
+  resetAt: Timestamp.fromMillis(0),
+  schemaVersion: 1,
+  ...overrides,
+});
+
+const validResetAwareProgress = (overrides: Record<string, unknown> = {}) => ({
+  ...validData(),
+  resetAt: Timestamp.fromMillis(0),
+  schemaVersion: 2,
+  ...overrides,
+});
+
 beforeAll(async () => {
   environment = await initializeTestEnvironment({
     projectId: "demo-yuwenke",
@@ -158,6 +174,75 @@ describe("Firestore progress rules", () => {
       updateDoc(
         ref,
         validFavoriteData({ clientUpdatedAt: Timestamp.fromMillis(999) }),
+      ),
+    );
+  });
+
+  it("merges open packs monotonically within the same reset boundary", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    const ref = doc(db, "users/alice/state/cardPacks");
+    await assertSucceeds(setDoc(ref, validPackState()));
+    await assertSucceeds(
+      setDoc(
+        ref,
+        validPackState({
+          openPackIds: ["CP001", "CP003"],
+          clientUpdatedAt: Timestamp.fromMillis(1001),
+        }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        ref,
+        validPackState({
+          openPackIds: ["CP001"],
+          clientUpdatedAt: Timestamp.fromMillis(1002),
+        }),
+      ),
+    );
+  });
+
+  it("requires reset-aware study writes to match the current reset boundary", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    const stateRef = doc(db, "users/alice/state/cardPacks");
+    const progressRef = doc(db, "users/alice/progress/FC001_hanzi-es");
+    await assertSucceeds(setDoc(stateRef, validPackState()));
+    await assertSucceeds(setDoc(progressRef, validResetAwareProgress()));
+    await assertFails(
+      setDoc(
+        doc(db, "users/alice/progress/FC002_hanzi-es"),
+        validResetAwareProgress({
+          cardId: "FC002",
+          resetAt: Timestamp.fromMillis(999),
+        }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, "users/alice/progress/FC003_hanzi-es"),
+        validData({ cardId: "FC003" }),
+      ),
+    );
+  });
+
+  it("allows an authoritative reset boundary and rejects a stale device afterward", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    const stateRef = doc(db, "users/alice/state/cardPacks");
+    await assertSucceeds(setDoc(stateRef, validPackState()));
+    await assertSucceeds(
+      setDoc(
+        stateRef,
+        validPackState({
+          openPackIds: ["CP001"],
+          clientUpdatedAt: serverTimestamp(),
+          resetAt: serverTimestamp(),
+        }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, "users/alice/progress/FC001_hanzi-es"),
+        validResetAwareProgress(),
       ),
     );
   });

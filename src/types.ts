@@ -28,13 +28,30 @@ export interface StudyUnit {
   card: Flashcard;
 }
 
+export interface CardPack {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export type PackIdByCardId = Record<string, string>;
+
+export interface CardPackState {
+  openPackIds: string[];
+  clientUpdatedAt: number;
+  serverUpdatedAt: number | null;
+  resetAt: number;
+  schemaVersion: 1;
+}
+
 export interface ProgressEntry {
   cardId: string;
   direction: StudyDirection;
   status: ProgressStatus;
   clientUpdatedAt: number;
   serverUpdatedAt: number | null;
-  schemaVersion: 1;
+  resetAt?: number;
+  schemaVersion: 1 | 2;
 }
 
 export type ProgressMap = Record<string, ProgressEntry>;
@@ -44,7 +61,8 @@ export interface FavoriteEntry {
   favorite: boolean;
   clientUpdatedAt: number;
   serverUpdatedAt: number | null;
-  schemaVersion: 1;
+  resetAt?: number;
+  schemaVersion: 1 | 2;
 }
 
 export type FavoriteMap = Record<string, FavoriteEntry>;

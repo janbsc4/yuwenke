@@ -6,24 +6,30 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    function validStudyVersion(data, commonFields) {
+      let statePath = /databases/$(database)/documents/users/$(request.auth.uid)/state/cardPacks;
+      let legacy = data.schemaVersion == 1
+        && data.keys().hasOnly(commonFields)
+        && !exists(statePath);
+      let resetAware = data.schemaVersion == 2
+        && data.keys().hasOnly(commonFields.concat(['resetAt']))
+        && data.resetAt is timestamp
+        && exists(statePath)
+        && data.resetAt == get(statePath).data.resetAt;
+      return legacy || resetAware;
+    }
+
     function validProgress(progressId) {
       let data = request.resource.data;
-      return data.keys().hasAll([
+      let commonFields = [
           'cardId',
           'direction',
           'status',
           'clientUpdatedAt',
           'serverUpdatedAt',
           'schemaVersion'
-        ])
-        && data.keys().hasOnly([
-          'cardId',
-          'direction',
-          'status',
-          'clientUpdatedAt',
-          'serverUpdatedAt',
-          'schemaVersion'
-        ])
+        ];
+      return data.keys().hasAll(commonFields)
         && data.cardId is string
         && data.cardId.matches('^FC[0-9]{3}$')
         && (data.direction == 'hanzi-es' || data.direction == 'es-hanzi')
@@ -32,26 +38,20 @@ service cloud.firestore {
         && data.serverUpdatedAt is timestamp
         && data.serverUpdatedAt == request.time
         && data.schemaVersion is int
-        && data.schemaVersion == 1
+        && validStudyVersion(data, commonFields)
         && progressId == data.cardId + '_' + data.direction;
     }
 
     function validFavorite(favoriteId) {
       let data = request.resource.data;
-      return data.keys().hasAll([
+      let commonFields = [
           'cardId',
           'favorite',
           'clientUpdatedAt',
           'serverUpdatedAt',
           'schemaVersion'
-        ])
-        && data.keys().hasOnly([
-          'cardId',
-          'favorite',
-          'clientUpdatedAt',
-          'serverUpdatedAt',
-          'schemaVersion'
-        ])
+        ];
+      return data.keys().hasAll(commonFields)
         && data.cardId is string
         && data.cardId.matches('^FC[0-9]{3}$')
         && data.favorite is bool
@@ -59,8 +59,34 @@ service cloud.firestore {
         && data.serverUpdatedAt is timestamp
         && data.serverUpdatedAt == request.time
         && data.schemaVersion is int
-        && data.schemaVersion == 1
+        && validStudyVersion(data, commonFields)
         && favoriteId == data.cardId;
+    }
+
+    function validCardPackState() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'openPackIds',
+          'clientUpdatedAt',
+          'serverUpdatedAt',
+          'resetAt',
+          'schemaVersion'
+        ])
+        && data.keys().hasOnly([
+          'openPackIds',
+          'clientUpdatedAt',
+          'serverUpdatedAt',
+          'resetAt',
+          'schemaVersion'
+        ])
+        && data.openPackIds is list
+        && data.openPackIds.size() > 0
+        && data.clientUpdatedAt is timestamp
+        && data.serverUpdatedAt is timestamp
+        && data.serverUpdatedAt == request.time
+        && data.resetAt is timestamp
+        && data.schemaVersion is int
+        && data.schemaVersion == 1;
     }
 
     match /users/{uid}/progress/{progressId} {
@@ -79,6 +105,26 @@ service cloud.firestore {
         && validFavorite(favoriteId)
         && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt;
       allow delete: if owns(uid);
+    }
+
+    match /users/{uid}/state/cardPacks {
+      allow get: if owns(uid);
+      allow create: if owns(uid) && validCardPackState();
+      allow update: if owns(uid)
+        && validCardPackState()
+        && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt
+        && request.resource.data.resetAt >= resource.data.resetAt
+        && (
+          (
+            request.resource.data.resetAt == resource.data.resetAt
+            && resource.data.openPackIds.hasOnly(request.resource.data.openPackIds)
+          )
+          || (
+            request.resource.data.resetAt > resource.data.resetAt
+            && request.resource.data.resetAt == request.time
+          )
+        );
+      allow delete: if false;
     }
 
     match /{document=**} {

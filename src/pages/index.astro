@@ -1,9 +1,11 @@
 ---
 import FlashcardApp from "../components/FlashcardApp";
 import { loadFlashcards } from "../data/loadFlashcards";
+import { loadCardPackData } from "../data/loadCardPacks";
 import "../styles/global.css";
 
 const cards = loadFlashcards();
+const { packs, packIdByCardId } = loadCardPackData(cards);
 const canonicalUrl = new URL(import.meta.env.BASE_URL, Astro.site);
 const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
 const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
@@ -53,7 +55,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
     <title>Yuwenke</title>
   </head>
   <body>
-    <FlashcardApp cards={cards} client:load />
+    <FlashcardApp cards={cards} packs={packs} packIdByCardId={packIdByCardId} client:load />
     <noscript>
       <p class="noscript-message">Necesitas activar JavaScript para usar las tarjetas.</p>
     </noscript>

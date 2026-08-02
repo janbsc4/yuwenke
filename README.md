@@ -21,17 +21,20 @@ It includes:
 - shuffled sessions without repetition;
 - lilac highlighting for proper names across Hanzi, pinyin, and Spanish;
 - an in-app guide explaining the study flow and visual conventions;
-- guest progress and favorites in local storage;
-- optional Google sign-in and Firestore synchronization for both.
+- seven editable card packs for progressive discovery;
+- guest progress, favorites, and open packs in local storage;
+- optional Google sign-in and Firestore synchronization for study state.
 
-The flashcard content is compiled from `chino_flashcards.csv` during the build. Firestore stores only each user's progress and card-level favorites, so a spreadsheet or content database is not required.
+The flashcard content and pack membership are compiled from repository files during the build. Firestore stores only each user's progress, card-level favorites, open packs, and reset boundary, so a content database is not required.
 
 ## Project files
 
 - `chino_flashcards.csv` — the structured class-note dataset.
+- `card_packs.json` — the ordered Card Pack catalog.
+- `card_pack_membership.csv` — the single Card Pack assignment for every Source Flashcard.
 - `scripts/build_flashcards.mjs` — regenerates the CSV from its maintained source rows.
 - `src/` — the Astro page, React interface, study logic, and persistence services.
-- `firestore.rules` — owner-only validation rules for synchronized progress and favorites.
+- `firestore.rules` — owner-only validation rules for synchronized study state.
 - `tests/` — CSV, study-domain, component, storage, and Firestore rules tests.
 - `docs/flashcard-app-plan.md` — the approved implementation plan.
 - `Notas Clase Chino Lei.pdf` — the original local notes, intentionally excluded from Git.
@@ -72,7 +75,7 @@ The `nombres_propios` column contains semicolon-separated literal forms that sho
 
 ## Optional Firebase synchronization
 
-The app works completely as a guest when Firebase is not configured. Progress statuses and card-level favorites use separate offline outboxes and synchronize after sign-in. To add account synchronization:
+The app works completely as a guest when Firebase is not configured. Progress statuses, card-level favorites, and open packs use offline outboxes and synchronize after sign-in. To add account synchronization:
 
 1. Create a Firebase project and a Web App.
 2. Enable Google in Authentication → Sign-in method.

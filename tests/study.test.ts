@@ -3,8 +3,15 @@ import {
   createStudyUnits,
   matchesFilters,
   mergeFavorites,
+  mergePackStates,
+  mergeGuestOpenPacks,
+  mergePackStatesWithGuest,
   mergeProgress,
   nextClientTimestamp,
+  openPackIdsForLegacyState,
+  packOpeningThresholdReached,
+  entriesAtResetBoundary,
+  entriesWithResetBoundary,
   progressForStudyUnits,
   shuffle,
   unitBelongsToView,
@@ -14,6 +21,7 @@ import {
 import type {
   FavoriteEntry,
   FavoriteMap,
+  CardPackState,
   ProgressEntry,
   ProgressMap,
 } from "../src/types";
@@ -125,6 +133,165 @@ describe("study domain", () => {
     expect(unitBelongsToView(units[1], "discover", progress)).toBe(true);
   });
 
+  it("gates only unseen Discover units by open pack membership", () => {
+    const units = createStudyUnits(cards.slice(0, 2));
+    const progress: ProgressMap = {
+      [units[2].key]: {
+        ...entry(1, "learning"),
+        cardId: units[2].cardId,
+        direction: units[2].direction,
+      },
+    };
+    const packIdByCardId = { FC001: "CP001", FC002: "CP002" };
+
+    expect(
+      visibleUnits(
+        units,
+        "discover",
+        progress,
+        { query: "", topic: "all", type: "all" },
+        {},
+        new Set(["CP001"]),
+        packIdByCardId,
+      ).map((unit) => unit.cardId),
+    ).toEqual(["FC001", "FC001"]);
+    expect(unitBelongsToView(units[2], "study", progress)).toBe(true);
+  });
+
+  it("infers legacy open packs from progress and favorites", () => {
+    const progress: ProgressMap = {
+      [unitKey("FC002", "hanzi-es")]: {
+        ...entry(1),
+        cardId: "FC002",
+      },
+    };
+    const favorites: FavoriteMap = {
+      FC003: { ...favoriteEntry(2), cardId: "FC003" },
+    };
+
+    expect(
+      openPackIdsForLegacyState(
+        ["CP001", "CP002", "CP003", "CP004"],
+        { FC001: "CP001", FC002: "CP002", FC003: "CP003" },
+        progress,
+        favorites,
+      ),
+    ).toEqual(["CP001", "CP002", "CP003"]);
+  });
+
+  it("merges open packs by union within a reset boundary and honors newer resets", () => {
+    const state = (
+      openPackIds: string[],
+      resetAt: number,
+      clientUpdatedAt: number,
+    ): CardPackState => ({
+      openPackIds,
+      resetAt,
+      clientUpdatedAt,
+      serverUpdatedAt: null,
+      schemaVersion: 1,
+    });
+
+    expect(
+      mergePackStates(state(["CP001", "CP003"], 0, 2), state(["CP001", "CP002"], 0, 3)),
+    ).toMatchObject({ openPackIds: ["CP001", "CP002", "CP003"], resetAt: 0 });
+    expect(
+      mergePackStates(state(["CP001", "CP003"], 0, 4), state(["CP001"], 10, 1)),
+    ).toMatchObject({ openPackIds: ["CP001"], resetAt: 10 });
+  });
+
+  it("unions guest packs into an account without applying the guest reset boundary", () => {
+    const account: CardPackState = {
+      openPackIds: ["CP001", "CP002"],
+      resetAt: 100,
+      clientUpdatedAt: 100,
+      serverUpdatedAt: null,
+      schemaVersion: 1,
+    };
+    const resetGuest: CardPackState = {
+      ...account,
+      openPackIds: ["CP001", "CP003"],
+      resetAt: 200,
+      clientUpdatedAt: 200,
+    };
+
+    expect(
+      mergeGuestOpenPacks(
+        ["CP001", "CP002", "CP003"],
+        account,
+        resetGuest,
+        ["CP001"],
+      ),
+    ).toMatchObject({
+      openPackIds: ["CP001", "CP002", "CP003"],
+      resetAt: 100,
+    });
+  });
+
+  it("keeps guest packs when a newer cloud reset boundary replaces stale account state", () => {
+    const staleLocal: CardPackState = {
+      openPackIds: ["CP001", "CP002", "CP003"],
+      resetAt: 0,
+      clientUpdatedAt: 20,
+      serverUpdatedAt: null,
+      schemaVersion: 1,
+    };
+    const resetCloud: CardPackState = {
+      openPackIds: ["CP001"],
+      resetAt: 100,
+      clientUpdatedAt: 100,
+      serverUpdatedAt: 100,
+      schemaVersion: 1,
+    };
+
+    expect(
+      mergePackStatesWithGuest(
+        ["CP001", "CP002", "CP003"],
+        staleLocal,
+        resetCloud,
+        ["CP003"],
+      ),
+    ).toMatchObject({
+      openPackIds: ["CP001", "CP003"],
+      resetAt: 100,
+    });
+  });
+
+  it("recommends packs only when 80% of all units in open packs are mastered", () => {
+    const units = createStudyUnits(cards.slice(0, 2));
+    const progress: ProgressMap = Object.fromEntries(
+      units.slice(0, 3).map((unit, index) => [
+        unit.key,
+        {
+          ...entry(index + 1, "known"),
+          cardId: unit.cardId,
+          direction: unit.direction,
+        },
+      ]),
+    );
+    const memberships = { FC001: "CP001", FC002: "CP001" };
+
+    expect(packOpeningThresholdReached(units, new Set(["CP001"]), memberships, progress)).toBe(false);
+    progress[units[3].key] = {
+      ...entry(4, "known"),
+      cardId: units[3].cardId,
+      direction: units[3].direction,
+    };
+    expect(packOpeningThresholdReached(units, new Set(["CP001"]), memberships, progress)).toBe(true);
+  });
+
+  it("upgrades legacy entries and drops entries from before a reset boundary", () => {
+    const legacy = { [unitKey("FC001", "hanzi-es")]: entry(1) };
+    const upgraded = entriesWithResetBoundary(legacy, 10);
+
+    expect(upgraded[unitKey("FC001", "hanzi-es")]).toMatchObject({
+      resetAt: 10,
+      schemaVersion: 2,
+    });
+    expect(entriesAtResetBoundary(upgraded, 11)).toEqual({});
+    expect(entriesAtResetBoundary(upgraded, 10)).toEqual(upgraded);
+  });
+
   it("includes both directions of a favorite card regardless of status", () => {
     const units = createStudyUnits(cards.slice(0, 1));
     const progress: ProgressMap = {
@@ -163,6 +330,8 @@ describe("study domain", () => {
       {},
       { query: "", topic: cards[0].tema, type: cards[0].tipo },
       favorites,
+      new Set(["CP001"]),
+      Object.fromEntries(selected.map((card) => [card.id, "CP001"])),
     );
 
     expect(result).toHaveLength(2);
