@@ -26,15 +26,35 @@ import {
   mergeGuestOpenPacks,
   nextClientTimestamp,
   unitKey,
-  openPackIdsForLegacyState,
+  inferOpenPacksForPackStateMigration,
 } from "../lib/study";
 
 type FirebaseClientModule = typeof import("../lib/firebaseClient");
+export type ProgressSyncFirebaseClient = Pick<
+  FirebaseClientModule,
+  | "mergeCloudCardPackState"
+  | "observeAuth"
+  | "observeCloudCardPackState"
+  | "observeCloudFavorites"
+  | "observeCloudProgress"
+  | "resetCloudStudyState"
+  | "signInWithGoogle"
+  | "signOutFromFirebase"
+  | "writeCloudFavorite"
+  | "writeCloudFavoritesBatch"
+  | "writeCloudProgress"
+  | "writeCloudProgressBatch"
+>;
+
+export interface ProgressSyncDependencies {
+  firebaseConfigured: boolean;
+  loadFirebaseClient: () => Promise<ProgressSyncFirebaseClient>;
+}
 
 let loadedFirebaseClient: FirebaseClientModule | null = null;
 let firebaseClientPromise: Promise<FirebaseClientModule> | null = null;
 
-function loadFirebaseClient(): Promise<FirebaseClientModule> {
+function loadDefaultFirebaseClient(): Promise<FirebaseClientModule> {
   if (loadedFirebaseClient) return Promise.resolve(loadedFirebaseClient);
   firebaseClientPromise ??= import("../lib/firebaseClient").then((client) => {
     loadedFirebaseClient = client;
@@ -111,14 +131,14 @@ function withoutSent<T extends TimestampedEntry>(
   return remaining;
 }
 
-function legacyPackState(
+function packStateForMigration(
   orderedPackIds: string[],
   packIdByCardId: PackIdByCardId,
   progress: ProgressMap,
   favorites: FavoriteMap,
 ): CardPackState {
   return {
-    openPackIds: openPackIdsForLegacyState(
+    openPackIds: inferOpenPacksForPackStateMigration(
       orderedPackIds,
       packIdByCardId,
       progress,
@@ -150,10 +170,21 @@ function samePackState(left: CardPackState, right: CardPackState): boolean {
   );
 }
 
-export function useProgressSync({
-  orderedPackIds,
-  packIdByCardId,
-}: UseProgressSyncOptions): UseProgressSyncResult {
+const defaultDependencies: ProgressSyncDependencies = {
+  firebaseConfigured: isFirebaseConfigured,
+  loadFirebaseClient: loadDefaultFirebaseClient,
+};
+
+export function useProgressSync(
+  {
+    orderedPackIds,
+    packIdByCardId,
+  }: UseProgressSyncOptions,
+  {
+    firebaseConfigured,
+    loadFirebaseClient,
+  }: ProgressSyncDependencies = defaultDependencies,
+): UseProgressSyncResult {
   const [progress, setProgress] = useState<ProgressMap>({});
   const [favorites, setFavorites] = useState<FavoriteMap>({});
   const [packState, setPackState] = useState<CardPackState | null>(null);
@@ -168,6 +199,7 @@ export function useProgressSync({
   const progressRef = useRef<ProgressMap>({});
   const favoritesRef = useRef<FavoriteMap>({});
   const packStateRef = useRef<CardPackState | null>(null);
+  const firebaseClientRef = useRef<ProgressSyncFirebaseClient | null>(null);
   const userRef = useRef<User | null>(null);
   const generationRef = useRef(0);
   const unsubscribeProgressRef = useRef<(() => void) | null>(null);
@@ -269,6 +301,7 @@ export function useProgressSync({
       let succeeded = false;
       try {
         const firebase = await loadFirebaseClient();
+        firebaseClientRef.current = firebase;
         if (pendingCardPacks) {
           const merged = await firebase.mergeCloudCardPackState(
             uid,
@@ -356,7 +389,7 @@ export function useProgressSync({
     const storedGuestPacks = localCardPacks.readGuest();
     const initialPackState =
       storedGuestPacks.value ??
-      legacyPackState(
+      packStateForMigration(
         orderedPackIds,
         packIdByCardId,
         guestProgress.value,
@@ -371,13 +404,14 @@ export function useProgressSync({
     );
     setReady(true);
 
-    if (!isFirebaseConfigured) return undefined;
+    if (!firebaseConfigured) return undefined;
 
     let cancelled = false;
     let unsubscribeAuth: () => void = () => undefined;
     void loadFirebaseClient()
       .then((firebase) => {
         if (cancelled) return;
+        firebaseClientRef.current = firebase;
         setFirebaseReady(true);
         unsubscribeAuth = firebase.observeAuth(
           (nextUser) => {
@@ -400,7 +434,7 @@ export function useProgressSync({
               const storedPacks = localCardPacks.readGuest();
               const nextGuestPacks =
                 storedPacks.value ??
-                legacyPackState(
+                packStateForMigration(
                   orderedPackIds,
                   packIdByCardId,
                   nextGuestProgress.value,
@@ -432,7 +466,7 @@ export function useProgressSync({
               localFavorites.readOutbox(nextUser.uid).value,
             );
             const guestPackState = localCardPacks.readGuest().value;
-            const guestInferredPackState = legacyPackState(
+            const guestInferredPackState = packStateForMigration(
               orderedPackIds,
               packIdByCardId,
               guestProgress,
@@ -447,7 +481,7 @@ export function useProgressSync({
               localFavorites.readOutbox(nextUser.uid).value,
             );
             const accountPackState = mergeAvailablePackStates(
-              legacyPackState(
+              packStateForMigration(
                 orderedPackIds,
                 packIdByCardId,
                 accountProgress,
@@ -712,7 +746,10 @@ export function useProgressSync({
       setSyncState("syncing");
       const generation = generationRef.current;
       void loadFirebaseClient()
-        .then((firebase) => firebase.writeCloudProgress(currentUser.uid, entry))
+        .then((firebase) => {
+          firebaseClientRef.current = firebase;
+          return firebase.writeCloudProgress(currentUser.uid, entry);
+        })
         .then(() => {
           if (
             generation !== generationRef.current ||
@@ -775,7 +812,10 @@ export function useProgressSync({
       setSyncState("syncing");
       const generation = generationRef.current;
       void loadFirebaseClient()
-        .then((firebase) => firebase.writeCloudFavorite(currentUser.uid, entry))
+        .then((firebase) => {
+          firebaseClientRef.current = firebase;
+          return firebase.writeCloudFavorite(currentUser.uid, entry);
+        })
         .then(() => {
           if (
             generation !== generationRef.current ||
@@ -814,7 +854,12 @@ export function useProgressSync({
       if (!orderedPackIds.includes(packId)) return;
       const current =
         packStateRef.current ??
-        legacyPackState(orderedPackIds, packIdByCardId, progressRef.current, favoritesRef.current);
+        packStateForMigration(
+          orderedPackIds,
+          packIdByCardId,
+          progressRef.current,
+          favoritesRef.current,
+        );
       if (current.openPackIds.includes(packId)) return;
       const next: CardPackState = {
         ...current,
@@ -862,7 +907,8 @@ export function useProgressSync({
       return true;
     }
 
-    if (!loadedFirebaseClient) {
+    const firebase = firebaseClientRef.current;
+    if (!firebase) {
       setNotice("Necesitas conexión para restablecer una cuenta sincronizada.");
       return false;
     }
@@ -871,7 +917,7 @@ export function useProgressSync({
     guestPackMergeRef.current.active = false;
     const generation = generationRef.current;
     try {
-      const next = await loadedFirebaseClient.resetCloudStudyState(
+      const next = await firebase.resetCloudStudyState(
         currentUser.uid,
         defaultPackId,
       );
@@ -907,14 +953,15 @@ export function useProgressSync({
 
   const signIn = useCallback(async () => {
     setNotice("");
-    if (!loadedFirebaseClient) {
+    const firebase = firebaseClientRef.current;
+    if (!firebase) {
       setNotice(
         "La sincronización se está preparando. Inténtalo de nuevo en un momento.",
       );
       return;
     }
     try {
-      await loadedFirebaseClient.signInWithGoogle();
+      await firebase.signInWithGoogle();
     } catch {
       setNotice("No se pudo iniciar sesión. Tu progreso local sigue a salvo.");
     }
@@ -953,7 +1000,9 @@ export function useProgressSync({
     localCardPacks.writeGuest(freshGuestPacks);
     setSyncState("local");
     try {
-      if (loadedFirebaseClient) await loadedFirebaseClient.signOutFromFirebase();
+      if (firebaseClientRef.current) {
+        await firebaseClientRef.current.signOutFromFirebase();
+      }
     } catch {
       // Local account state has already been isolated from the fresh guest session.
     } finally {
@@ -978,7 +1027,7 @@ export function useProgressSync({
     storageAvailable,
     user,
     syncState,
-    firebaseConfigured: isFirebaseConfigured,
+    firebaseConfigured,
     firebaseReady,
     notice,
     resetting,

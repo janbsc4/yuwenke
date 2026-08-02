@@ -112,16 +112,17 @@ service cloud.firestore {
       allow create: if owns(uid) && validCardPackState();
       allow update: if owns(uid)
         && validCardPackState()
-        && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt
         && request.resource.data.resetAt >= resource.data.resetAt
         && (
           (
             request.resource.data.resetAt == resource.data.resetAt
+            && request.resource.data.clientUpdatedAt >= resource.data.clientUpdatedAt
             && resource.data.openPackIds.hasOnly(request.resource.data.openPackIds)
           )
           || (
             request.resource.data.resetAt > resource.data.resetAt
             && request.resource.data.resetAt == request.time
+            && request.resource.data.clientUpdatedAt == request.time
           )
         );
       allow delete: if false;

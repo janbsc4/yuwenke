@@ -8,7 +8,7 @@ import {
   mergePackStatesWithGuest,
   mergeProgress,
   nextClientTimestamp,
-  openPackIdsForLegacyState,
+  inferOpenPacksForPackStateMigration,
   packOpeningThresholdReached,
   entriesAtResetBoundary,
   entriesWithResetBoundary,
@@ -158,7 +158,7 @@ describe("study domain", () => {
     expect(unitBelongsToView(units[2], "study", progress)).toBe(true);
   });
 
-  it("infers legacy open packs from progress and favorites", () => {
+  it("performs Pack-State Migration from existing progress and favorites", () => {
     const progress: ProgressMap = {
       [unitKey("FC002", "hanzi-es")]: {
         ...entry(1),
@@ -170,7 +170,7 @@ describe("study domain", () => {
     };
 
     expect(
-      openPackIdsForLegacyState(
+      inferOpenPacksForPackStateMigration(
         ["CP001", "CP002", "CP003", "CP004"],
         { FC001: "CP001", FC002: "CP002", FC003: "CP003" },
         progress,

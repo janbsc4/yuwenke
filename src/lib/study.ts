@@ -127,7 +127,7 @@ export function visibleUnits(
   );
 }
 
-export function openPackIdsForLegacyState(
+export function inferOpenPacksForPackStateMigration(
   orderedPackIds: string[],
   packIdByCardId: PackIdByCardId,
   progress: ProgressMap,

@@ -225,10 +225,17 @@ describe("Firestore progress rules", () => {
     );
   });
 
-  it("allows an authoritative reset boundary and rejects a stale device afterward", async () => {
+  it("allows an authoritative reset despite a future client clock and rejects stale writes", async () => {
     const db = environment.authenticatedContext("alice").firestore();
     const stateRef = doc(db, "users/alice/state/cardPacks");
-    await assertSucceeds(setDoc(stateRef, validPackState()));
+    await assertSucceeds(
+      setDoc(
+        stateRef,
+        validPackState({
+          clientUpdatedAt: Timestamp.fromDate(new Date("2100-01-01T00:00:00Z")),
+        }),
+      ),
+    );
     await assertSucceeds(
       setDoc(
         stateRef,

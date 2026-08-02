@@ -41,7 +41,7 @@ import type {
 import { firebaseConfig, isFirebaseConfigured } from "./firebaseConfig";
 import {
   mergePackStatesWithGuest,
-  openPackIdsForLegacyState,
+  inferOpenPacksForPackStateMigration,
   progressDocumentId,
   unitKey,
 } from "./study";
@@ -328,7 +328,7 @@ export async function mergeCloudCardPackState(
     ]);
     const inferred = new Set([
       ...candidate.openPackIds,
-      ...openPackIdsForLegacyState(
+      ...inferOpenPacksForPackStateMigration(
         orderedPackIds,
         packIdByCardId,
         snapshotProgress(cloudProgress),
