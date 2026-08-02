@@ -51,7 +51,7 @@ const rows = [
   ["palabra", "gramatica", "呢", "ne", "¿y…? / partícula que retoma la pregunta", "Después de un tema, devuelve la misma pregunta: «¿y tú?», «¿y él?».", "你呢？", "Nǐ ne?", "¿Y tú?", "6;15", "particula;pregunta"],
   ["frase", "saludos", "你呢？", "Nǐ ne?", "¿Y tú?", "Pregunta el mismo dato sobre la otra persona sin repetir toda la oración.", "我很好，你呢？", "Wǒ hěn hǎo, nǐ ne?", "Estoy muy bien, ¿y tú?", "6;15", "pregunta;conversacion"],
   ["palabra", "basico", "大", "dà", "grande", "Adjetivo básico; forma parte de 大家.", "大家", "dàjiā", "todos / todo el mundo", "5-6;15", "adjetivo;caracter"],
-  ["palabra", "basico", "家", "jiā", "casa / familia / hogar", "Sustantivo básico; forma parte de 大家.", "大家", "dàjiā", "todos / todo el mundo", "6;15", "sustantivo;caracter"],
+  ["palabra", "basico", "家", "jiā", "casa / familia / hogar", "Según el contexto, puede referirse al lugar donde se vive, al hogar o a la familia; también forma parte de 大家.", "我家", "wǒ jiā", "mi casa / mi familia", "6;15", "sustantivo;familia;basico"],
   ["palabra", "pronombres", "大家", "dàjiā", "todos / todo el mundo", "Pronombre colectivo para un grupo de personas; no equivale a «todos» delante de cualquier sustantivo.", "大家好！", "Dàjiā hǎo!", "¡Hola a todos!", "6;9;15", "plural;saludo"],
   ["palabra", "gramatica", "也", "yě", "también", "Adverbio que suele colocarse antes del verbo o predicado.", "我也很好。", "Wǒ yě hěn hǎo.", "Yo también estoy muy bien.", "6;15", "adverbio;basico"],
 
@@ -172,6 +172,20 @@ const rows = [
   ["palabra", "numeros", "四十八", "sìshíbā", "cuarenta y ocho", "Se forma con 四 + 十 + 八: cuatro decenas más ocho.", "四十八", "sìshíbā", "cuarenta y ocho", "—", "numero;compuesto"],
   ["palabra", "numeros", "六十七", "liùshíqī", "sesenta y siete", "Se forma con 六 + 十 + 七: seis decenas más siete.", "六十七", "liùshíqī", "sesenta y siete", "—", "numero;compuesto"],
   ["palabra", "numeros", "九十九", "jiǔshíjiǔ", "noventa y nueve", "Se forma con 九 + 十 + 九: nueve decenas más nueve.", "九十九", "jiǔshíjiǔ", "noventa y nueve", "—", "numero;compuesto"],
+
+  ["palabra", "gramatica", "和", "hé", "y (une nombres o grupos nominales)", "Conjunción que une sobre todo sustantivos o grupos nominales. No se usa como el «y» español para encadenar dos acciones completas.", "我喜欢奶茶和牛奶。", "Wǒ xǐhuan nǎichá hé niúnǎi.", "Me gustan el té con leche y la leche.", "—", "conjuncion;gramatica"],
+  ["palabra", "gramatica", "然后", "ránhòu", "y luego / después (enlaza acciones)", "Conector que presenta una acción posterior a otra. Sirve para ordenar acciones, no para unir dos sustantivos.", "我跑步，然后洗澡。", "Wǒ pǎobù, ránhòu xǐzǎo.", "Salgo a correr y después me ducho.", "—", "conector;secuencia;gramatica"],
+  ["palabra", "lugares", "咖啡厅", "kāfēitīng", "cafetería / café", "Local donde se sirve café y otras bebidas. También es frecuente 咖啡馆 (kāfēiguǎn).", "我们在咖啡厅喝茶。", "Wǒmen zài kāfēitīng hē chá.", "Tomamos té en la cafetería.", "—", "lugar;bebida"],
+  ["palabra", "lugares", "海滩", "hǎitān", "playa", "Zona de arena o piedras junto al mar.", "我们去海滩。", "Wǒmen qù hǎitān.", "Vamos a la playa.", "—", "lugar;ocio"],
+  ["palabra", "lugares", "餐厅", "cāntīng", "restaurante / comedor (término general)", "Término general para un restaurante; también puede designar el comedor de una casa, hotel o institución según el contexto.", "这家餐厅很一般。", "Zhè jiā cāntīng hěn yìbān.", "Este restaurante es del montón.", "—", "lugar;comida"],
+  ["palabra", "lugares", "饭店", "fàndiàn", "restaurante / hotel (según el contexto)", "Puede significar «restaurante» y, según la región o el nombre del establecimiento, también «hotel».", "我们去饭店吃饭。", "Wǒmen qù fàndiàn chīfàn.", "Vamos al restaurante a comer.", "—", "lugar;comida"],
+  ["palabra", "lugares", "饭馆", "fànguǎn", "restaurante / casa de comidas (coloquial)", "Forma cotidiana para un restaurante o una casa de comidas, normalmente más informal que 餐厅.", "这家饭馆很好。", "Zhè jiā fànguǎn hěn hǎo.", "Este restaurante está muy bien.", "—", "lugar;comida;coloquial"],
+  ["palabra", "acciones", "来", "lái", "venir", "Verbo de movimiento hacia el lugar donde está quien habla o hacia el punto de referencia de la conversación.", "你什么时候来？", "Nǐ shénme shíhou lái?", "¿Cuándo vienes?", "—", "verbo;movimiento"],
+  ["palabra", "acciones", "做", "zuò", "hacer", "Verbo general para hacer, preparar o realizar algo; el sentido concreto depende de su complemento.", "你做什么？", "Nǐ zuò shénme?", "¿Qué haces?", "—", "verbo;accion"],
+  ["palabra", "acciones", "睡觉", "shuìjiào", "dormir / irse a dormir", "Expresión habitual para la acción de dormir o acostarse para dormir.", "我晚上十一点睡觉。", "Wǒ wǎnshang shíyī diǎn shuìjiào.", "Me voy a dormir a las once de la noche.", "—", "verbo;rutina"],
+  ["palabra", "acciones", "工作", "gōngzuò", "trabajar / trabajo", "Puede funcionar como verbo, «trabajar», o como sustantivo, «trabajo».", "我爸爸在饭店工作。", "Wǒ bàba zài fàndiàn gōngzuò.", "Mi padre trabaja en un restaurante.", "—", "verbo;sustantivo;rutina"],
+  ["palabra", "paises", "西班牙", "Xībānyá", "España", "Nombre de España en mandarín.", "我来自西班牙。", "Wǒ láizì Xībānyá.", "Soy de España.", "—", "pais;nombre_propio"],
+  ["palabra", "paises", "法国", "Fǎguó", "Francia", "Nombre de Francia en mandarín.", "她来自法国。", "Tā láizì Fǎguó.", "Ella es de Francia.", "—", "pais;nombre_propio"],
 ];
 
 // Exact visible forms that should use the proper-name colour. Keeping this
@@ -219,6 +233,8 @@ const properNamesById = new Map([
   ["FC121", "孙;Sūn;Sun"],
   ["FC122", "王芳;Wáng Fāng;Wang Fang"],
   ["FC123", "王芳;Wáng Fāng;Wang Fang"],
+  ["FC170", "西班牙;Xībānyá;España"],
+  ["FC171", "法国;Fǎguó;Francia"],
 ]);
 
 const header = [

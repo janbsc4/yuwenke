@@ -6,21 +6,55 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(158);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(158);
+    expect(cards).toHaveLength(171);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(171);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 158 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 171 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
     expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
-      "二十一",
-      "三十五",
-      "四十八",
-      "六十七",
-      "九十九",
+      "做",
+      "睡觉",
+      "工作",
+      "西班牙",
+      "法国",
     ]);
+  });
+
+  it("adds connectors, places, actions, and countries without duplicating 家", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.filter((card) => card.hanzi === "家")).toHaveLength(1);
+    expect(cards.find((card) => card.hanzi === "家")).toMatchObject({
+      id: "FC046",
+      ejemplo_hanzi: "我家",
+      ejemplo_espanol: "mi casa / mi familia",
+    });
+    expect(cards.slice(158).map((card) => card.hanzi)).toEqual([
+      "和",
+      "然后",
+      "咖啡厅",
+      "海滩",
+      "餐厅",
+      "饭店",
+      "饭馆",
+      "来",
+      "做",
+      "睡觉",
+      "工作",
+      "西班牙",
+      "法国",
+    ]);
+    expect(cards.find((card) => card.hanzi === "和")?.explicacion).toContain(
+      "No se usa como el «y» español para encadenar dos acciones completas",
+    );
+    expect(cards.find((card) => card.hanzi === "然后")?.explicacion).toContain(
+      "presenta una acción posterior",
+    );
+    expect(cards.find((card) => card.id === "FC170")?.nombres_propios).toContain("España");
+    expect(cards.find((card) => card.id === "FC171")?.nombres_propios).toContain("Francia");
   });
 
   it("contains an individual card for every number from zero to ten", () => {

@@ -24,9 +24,14 @@ describe("card pack authoring data", () => {
     ]);
     expect(Object.keys(packIdByCardId)).toHaveLength(cards.length);
     expect(packIdByCardId.FC001).toBe("CP001");
+    expect(packIdByCardId.FC046).toBe("CP003");
     expect(packIdByCardId.FC139).toBe("CP007");
     expect(packIdByCardId.FC140).toBe("CP008");
     expect(packIdByCardId.FC158).toBe("CP008");
+    expect(packIdByCardId.FC159).toBe("CP002");
+    expect(packIdByCardId.FC161).toBe("CP006");
+    expect(packIdByCardId.FC166).toBe("CP007");
+    expect(packIdByCardId.FC171).toBe("CP003");
     expect(
       packs.every((pack) =>
         Object.values(packIdByCardId).includes(pack.id),
@@ -43,11 +48,11 @@ describe("card pack authoring data", () => {
     ).toEqual({
       CP001: 43,
       CP002: 49,
-      CP003: 25,
+      CP003: 31,
       CP004: 35,
       CP005: 29,
-      CP006: 49,
-      CP007: 17,
+      CP006: 57,
+      CP007: 29,
       CP008: 38,
     });
   });
