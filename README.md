@@ -12,7 +12,7 @@ The site is a static Astro app with one React study interface. It can be hosted 
 
 It includes:
 
-- 139 source cards and 247 study units;
+- 158 source cards and 285 study units;
 - `Estudiar`, `Descubrir`, `Dominadas`, and `Favoritas` modes;
 - Mandarin → Spanish and Spanish → Mandarin prompts;
 - Spanish question-and-answer prompts for concept rules;
@@ -69,7 +69,7 @@ npm install
 node scripts/build_flashcards.mjs
 ```
 
-The script preserves the existing `FC001`–`FC139` identities because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
+The script preserves the existing `FC001`–`FC158` identities because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
 
 The `nombres_propios` column contains semicolon-separated literal forms that should be highlighted as proper names. The maintained annotations live in `properNamesById` inside the build script; the underlying study text stays unchanged so search and card identity remain stable.
 

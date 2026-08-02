@@ -33,5 +33,10 @@
     "id": "CP007",
     "title": "Pronunciación y rutina",
     "description": "Reglas de pinyin y expresiones cotidianas para seguir practicando."
+  },
+  {
+    "id": "CP008",
+    "title": "Números",
+    "description": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve."
   }
 ]

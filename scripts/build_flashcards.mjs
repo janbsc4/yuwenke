@@ -152,6 +152,26 @@ const rows = [
   ["palabra", "acciones", "跑步", "pǎobù", "correr / salir a correr", "Verbo habitual para hablar de correr como actividad o ejercicio; 跑 significa «correr» de forma más general.", "我每天早上跑步。", "Wǒ měitiān zǎoshang pǎobù.", "Corro todas las mañanas.", "—", "verbo;actividad;rutina"],
   ["palabra", "acciones", "洗澡", "xǐzǎo", "ducharse / bañarse", "Expresión cotidiana para lavarse el cuerpo; según el contexto puede significar «ducharse» o «bañarse».", "我晚上洗澡。", "Wǒ wǎnshang xǐzǎo.", "Me ducho por la noche.", "—", "verbo;higiene;rutina"],
   ["frase", "bebidas", "喝牛奶", "hē niúnǎi", "beber leche", "喝 significa «beber» y 牛奶 es la forma habitual de decir «leche».", "我每天早上喝牛奶。", "Wǒ měitiān zǎoshang hē niúnǎi.", "Bebo leche todas las mañanas.", "—", "bebida;verbo;rutina"],
+
+  ["palabra", "numeros", "零", "líng", "cero", "Número cero.", "零、一、二", "líng, yī, èr", "cero, uno, dos", "—", "numero;basico"],
+  ["palabra", "numeros", "一", "yī", "uno", "Número uno. Su tono cambia a menudo en el habla según la sílaba siguiente, pero su forma de diccionario es yī.", "零、一、二", "líng, yī, èr", "cero, uno, dos", "—", "numero;basico"],
+  ["palabra", "numeros", "二", "èr", "dos", "Número dos. Se usa para contar y para formar números; delante de muchos clasificadores suele preferirse 两 (liǎng).", "一、二、三", "yī, èr, sān", "uno, dos, tres", "—", "numero;basico"],
+  ["palabra", "numeros", "三", "sān", "tres", "Número tres.", "二、三、四", "èr, sān, sì", "dos, tres, cuatro", "—", "numero;basico"],
+  ["palabra", "numeros", "四", "sì", "cuatro", "Número cuatro.", "三、四、五", "sān, sì, wǔ", "tres, cuatro, cinco", "—", "numero;basico"],
+  ["palabra", "numeros", "五", "wǔ", "cinco", "Número cinco.", "四、五、六", "sì, wǔ, liù", "cuatro, cinco, seis", "—", "numero;basico"],
+  ["palabra", "numeros", "六", "liù", "seis", "Número seis.", "五、六、七", "wǔ, liù, qī", "cinco, seis, siete", "—", "numero;basico"],
+  ["palabra", "numeros", "七", "qī", "siete", "Número siete.", "六、七、八", "liù, qī, bā", "seis, siete, ocho", "—", "numero;basico"],
+  ["palabra", "numeros", "八", "bā", "ocho", "Número ocho.", "七、八、九", "qī, bā, jiǔ", "siete, ocho, nueve", "—", "numero;basico"],
+  ["palabra", "numeros", "九", "jiǔ", "nueve", "Número nueve.", "八、九、十", "bā, jiǔ, shí", "ocho, nueve, diez", "—", "numero;basico"],
+  ["palabra", "numeros", "十", "shí", "diez", "Número diez. Del 11 al 19 se coloca 十 delante de la unidad.", "九、十、十一", "jiǔ, shí, shíyī", "nueve, diez, once", "—", "numero;basico"],
+  ["palabra", "numeros", "十一", "shíyī", "once", "Se forma con 十 + 一: diez más uno.", "十、十一、十二", "shí, shíyī, shí'èr", "diez, once, doce", "—", "numero;compuesto"],
+  ["palabra", "numeros", "十五", "shíwǔ", "quince", "Se forma con 十 + 五: diez más cinco.", "十四、十五、十六", "shísì, shíwǔ, shíliù", "catorce, quince, dieciséis", "—", "numero;compuesto"],
+  ["palabra", "numeros", "二十", "èrshí", "veinte", "Se forma con 二 + 十: dos decenas.", "十九、二十、二十一", "shíjiǔ, èrshí, èrshíyī", "diecinueve, veinte, veintiuno", "—", "numero;decena"],
+  ["palabra", "numeros", "二十一", "èrshíyī", "veintiuno", "Se forma con 二 + 十 + 一: dos decenas más uno.", "二十、二十一、二十二", "èrshí, èrshíyī, èrshí'èr", "veinte, veintiuno, veintidós", "—", "numero;compuesto"],
+  ["palabra", "numeros", "三十五", "sānshíwǔ", "treinta y cinco", "Se forma con 三 + 十 + 五: tres decenas más cinco.", "三十五", "sānshíwǔ", "treinta y cinco", "—", "numero;compuesto"],
+  ["palabra", "numeros", "四十八", "sìshíbā", "cuarenta y ocho", "Se forma con 四 + 十 + 八: cuatro decenas más ocho.", "四十八", "sìshíbā", "cuarenta y ocho", "—", "numero;compuesto"],
+  ["palabra", "numeros", "六十七", "liùshíqī", "sesenta y siete", "Se forma con 六 + 十 + 七: seis decenas más siete.", "六十七", "liùshíqī", "sesenta y siete", "—", "numero;compuesto"],
+  ["palabra", "numeros", "九十九", "jiǔshíjiǔ", "noventa y nueve", "Se forma con 九 + 十 + 九: nueve decenas más nueve.", "九十九", "jiǔshíjiǔ", "noventa y nueve", "—", "numero;compuesto"],
 ];
 
 // Exact visible forms that should use the proper-name colour. Keeping this

@@ -6,21 +6,52 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(139);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(139);
+    expect(cards).toHaveLength(158);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(158);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 139 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 158 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
     expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
-      "加油！",
-      "什么时候",
-      "跑步",
-      "洗澡",
-      "喝牛奶",
+      "二十一",
+      "三十五",
+      "四十八",
+      "六十七",
+      "九十九",
     ]);
+  });
+
+  it("contains an individual card for every number from zero to ten", () => {
+    const numberCards = loadFlashcards().filter((card) => card.tema === "numeros");
+
+    expect(numberCards.slice(0, 11).map((card) => card.hanzi)).toEqual([
+      "零",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六",
+      "七",
+      "八",
+      "九",
+      "十",
+    ]);
+    expect(numberCards.slice(11).map((card) => card.hanzi)).toEqual([
+      "十一",
+      "十五",
+      "二十",
+      "二十一",
+      "三十五",
+      "四十八",
+      "六十七",
+      "九十九",
+    ]);
+    expect(numberCards.find((card) => card.hanzi === "二")?.explicacion).toContain(
+      "两 (liǎng)",
+    );
   });
 
   it("expresses every concept as a direct Spanish question and answer", () => {

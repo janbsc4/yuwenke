@@ -20,10 +20,13 @@ describe("card pack authoring data", () => {
       "CP005",
       "CP006",
       "CP007",
+      "CP008",
     ]);
     expect(Object.keys(packIdByCardId)).toHaveLength(cards.length);
     expect(packIdByCardId.FC001).toBe("CP001");
     expect(packIdByCardId.FC139).toBe("CP007");
+    expect(packIdByCardId.FC140).toBe("CP008");
+    expect(packIdByCardId.FC158).toBe("CP008");
     expect(
       packs.every((pack) =>
         Object.values(packIdByCardId).includes(pack.id),
@@ -45,6 +48,7 @@ describe("card pack authoring data", () => {
       CP005: 29,
       CP006: 49,
       CP007: 17,
+      CP008: 38,
     });
   });
 
