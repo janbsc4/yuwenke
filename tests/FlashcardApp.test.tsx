@@ -45,7 +45,7 @@ function renderApp(cards: Flashcard[]) {
   return render(
     <FlashcardApp
       cards={cards}
-      packs={[{ id: "CP001", title: "Tarjetas", description: "Para practicar." }]}
+      packs={[{ id: "CP001", title: "Cartas", description: "Para practicar." }]}
       packIdByCardId={Object.fromEntries(cards.map((item) => [item.id, "CP001"]))}
     />,
   );
@@ -83,7 +83,7 @@ describe("FlashcardApp", () => {
     expect(await screen.findByText("Descubrir")).toBeInTheDocument();
     expect(screen.getByText("Aprende Mucho Chino")).toBeInTheDocument();
     expect(
-      screen.queryByText(/Cada tarjeta se practica en dos sentidos/),
+      screen.queryByText(/Cada carta se practica en dos sentidos/),
     ).not.toBeInTheDocument();
     const reveal = await screen.findByRole("button", { name: /Mostrar respuesta/ });
     await user.click(reveal);
@@ -173,7 +173,7 @@ describe("FlashcardApp", () => {
     renderApp([card]);
     await screen.findByRole("button", { name: /Estudiar/ });
     await user.click(screen.getByRole("button", { name: /Estudiar/ }));
-    expect(await screen.findByText("Aún no tienes tarjetas en aprendizaje.")).toBeInTheDocument();
+    expect(await screen.findByText("Aún no tienes cartas en aprendizaje.")).toBeInTheDocument();
   });
 
   it("favorites a whole card, exposes both directions, and can remove it", async () => {
@@ -181,7 +181,7 @@ describe("FlashcardApp", () => {
     renderApp([card]);
 
     const addFavorite = await screen.findByRole("button", {
-      name: "Añadir tarjeta a favoritas",
+      name: "Añadir carta a favoritas",
     });
     expect(addFavorite).toHaveAttribute("aria-pressed", "false");
     await user.click(addFavorite);
@@ -196,13 +196,13 @@ describe("FlashcardApp", () => {
     await user.click(favoritesTab);
 
     const removeFavorite = await screen.findByRole("button", {
-      name: "Quitar tarjeta de favoritas",
+      name: "Quitar carta de favoritas",
     });
     expect(removeFavorite).toHaveAttribute("aria-pressed", "true");
     await user.click(removeFavorite);
 
     expect(
-      await screen.findByText("Aún no tienes tarjetas favoritas."),
+      await screen.findByText("Aún no tienes cartas favoritas."),
     ).toBeInTheDocument();
     expect(window.localStorage.getItem("yuwenke:guest-favorites:v1")).toContain(
       '"favorite":false',
@@ -281,7 +281,7 @@ describe("FlashcardApp", () => {
       await screen.findByRole("button", { name: /Mostrar respuesta/ }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("Ya has clasificado todas las tarjetas."),
+      screen.queryByText("Ya has clasificado todas las cartas."),
     ).not.toBeInTheDocument();
     expect(
       within(screen.getByRole("button", { name: /Descubrir/ })).getByText("202"),
@@ -296,7 +296,7 @@ describe("FlashcardApp", () => {
     await user.click(await screen.findByRole("button", { name: /Saltar/ }));
 
     expect(await screen.findByText("Selección completada")).toBeInTheDocument();
-    expect(screen.getByText("2 prácticas siguen sin clasificar.")).toBeInTheDocument();
+    expect(screen.getByText("2 cartas siguen sin clasificar.")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Ir a Descubrir" }),
     ).not.toBeInTheDocument();
@@ -369,7 +369,7 @@ describe("FlashcardApp", () => {
       screen.getByText(/Los conceptos plantean una sola pregunta en español/),
     ).toBeInTheDocument();
     expect(screen.getByText(/nombres propios se muestran/)).toBeInTheDocument();
-    expect(screen.getByText(/Marca una tarjeta con la estrella/)).toBeInTheDocument();
+    expect(screen.getByText(/Marca una carta con la estrella/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cerrar explicación" })).toHaveFocus();
 
     await user.keyboard("{Escape}");
@@ -383,12 +383,12 @@ describe("FlashcardApp", () => {
 
     const filterButton = await screen.findByRole("button", { name: "Filtros" });
     await user.click(filterButton);
-    const filters = screen.getByRole("dialog", { name: "Filtrar tarjetas" });
+    const filters = screen.getByRole("dialog", { name: "Filtrar cartas" });
     await user.click(
       within(filters).getByRole("button", { name: "¿Cómo funciona?" }),
     );
 
-    expect(screen.queryByRole("dialog", { name: "Filtrar tarjetas" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Filtrar cartas" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(filterButton).toHaveFocus();
@@ -432,8 +432,8 @@ describe("FlashcardApp", () => {
       within(await screen.findByRole("button", { name: /Descubrir/ })).getByText("2"),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Packs" }));
-    const panel = screen.getByRole("dialog", { name: "Packs de tarjetas" });
-    expect(within(panel).getAllByText("2 prácticas")).toHaveLength(2);
+    const panel = screen.getByRole("dialog", { name: "Packs de cartas" });
+    expect(within(panel).getAllByText("2 cartas")).toHaveLength(2);
     expect(within(panel).getByText("Abierto")).toBeInTheDocument();
     expect(within(panel).getByText("Sin abrir")).toBeInTheDocument();
 
@@ -526,7 +526,7 @@ describe("FlashcardApp", () => {
       "page",
     );
     expect(
-      within(screen.getByRole("dialog", { name: "Packs de tarjetas" })).getByRole(
+      within(screen.getByRole("dialog", { name: "Packs de cartas" })).getByRole(
         "button",
         { name: "Ir a Descubrir" },
       ),

@@ -63,7 +63,7 @@ export function CardPackDialogs({
             <div className="modal-heading">
               <div>
                 <p className="eyebrow">Tu recorrido</p>
-                <h2 id="packs-title">Packs de tarjetas</h2>
+                <h2 id="packs-title">Packs de cartas</h2>
               </div>
               <button type="button" aria-label="Cerrar packs" onClick={onClosePanel}>×</button>
             </div>
@@ -87,7 +87,7 @@ export function CardPackDialogs({
                       <span className="pack-status">{isOpen ? "Abierto" : "Sin abrir"}</span>
                       <h3>{pack.title}</h3>
                       <p>{pack.description}</p>
-                      <small>{plural(packUnitCounts[pack.id] ?? 0, "práctica")}</small>
+                      <small>{plural(packUnitCounts[pack.id] ?? 0, "carta")}</small>
                     </div>
                     {!isOpen ? (
                       <button
@@ -125,7 +125,7 @@ export function CardPackDialogs({
             <p className="eyebrow">Abrir pack</p>
             <h2 id="open-pack-title">Abrir {packToConfirm.title}</h2>
             <p>
-              Sus {plural(packUnitCounts[packToConfirm.id] ?? 0, "práctica")} nuevas
+              Sus {plural(packUnitCounts[packToConfirm.id] ?? 0, "carta")} nuevas
               estarán disponibles en Descubrir. Este pack no se podrá cerrar por separado.
             </p>
             <div className="confirm-actions">

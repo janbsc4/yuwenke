@@ -18,7 +18,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta
       name="description"
-      content="Tarjetas de vocabulario, frases y conceptos de mandarín con explicaciones en español."
+      content="Cartas de vocabulario, frases y conceptos de mandarín con explicaciones en español."
     />
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-title" content="Yuwenke" />
@@ -43,7 +43,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
     <meta property="og:image" content={socialImageUrl} />
     <meta
       property="og:image:alt"
-      content="Yuwenke, tarjetas de mandarín y español"
+      content="Yuwenke, cartas de mandarín y español"
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Yuwenke" />
@@ -57,7 +57,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
   <body>
     <FlashcardApp cards={cards} packs={packs} packIdByCardId={packIdByCardId} client:load />
     <noscript>
-      <p class="noscript-message">Necesitas activar JavaScript para usar las tarjetas.</p>
+      <p class="noscript-message">Necesitas activar JavaScript para usar las cartas.</p>
     </noscript>
   </body>
 </html>

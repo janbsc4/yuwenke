@@ -57,7 +57,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
         type="button"
         className={`favorite-button ${favorite ? "is-favorite" : ""}`}
         aria-label={
-          favorite ? "Quitar tarjeta de favoritas" : "Añadir tarjeta a favoritas"
+          favorite ? "Quitar carta de favoritas" : "Añadir carta a favoritas"
         }
         aria-pressed={favorite}
         onClick={onToggleFavorite}

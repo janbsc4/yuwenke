@@ -580,7 +580,7 @@ export default function FlashcardApp({
         <div className="loading-brand skeleton" />
         <div className="loading-progress skeleton" />
         <div className="loading-card skeleton" />
-        <p>Preparando tus tarjetas…</p>
+        <p>Preparando tus cartas…</p>
       </div>
     );
   }
@@ -710,7 +710,7 @@ export default function FlashcardApp({
 
       <div className="search-row">
         <label className="search-field">
-          <span className="sr-only">Buscar en las tarjetas</span>
+          <span className="sr-only">Buscar en las cartas</span>
           <span className="search-icon" aria-hidden="true">⌕</span>
           <input
             type="search"
@@ -753,7 +753,7 @@ export default function FlashcardApp({
         <aside className="filter-panel" aria-label="Filtros">
           <div className="panel-heading">
             <p className="eyebrow">Tu colección</p>
-            <p>{plural(units.length, "práctica", "prácticas")}</p>
+            <p>{plural(units.length, "carta")}</p>
           </div>
           <label>
             Tema
@@ -803,7 +803,7 @@ export default function FlashcardApp({
           </div>
         </aside>
 
-        <section className="session-panel" aria-label={`${VIEW_LABELS[activeView]} tarjetas`}>
+        <section className="session-panel" aria-label={`${VIEW_LABELS[activeView]} cartas`}>
           {!queueReady ? (
             <div className="queue-loading" aria-live="polite">
               <div className="loading-progress skeleton" />
@@ -815,7 +815,7 @@ export default function FlashcardApp({
               <div className="session-progress" aria-live="polite">
                 <div>
                   <span>
-                    Tarjeta {queueIndex + 1} de {queue.length}
+                    Carta {queueIndex + 1} de {queue.length}
                   </span>
                   <span className="direction-badge">
                     {current.card.tipo === "concepto"
@@ -941,7 +941,7 @@ export default function FlashcardApp({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
-              <h2 id="filter-title">Filtrar tarjetas</h2>
+              <h2 id="filter-title">Filtrar cartas</h2>
               <button type="button" aria-label="Cerrar filtros" onClick={closeFilterSheet}>×</button>
             </div>
             <label>
@@ -1010,7 +1010,7 @@ export default function FlashcardApp({
               <li>
                 <strong>Descubrir</strong>
                 <p>
-                  Mira tarjetas nuevas y decide si quieres añadirlas a aprendizaje,
+                  Mira cartas nuevas y decide si quieres añadirlas a aprendizaje,
                   marcarlas como dominadas o saltarlas por ahora.
                 </p>
               </li>
@@ -1031,7 +1031,7 @@ export default function FlashcardApp({
               <li>
                 <strong>Favoritas</strong>
                 <p>
-                  Marca una tarjeta con la estrella para tener sus prácticas
+                  Marca una carta con la estrella para tener sus cartas
                   siempre disponibles en una cola personal.
                 </p>
               </li>
@@ -1107,7 +1107,7 @@ export default function FlashcardApp({
 
       <div className="sr-only" aria-live="polite">
         {queueReady && current && !completed
-          ? `Tarjeta ${queueIndex + 1} de ${queue.length}`
+          ? `Carta ${queueIndex + 1} de ${queue.length}`
           : ""}
       </div>
     </div>
@@ -1135,7 +1135,7 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">空</span>
-        <h2>No hay tarjetas que coincidan con estos filtros.</h2>
+        <h2>No hay cartas que coincidan con estos filtros.</h2>
         <button type="button" className="button button-primary" onClick={onClear}>Limpiar filtros</button>
       </div>
     );
@@ -1144,8 +1144,8 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">学</span>
-        <h2>Aún no tienes tarjetas en aprendizaje.</h2>
-        <p>Clasifica algunas tarjetas para empezar a practicar.</p>
+        <h2>Aún no tienes cartas en aprendizaje.</h2>
+        <p>Clasifica algunas cartas para empezar a practicar.</p>
         <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>Ir a Descubrir</button>
       </div>
     );
@@ -1154,7 +1154,7 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">完</span>
-        <h2>Ya has clasificado todas las tarjetas.</h2>
+        <h2>Ya has clasificado todas las cartas.</h2>
         <div className="empty-actions">
           {learningCount > 0 ? (
             <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>Ir a Estudiar</button>
@@ -1169,8 +1169,8 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">★</span>
-        <h2>Aún no tienes tarjetas favoritas.</h2>
-        <p>Usa la estrella de cualquier tarjeta para añadirla a esta cola.</p>
+        <h2>Aún no tienes cartas favoritas.</h2>
+        <p>Usa la estrella de cualquier carta para añadirla a esta cola.</p>
         <button
           type="button"
           className="button button-primary"
@@ -1184,7 +1184,7 @@ function EmptyState({
   return (
     <div className="empty-state">
       <span aria-hidden="true">熟</span>
-      <h2>Aún no has marcado ninguna tarjeta como dominada.</h2>
+      <h2>Aún no has marcado ninguna carta como dominada.</h2>
       <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>Ir a Descubrir</button>
     </div>
   );
@@ -1256,8 +1256,8 @@ function SessionSummary({
             <strong>{tally.primary + tally.secondary}</strong>
             <span>
               {tally.primary + tally.secondary === 1
-                ? "favorita practicada"
-                : "favoritas practicadas"}
+                ? "carta favorita practicada"
+                : "cartas favoritas practicadas"}
             </span>
           </p>
         ) : (
@@ -1271,8 +1271,8 @@ function SessionSummary({
         <p className="summary-remaining">
           {plural(
             discoverRemaining,
-            "práctica sigue sin clasificar",
-            "prácticas siguen sin clasificar",
+            "carta sigue sin clasificar",
+            "cartas siguen sin clasificar",
           )}
           .
         </p>

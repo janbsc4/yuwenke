@@ -1,7 +1,7 @@
 {
   "name": "Yuwenke",
   "short_name": "Yuwenke",
-  "description": "Tarjetas de mandarín y español a partir de notas de clase.",
+  "description": "Cartas de mandarín y español a partir de notas de clase.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
