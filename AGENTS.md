@@ -10,18 +10,22 @@ The application is a static Astro website with a single React study interface. I
 
 ## Architecture
 
-The flashcard dataset is generated during the build process from `chino_flashcards.csv`.
+Astro parses and validates `chino_flashcards.csv`, `card_packs.json`, and `card_pack_membership.csv` while building the static site. The separate `scripts/build_flashcards.mjs` authoring script regenerates the flashcard CSV when run explicitly; it is not part of `npm run build`.
 
-Firestore **does not** store flashcard content. It stores **only user progress and card-level favorites**, allowing the application to work completely offline or as a guest without any backend configuration.
+Firestore **does not** store flashcard content or Card Pack definitions. It stores only learner state: progress, card-level favorites, Open Packs, and the Reset Boundary. The application therefore works completely offline or as a guest without any backend configuration.
 
 The main project areas are:
 
 * `chino_flashcards.csv` — structured flashcard dataset.
+* `card_packs.json` — ordered Card Pack catalog.
+* `card_pack_membership.csv` — one Card Pack assignment per Source Flashcard.
 * `scripts/build_flashcards.mjs` — rebuilds the dataset while preserving card identities.
 * `src/` — Astro pages, React UI, study logic, and persistence.
 * `tests/` — unit and integration tests.
 * `firestore.rules` — Firestore security rules.
-* `docs/flashcard-app-plan.md` — approved implementation plan.
+* `CONTEXT.md` — canonical domain vocabulary.
+* `docs/adr/` — accepted architectural decisions.
+* `docs/flashcard-app-plan.md` — historical v1 implementation plan; not the current specification.
 
 ## Card identity
 
@@ -32,6 +36,12 @@ Card IDs (`FC001`, `FC002`, ...) are stable identifiers.
 New cards must always be appended to the end of the dataset. Existing IDs are referenced by saved user progress.
 
 If a change requires modifying card identities, treat it as a migration rather than a normal edit.
+
+## Card packs
+
+Every Source Flashcard belongs to exactly one Card Pack. When appending cards, add their memberships to `card_pack_membership.csv` and keep deployed `CP` IDs stable.
+
+New Card Packs may be appended to `card_packs.json` when the material forms a coherent learning group. The first catalog entry remains the default pack, and catalog order controls recommendation priority rather than access prerequisites.
 
 ## Dataset annotations
 

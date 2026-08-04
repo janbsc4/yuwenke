@@ -1,5 +1,7 @@
 # GitHub Pages Flashcard App
 
+> **Status: Historical.** This document records the original v1 implementation plan for the 171-card application. It is retained as design history, not as the current product or architecture specification. For current repository guidance, read `AGENTS.md` and `README.md`; for domain vocabulary and accepted decisions, read `CONTEXT.md` and `docs/adr/`.
+
 ## Summary
 
 Build a Spanish-language flashcard app using Astro with one React/TypeScript client island. GitHub Pages will host the static site, the repository CSV will remain the card source, and Firebase Authentication plus Firestore will synchronize progress.

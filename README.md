@@ -12,7 +12,7 @@ The site is a static Astro app with one React study interface. It can be hosted 
 
 It includes:
 
-- 171 source cards and 311 study units;
+- 205 source cards and 387 study units;
 - `Estudiar`, `Descubrir`, `Dominadas`, and `Favoritas` modes;
 - Mandarin → Spanish and Spanish → Mandarin prompts;
 - Spanish question-and-answer prompts for concept rules;
@@ -21,7 +21,7 @@ It includes:
 - shuffled sessions without repetition;
 - lilac highlighting for proper names across Hanzi, pinyin, and Spanish;
 - an in-app guide explaining the study flow and visual conventions;
-- seven editable card packs for progressive discovery;
+- ten editable card packs for progressive discovery;
 - guest progress, favorites, and open packs in local storage;
 - optional Google sign-in and Firestore synchronization for study state.
 
@@ -36,7 +36,7 @@ The flashcard content and pack membership are compiled from repository files dur
 - `src/` — the Astro page, React interface, study logic, and persistence services.
 - `firestore.rules` — owner-only validation rules for synchronized study state.
 - `tests/` — CSV, study-domain, component, storage, and Firestore rules tests.
-- `docs/flashcard-app-plan.md` — the approved implementation plan.
+- `docs/flashcard-app-plan.md` — the historical v1 implementation plan.
 - `Notas Clase Chino Lei.pdf` — the original local notes, intentionally excluded from Git.
 
 ## Local development
@@ -69,7 +69,7 @@ npm install
 node scripts/build_flashcards.mjs
 ```
 
-The script preserves the existing `FC001`–`FC171` identities because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
+The script preserves every existing `FC` identity because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
 
 The `nombres_propios` column contains semicolon-separated literal forms that should be highlighted as proper names. The maintained annotations live in `properNamesById` inside the build script; the underlying study text stays unchanged so search and card identity remain stable.
 

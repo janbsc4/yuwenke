@@ -15,7 +15,7 @@ const rows = [
   ["palabra", "pronombres", "你们", "nǐmen", "vosotros / ustedes", "Plural de 你.", "你们最近怎么样？", "Nǐmen zuìjìn zěnmeyàng?", "¿Cómo estáis últimamente? / ¿Cómo están ustedes últimamente?", "3-5;9", "pronombre;plural"],
   ["concepto", "pronombres", "他／她／它", "tā / tā / tā", "¿Qué diferencia hay entre 他, 她 y 它?", "Los tres se pronuncian tā. Al escribir, 他 es «él», 她 es «ella» y 它 se usa para animales o cosas.", "他、她、它都读 tā。", "Tā, tā, tā dōu dú tā.", "Los tres caracteres se leen tā.", "1-2", "pronunciacion;pronombre"],
 
-  ["concepto", "caracteres", "笔顺", "bǐshùn", "¿Para qué sirve el orden de los trazos (笔顺)?", "Indica en qué orden se escriben los trazos de un carácter.", "十", "shí", "En 十, el trazo horizontal va antes que el vertical.", "1-3", "escritura;trazos"],
+  ["concepto", "caracteres", "笔顺", "bǐshùn", "¿En qué orden se escriben los trazos del carácter 十?", "Primero el trazo horizontal y después el vertical.", "十", "shí", "En 十, el trazo horizontal va antes que el vertical.", "1-3", "escritura;trazos"],
   ["palabra", "basico", "学生", "xuésheng", "estudiante", "Persona que estudia.", "我是学生。", "Wǒ shì xuésheng.", "Soy estudiante.", "1-3", "persona;estudio"],
   ["palabra", "saludos", "最近", "zuìjìn", "últimamente / recientemente", "Se refiere a un periodo cercano al momento actual.", "你最近怎么样？", "Nǐ zuìjìn zěnmeyàng?", "¿Cómo estás últimamente?", "3-5", "tiempo;saludo"],
   ["frase", "descripcion", "还行", "hái xíng", "bastante bien / no está mal", "Respuesta informal para decir que algo está aceptablemente bien.", "我还行。", "Wǒ hái xíng.", "Estoy bastante bien.", "3-5", "estado;respuesta"],
@@ -31,7 +31,7 @@ const rows = [
   ["palabra", "radicales", "口", "kǒu", "boca", "Carácter y radical relacionados con la boca o el habla.", "吗", "ma", "partícula interrogativa", "10", "radical;caracter"],
   ["palabra", "radicales", "门", "mén", "puerta", "Carácter que significa «puerta».", "门", "mén", "puerta", "6", "caracter;basico"],
   ["palabra", "radicales", "子", "zǐ", "hijo / niño (como carácter o componente)", "Aporta la idea de «hijo» o «niño». En el habla diaria son más comunes 儿子 y 孩子.", "好", "hǎo", "bien", "10", "caracter;familia"],
-  ["concepto", "caracteres", "女＋子＝好", "nǚ + zǐ = hǎo", "¿Qué elementos forman el carácter 好?", "Se puede recordar como la unión de 女 y 子. 好 significa «bien» o «bueno».", "好", "hǎo", "bien / bueno", "10", "memoria;caracter"],
+  ["palabra", "caracteres", "汉字", "hànzì", "carácter chino", "Nombre general de los caracteres empleados para escribir chino.", "我学习汉字。", "Wǒ xuéxí hànzì.", "Estudio los caracteres chinos.", "1-3", "escritura;caracter;basico"],
 
   ["palabra", "saludos", "好", "hǎo", "bien / bueno", "Adjetivo básico con sentido positivo.", "很好", "hěn hǎo", "muy bien", "4-5;10;13", "basico;saludo"],
   ["frase", "saludos", "你好！", "Nǐ hǎo!", "¡Hola!", "Saludo básico dirigido a una persona.", "你好！", "Nǐ hǎo!", "¡Hola!", "5;9", "saludo;basico"],

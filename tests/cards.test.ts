@@ -141,9 +141,10 @@ describe("flashcard CSV", () => {
   });
 
   it("expresses every concept as a direct Spanish question and answer", () => {
-    const concepts = loadFlashcards().filter((card) => card.tipo === "concepto");
+    const cards = loadFlashcards();
+    const concepts = cards.filter((card) => card.tipo === "concepto");
 
-    expect(concepts).toHaveLength(24);
+    expect(concepts).toHaveLength(23);
     expect(
       concepts.every(
         (card) => card.espanol.startsWith("¿") && card.espanol.endsWith("?"),
@@ -156,9 +157,18 @@ describe("flashcard CSV", () => {
         "Solo puede haber una, aunque la sílaba tenga varias vocales.",
     });
     expect(concepts.find((card) => card.id === "FC011")).toMatchObject({
-      espanol: "¿Para qué sirve el orden de los trazos (笔顺)?",
+      espanol: "¿En qué orden se escriben los trazos del carácter 十?",
+      explicacion: "Primero el trazo horizontal y después el vertical.",
       ejemplo_hanzi: "十",
       ejemplo_espanol: "En 十, el trazo horizontal va antes que el vertical.",
+    });
+    expect(cards.find((card) => card.id === "FC027")).toMatchObject({
+      tipo: "palabra",
+      hanzi: "汉字",
+      pinyin: "hànzì",
+      espanol: "carácter chino",
+      ejemplo_hanzi: "我学习汉字。",
+      ejemplo_espanol: "Estudio los caracteres chinos.",
     });
   });
 
