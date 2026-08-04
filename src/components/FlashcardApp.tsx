@@ -781,16 +781,11 @@ export default function FlashcardApp({
             </button>
           ) : null}
         </label>
-        <button
-          type="button"
-          className={`button pack-trigger${packTriggerOpening ? " is-opening" : ""}`}
-          aria-haspopup="dialog"
-          aria-expanded={packsOpen}
-          disabled={packTriggerOpening}
+        <PacksButton
+          open={packsOpen}
+          opening={packTriggerOpening}
           onClick={requestPacksFromTrigger}
-        >
-          Packs
-        </button>
+        />
         <button
           type="button"
           className="button filter-trigger"
@@ -942,7 +937,9 @@ export default function FlashcardApp({
                 suggestedPack ? packUnitCounts[suggestedPack.id] ?? 0 : 0
               }
               onSuggestPack={(pack) => requestOpenPack(pack)}
-              onOpenPacks={() => setPacksOpen(true)}
+              packsOpen={packsOpen}
+              packsOpening={packTriggerOpening}
+              onOpenPacks={requestPacksFromTrigger}
             />
           ) : (
             <EmptyState
@@ -951,7 +948,9 @@ export default function FlashcardApp({
               learningCount={counts.study}
               onClear={resetFilters}
               onChangeView={changeView}
-              onOpenPacks={() => setPacksOpen(true)}
+              packsOpen={packsOpen}
+              packsOpening={packTriggerOpening}
+              onOpenPacks={requestPacksFromTrigger}
             />
           )}
         </section>
@@ -1179,7 +1178,30 @@ interface EmptyStateProps {
   learningCount: number;
   onClear: () => void;
   onChangeView: (view: StudyView) => void;
+  packsOpen: boolean;
+  packsOpening: boolean;
   onOpenPacks: () => void;
+}
+
+interface PacksButtonProps {
+  open: boolean;
+  opening: boolean;
+  onClick: () => void;
+}
+
+function PacksButton({ open, opening, onClick }: PacksButtonProps) {
+  return (
+    <button
+      type="button"
+      className={`button pack-trigger${opening ? " is-opening" : ""}`}
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      disabled={opening}
+      onClick={onClick}
+    >
+      Packs
+    </button>
+  );
 }
 
 function EmptyState({
@@ -1188,6 +1210,8 @@ function EmptyState({
   learningCount,
   onClear,
   onChangeView,
+  packsOpen,
+  packsOpening,
   onOpenPacks,
 }: EmptyStateProps) {
   if (filtered) {
@@ -1219,7 +1243,7 @@ function EmptyState({
             <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>Ir a Estudiar</button>
           ) : null}
           <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>Ver dominadas</button>
-          <button type="button" className="text-button" onClick={onOpenPacks}>Ver todos los packs</button>
+          <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} />
         </div>
       </div>
     );
@@ -1259,6 +1283,8 @@ interface SessionSummaryProps {
   suggestedPack: CardPack | null;
   suggestedPackUnitCount: number;
   onSuggestPack: (pack: CardPack) => void;
+  packsOpen: boolean;
+  packsOpening: boolean;
   onOpenPacks: () => void;
 }
 
@@ -1272,6 +1298,8 @@ function SessionSummary({
   suggestedPack,
   suggestedPackUnitCount,
   onSuggestPack,
+  packsOpen,
+  packsOpening,
   onOpenPacks,
 }: SessionSummaryProps) {
   const title =
@@ -1357,9 +1385,7 @@ function SessionSummary({
               >
                 Abrir «{suggestedPack.title}»
               </button>
-              <button type="button" className="text-button" onClick={onOpenPacks}>
-                Ver todos los packs
-              </button>
+              <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} />
             </div>
           </div>
         </article>
