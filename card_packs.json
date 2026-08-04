@@ -54,5 +54,19 @@
     "description": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve.",
     "mark": "数",
     "theme": "amber"
+  },
+  {
+    "id": "CP009",
+    "title": "Moverse y preguntar",
+    "description": "Ir, venir y volver, destinos cotidianos y preguntas sobre dónde y cuándo.",
+    "mark": "行",
+    "theme": "cinnabar"
+  },
+  {
+    "id": "CP010",
+    "title": "Comer y beber",
+    "description": "Comidas, bebidas y frases prácticas para hablar de lo que quieres comer o beber.",
+    "mark": "食",
+    "theme": "jade"
   }
 ]

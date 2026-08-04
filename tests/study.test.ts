@@ -52,7 +52,7 @@ describe("study domain", () => {
 
   it("creates two units for language cards and one Spanish unit for concepts", () => {
     const units = createStudyUnits(cards);
-    expect(units).toHaveLength(318);
+    expect(units).toHaveLength(386);
     expect(units.slice(0, 2).map((unit) => unit.direction)).toEqual([
       "hanzi-es",
       "es-hanzi",

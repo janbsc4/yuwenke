@@ -6,20 +6,20 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(171);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(171);
+    expect(cards).toHaveLength(205);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(205);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 171 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 205 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
     expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
-      "做",
-      "睡觉",
-      "工作",
-      "西班牙",
-      "法国",
+      "饺子",
+      "薯条",
+      "拉面",
+      "帅哥",
+      "美女",
     ]);
   });
 
@@ -32,7 +32,7 @@ describe("flashcard CSV", () => {
       ejemplo_hanzi: "我家",
       ejemplo_espanol: "mi casa / mi familia",
     });
-    expect(cards.slice(158).map((card) => card.hanzi)).toEqual([
+    expect(cards.slice(158, 171).map((card) => card.hanzi)).toEqual([
       "和",
       "然后",
       "咖啡厅",
@@ -55,6 +55,58 @@ describe("flashcard CSV", () => {
     );
     expect(cards.find((card) => card.id === "FC170")?.nombres_propios).toContain("España");
     expect(cards.find((card) => card.id === "FC171")?.nombres_propios).toContain("Francia");
+  });
+
+  it("adds the photographed movement, question, food, and drink material", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.slice(171, 183).map((card) => card.hanzi)).toEqual([
+      "去",
+      "回",
+      "奶茶店",
+      "商店",
+      "巴塞罗那",
+      "哪里／哪儿",
+      "我晚上回家。",
+      "你好，他们什么时候来咖啡厅？",
+      "她中午去餐厅，下午回家。",
+      "我们下午去中国。",
+      "他中午来餐厅。",
+      "他和爸爸中午去咖啡厅。",
+    ]);
+    expect(cards.slice(183).map((card) => card.hanzi)).toEqual([
+      "吃",
+      "吃饭",
+      "水",
+      "橙汁",
+      "啤酒",
+      "瓶",
+      "想要",
+      "我想要一瓶啤酒。",
+      "你吃什么？",
+      "你什么时候吃饭？",
+      "米饭",
+      "面条",
+      "面包",
+      "披萨",
+      "汉堡／汉堡包",
+      "中国菜",
+      "包子",
+      "饺子",
+      "薯条",
+      "拉面",
+      "帅哥",
+      "美女",
+    ]);
+    expect(cards.find((card) => card.hanzi === "哪里／哪儿")?.pinyin).toBe("nǎlǐ / nǎr");
+    expect(cards.find((card) => card.hanzi === "汉堡／汉堡包")?.pinyin).toBe(
+      "hànbǎo / hànbǎobāo",
+    );
+    expect(cards.find((card) => card.hanzi === "米饭")?.espanol).toBe("arroz cocido");
+    expect(cards.find((card) => card.hanzi === "拉面")?.explicacion).toContain(
+      "fideos hechos estirando la masa",
+    );
+    expect(cards.find((card) => card.id === "FC176")?.nombres_propios).toContain("Barcelona");
   });
 
   it("contains an individual card for every number from zero to ten", () => {
