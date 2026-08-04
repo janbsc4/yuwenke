@@ -48,7 +48,7 @@ describe("flashcard CSV", () => {
       "法国",
     ]);
     expect(cards.find((card) => card.hanzi === "和")?.explicacion).toContain(
-      "No se usa como el «y» español para encadenar dos acciones completas",
+      "no enlaza acciones completas",
     );
     expect(cards.find((card) => card.hanzi === "然后")?.explicacion).toContain(
       "presenta una acción posterior",
@@ -91,7 +91,7 @@ describe("flashcard CSV", () => {
   it("expresses every concept as a direct Spanish question and answer", () => {
     const concepts = loadFlashcards().filter((card) => card.tipo === "concepto");
 
-    expect(concepts).toHaveLength(31);
+    expect(concepts).toHaveLength(24);
     expect(
       concepts.every(
         (card) => card.espanol.startsWith("¿") && card.espanol.endsWith("?"),
@@ -104,12 +104,42 @@ describe("flashcard CSV", () => {
         "Solo puede haber una, aunque la sílaba tenga varias vocales.",
     });
     expect(concepts.find((card) => card.id === "FC011")).toMatchObject({
-      espanol:
-        "¿Qué indica el orden de los trazos (笔顺) al escribir un carácter chino?",
+      espanol: "¿Para qué sirve el orden de los trazos (笔顺)?",
       ejemplo_hanzi: "十",
-      ejemplo_espanol:
-        "En 十, se escribe primero el trazo horizontal y después el vertical.",
+      ejemplo_espanol: "En 十, el trazo horizontal va antes que el vertical.",
     });
+  });
+
+  it("replaces character-structure drills with practical vocabulary", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.slice(11, 18).map(({ id, tipo, hanzi, espanol }) => ({
+      id,
+      tipo,
+      hanzi,
+      espanol,
+    }))).toEqual([
+      { id: "FC012", tipo: "palabra", hanzi: "学生", espanol: "estudiante" },
+      { id: "FC013", tipo: "palabra", hanzi: "最近", espanol: "últimamente / recientemente" },
+      { id: "FC014", tipo: "frase", hanzi: "还行", espanol: "bastante bien / no está mal" },
+      { id: "FC015", tipo: "palabra", hanzi: "这", espanol: "este / esta / esto" },
+      { id: "FC016", tipo: "palabra", hanzi: "牛奶", espanol: "leche" },
+      { id: "FC017", tipo: "palabra", hanzi: "喝", espanol: "beber" },
+      { id: "FC018", tipo: "palabra", hanzi: "儿子", espanol: "hijo" },
+    ]);
+  });
+
+  it("keeps study copy concise and avoids specialist memory jargon", () => {
+    const cards = loadFlashcards();
+    const content = cards.flatMap((card) => Object.values(card)).join("\n");
+
+    expect(cards.filter((card) => card.explicacion.length > 110)).toEqual([]);
+    expect(
+      cards
+        .filter((card) => card.tipo === "concepto")
+        .filter((card) => card.espanol.length > 70),
+    ).toEqual([]);
+    expect(content).not.toMatch(/mnemotecnia/i);
   });
 
   it("distinguishes formal characters from everyday family words", () => {
