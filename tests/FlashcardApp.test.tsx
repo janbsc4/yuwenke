@@ -317,6 +317,34 @@ describe("FlashcardApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("reuses the persistent Packs button in the completed Discover empty state", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      "yuwenke:guest-progress:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        entries: {
+          [unitKey(card.id, "hanzi-es")]: savedProgress("hanzi-es", "known"),
+          [unitKey(card.id, "es-hanzi")]: savedProgress("es-hanzi", "known"),
+        },
+      }),
+    );
+
+    renderApp([card]);
+    await user.click(await screen.findByRole("button", { name: /Descubrir/ }));
+
+    const emptyState = (await screen.findByText("Ya has clasificado todas las cartas."))
+      .closest<HTMLElement>(".empty-state");
+    expect(emptyState).not.toBeNull();
+    expect(within(emptyState!).getByRole("button", { name: "Packs" })).toHaveClass(
+      "button",
+      "pack-trigger",
+    );
+    expect(
+      within(emptyState!).queryByRole("button", { name: "Ver todos los packs" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("makes skipped Discover cards available in the next session", async () => {
     const user = userEvent.setup();
     renderApp([card]);
@@ -586,7 +614,13 @@ describe("FlashcardApp", () => {
     expect(
       screen.getByRole("button", { name: "Abrir «Saludos»" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ver todos los packs" })).toBeInTheDocument();
+    const suggestion = screen.getByRole("heading", { level: 3, name: "Saludos" })
+      .closest<HTMLElement>(".pack-suggestion");
+    expect(suggestion).not.toBeNull();
+    expect(within(suggestion!).getByRole("button", { name: "Packs" })).toHaveClass(
+      "button",
+      "pack-trigger",
+    );
 
     await user.click(screen.getByRole("button", { name: "Abrir «Saludos»" }));
     await user.click(
