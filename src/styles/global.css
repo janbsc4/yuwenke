@@ -723,6 +723,22 @@ select {
   transform: translateX(-50%);
 }
 
+.answer-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-reference {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
 .favorite-button {
   position: absolute;
   z-index: 2;
@@ -2039,6 +2055,14 @@ kbd {
     background:
       linear-gradient(90deg, transparent 0, transparent 22px, rgba(166, 61, 50, 0.08) 22px, rgba(166, 61, 50, 0.08) 23px, transparent 23px),
       var(--surface-warm);
+  }
+
+  .answer-heading {
+    align-items: flex-start;
+  }
+
+  .card-reference {
+    max-width: 55%;
   }
 
   .answer-details > div {

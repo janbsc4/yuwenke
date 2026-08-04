@@ -116,6 +116,10 @@ export default function FlashcardApp({
   packIdByCardId,
 }: FlashcardAppProps) {
   const orderedPackIds = useMemo(() => packs.map((pack) => pack.id), [packs]);
+  const packTitleById = useMemo(
+    () => Object.fromEntries(packs.map((pack) => [pack.id, pack.title])),
+    [packs],
+  );
   const units = useMemo(() => createStudyUnits(cards), [cards]);
   const topics = useMemo(
     () => [...new Set(cards.map((card) => card.tema))].sort((a, b) => a.localeCompare(b, "es")),
@@ -887,6 +891,7 @@ export default function FlashcardApp({
 
               <StudyCard
                 unit={current}
+                packTitle={packTitleById[packIdByCardId[current.cardId]]}
                 revealed={revealed}
                 favorite={currentFavorite}
                 onToggleFavorite={() =>

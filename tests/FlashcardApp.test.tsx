@@ -113,6 +113,17 @@ describe("FlashcardApp", () => {
     });
   });
 
+  it("shows the card ID and pack name on the answer side", async () => {
+    const user = userEvent.setup();
+    renderApp([card]);
+
+    expect(screen.queryByText("FC001 · Cartas")).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+
+    expect(screen.getByText("FC001 · Cartas")).toBeInTheDocument();
+  });
+
   it("does not render card metadata while retaining the study content", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card]);

@@ -5,6 +5,7 @@ import { highlightProperNames } from "../lib/properNames";
 
 interface StudyCardProps {
   unit: StudyUnit;
+  packTitle: string;
   revealed: boolean;
   favorite: boolean;
   onToggleFavorite: () => void;
@@ -33,7 +34,7 @@ export function HighlightedText({ text, properNames }: HighlightedTextProps) {
 }
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
-  { unit, revealed, favorite, onToggleFavorite, promptRef },
+  { unit, packTitle, revealed, favorite, onToggleFavorite, promptRef },
   answerRef,
 ) {
   const { card, direction } = unit;
@@ -81,9 +82,14 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
 
       {revealed ? (
         <section className="card-answer" ref={answerRef} tabIndex={-1} aria-labelledby="answer-title">
-          <h3 className="eyebrow" id="answer-title">
-            Respuesta
-          </h3>
+          <div className="answer-heading">
+            <h3 className="eyebrow" id="answer-title">
+              Respuesta
+            </h3>
+            <p className="card-reference">
+              {card.id} · {packTitle}
+            </p>
+          </div>
           <p
             className={hanziAnswer ? "answer-hanzi" : "answer-spanish"}
             lang={hanziAnswer ? "zh-Hans" : "es"}
