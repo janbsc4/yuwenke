@@ -1,0 +1,3 @@
+interface:
+  display_name: "Process New Material"
+  short_description: "Turn new class material into cards and packs"
