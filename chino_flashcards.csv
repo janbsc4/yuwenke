@@ -208,3 +208,4 @@ FC206,palabra,personas,朋友,péngyou,amigo / amiga,Persona con la que se manti
 FC207,palabra,personas,男朋友,nánpéngyou,novio,Pareja masculina en una relación sentimental.,她中午和男朋友来西班牙。,Tā zhōngwǔ hé nánpéngyou lái Xībānyá.,Ella viene a España al mediodía con su novio.,—,persona;pareja,西班牙;Xībānyá;España
 FC208,palabra,personas,女朋友,nǚpéngyou,novia,Pareja femenina en una relación sentimental.,她是我女朋友。,Tā shì wǒ nǚpéngyou.,Ella es mi novia.,—,persona;pareja,
 FC209,palabra,acciones,喜欢,xǐhuan,querer a alguien / gustar,Expresa afecto por una persona o agrado por algo; según el contexto corresponde a «querer» o «gustar».,我喜欢中国菜。,Wǒ xǐhuan Zhōngguó cài.,Me gusta la comida china.,—,verbo;preferencia;afecto,中国;Zhōngguó;China
+FC210,frase,preguntas,真的吗？,Zhēn de ma?,¿En serio?,真的 pregunta si algo es cierto y 吗 convierte la expresión en una pregunta de sí o no.,真的吗？,Zhēn de ma?,¿En serio?,—,pregunta;confirmacion;conversacion,

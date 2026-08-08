@@ -52,6 +52,7 @@ describe("card pack authoring data", () => {
     expect(packIdByCardId.FC205).toBe("CP010");
     expect(packIdByCardId.FC206).toBe("CP003");
     expect(packIdByCardId.FC209).toBe("CP002");
+    expect(packIdByCardId.FC210).toBe("CP002");
     expect(
       packs.every((pack) =>
         Object.values(packIdByCardId).includes(pack.id),
@@ -67,7 +68,7 @@ describe("card pack authoring data", () => {
       ),
     ).toEqual({
       CP001: 51,
-      CP002: 55,
+      CP002: 57,
       CP003: 37,
       CP004: 41,
       CP005: 31,

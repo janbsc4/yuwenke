@@ -6,26 +6,27 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(209);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(209);
+    expect(cards).toHaveLength(210);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(210);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 209 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 210 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
-    expect(cards.slice(-4).map((card) => card.hanzi)).toEqual([
+    expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
       "朋友",
       "男朋友",
       "女朋友",
       "喜欢",
+      "真的吗？",
     ]);
   });
 
   it("adds friendship vocabulary and 喜欢 from the latest material", () => {
     const cards = loadFlashcards();
 
-    expect(cards.slice(205).map((card) => card.hanzi)).toEqual([
+    expect(cards.slice(205, 209).map((card) => card.hanzi)).toEqual([
       "朋友",
       "男朋友",
       "女朋友",
@@ -42,6 +43,15 @@ describe("flashcard CSV", () => {
     expect(cards.find((card) => card.id === "FC209")).toMatchObject({
       pinyin: "xǐhuan",
       espanol: "querer a alguien / gustar",
+    });
+  });
+
+  it("adds 真的吗 as a conversational confirmation question", () => {
+    expect(loadFlashcards().find((card) => card.id === "FC210")).toMatchObject({
+      tipo: "frase",
+      hanzi: "真的吗？",
+      pinyin: "Zhēn de ma?",
+      espanol: "¿En serio?",
     });
   });
 
