@@ -29,7 +29,7 @@ const rows = [
   ["palabra", "radicales", "女", "nǚ", "mujer / femenino (carácter y componente)", "Carácter y componente relacionados con la mujer o lo femenino.", "她、好", "tā, hǎo", "ella; bien", "6;10", "radical;familia"],
   ["palabra", "radicales", "父", "fù", "padre (carácter formal y componente)", "Significa «padre», pero suele aparecer en palabras como 父亲 o 父母. Para «papá» se usa 爸爸.", "父亲／爸爸", "fùqin / bàba", "padre / papá", "6-7", "radical;familia"],
   ["palabra", "radicales", "口", "kǒu", "boca", "Carácter y radical relacionados con la boca o el habla.", "吗", "ma", "partícula interrogativa", "10", "radical;caracter"],
-  ["palabra", "radicales", "门", "mén", "puerta", "Carácter que significa «puerta».", "门", "mén", "puerta", "6", "caracter;basico"],
+  ["palabra", "acciones", "有", "yǒu", "tener / haber", "Verbo básico que expresa que alguien tiene algo o que algo existe.", "我上午有课。", "Wǒ shàngwǔ yǒu kè.", "Tengo clase por la mañana.", "13", "verbo;posesion;existencia;basico"],
   ["palabra", "radicales", "子", "zǐ", "hijo / niño (como carácter o componente)", "Aporta la idea de «hijo» o «niño». En el habla diaria son más comunes 儿子 y 孩子.", "好", "hǎo", "bien", "10", "caracter;familia"],
   ["palabra", "caracteres", "汉字", "hànzì", "carácter chino", "Nombre general de los caracteres empleados para escribir chino.", "我学习汉字。", "Wǒ xuéxí hànzì.", "Estudio los caracteres chinos.", "1-3", "escritura;caracter;basico"],
 

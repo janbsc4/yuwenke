@@ -55,6 +55,24 @@ describe("flashcard CSV", () => {
     });
   });
 
+  it("teaches the plural suffix 们 and uses FC025 for a useful beginner verb", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.find((card) => card.id === "FC007")).toMatchObject({
+      hanzi: "们",
+      pinyin: "men",
+      espanol: "sufijo de plural",
+    });
+    expect(cards.find((card) => card.id === "FC025")).toMatchObject({
+      tema: "acciones",
+      hanzi: "有",
+      pinyin: "yǒu",
+      espanol: "tener / haber",
+      ejemplo_hanzi: "我上午有课。",
+    });
+    expect(cards.find((card) => card.hanzi === "门")).toBeUndefined();
+  });
+
   it("adds connectors, places, actions, and countries without duplicating 家", () => {
     const cards = loadFlashcards();
 
