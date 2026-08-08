@@ -13,6 +13,7 @@ import {
   entriesAtResetBoundary,
   entriesWithResetBoundary,
   progressForStudyUnits,
+  reshuffleDiscoverQueueAfterPackOpening,
   shuffle,
   unitBelongsToView,
   unitKey,
@@ -124,6 +125,27 @@ describe("study domain", () => {
     const result = shuffle([1, 2, 3, 4], () => 0);
     expect(result).toEqual([2, 3, 4, 1]);
     expect(new Set(result)).toEqual(new Set([1, 2, 3, 4]));
+  });
+
+  it("reshuffles the remaining Discover queue with units from an opened pack", () => {
+    const result = reshuffleDiscoverQueueAfterPackOpening(
+      ["handled", "current", "old-1", "old-2"],
+      1,
+      ["new-1", "new-2"],
+      () => 0,
+    );
+
+    expect(result).toEqual([
+      "handled",
+      "current",
+      "old-2",
+      "new-1",
+      "new-2",
+      "old-1",
+    ]);
+    expect(new Set(result)).toEqual(
+      new Set(["handled", "current", "old-1", "old-2", "new-1", "new-2"]),
+    );
   });
 
   it("tracks the two directions independently", () => {

@@ -32,9 +32,9 @@ Users must remain free to choose any pack. The application may recommend a pack,
 ### Opening packs
 
 - Require confirmation before opening a pack.
-- Opening during an active Descubrir session preserves the existing queue order, shuffles the newly eligible filtered units as a batch, and appends that batch.
+- Opening during an active Descubrir session preserves handled units and the current unit, then combines and shuffles the remaining queue with the newly eligible filtered units.
 - Opening outside Descubrir preserves the current view and offers a direct action to go to Descubrir.
-- Opening from a completed Descubrir session continues into the appended batch.
+- Opening from a completed Descubrir session continues into the shuffled newly eligible units.
 - Recommend the first unopened pack in catalog order even if it adds zero unseen units for that user.
 
 ### Recommendations
@@ -66,4 +66,4 @@ Users must remain free to choose any pack. The application may recommend a pack,
 - Pack composition and recommendation priority can change without editing flashcard content or card IDs.
 - Persisted open-pack state and reset metadata become additional user-progress data in local storage and Firestore.
 - Opening a pack is intentionally easy to merge across devices; Account Reset requires special reset-boundary semantics because it is destructive.
-- The active Discover queue needs append-only expansion when a pack opens mid-session.
+- The active Discover queue needs to preserve handled and current units while reshuffling its remaining units when a pack opens mid-session.

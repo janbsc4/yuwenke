@@ -245,6 +245,19 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
   return result;
 }
 
+export function reshuffleDiscoverQueueAfterPackOpening<T>(
+  queue: readonly T[],
+  currentIndex: number,
+  additions: readonly T[],
+  random: () => number = Math.random,
+): T[] {
+  const preservedLength = Math.min(Math.max(currentIndex + 1, 0), queue.length);
+  return [
+    ...queue.slice(0, preservedLength),
+    ...shuffle([...queue.slice(preservedLength), ...additions], random),
+  ];
+}
+
 export function nextClientTimestamp(
   previous?: Pick<ProgressEntry | FavoriteEntry, "clientUpdatedAt">,
   now = Date.now(),

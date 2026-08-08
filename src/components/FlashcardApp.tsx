@@ -23,6 +23,7 @@ import {
   matchesFilters,
   packOpeningThresholdReached,
   progressForStudyUnits,
+  reshuffleDiscoverQueueAfterPackOpening,
   shuffle,
   unitBelongsToView,
   visibleUnits,
@@ -313,14 +314,12 @@ export default function FlashcardApp({
 
     setQueue((existingQueue) => {
       const existingKeys = new Set(existingQueue.map((unit) => unit.key));
-      const additions = shuffle(
-        units.filter(
-          (unit) =>
-            newlyOpened.has(packIdByCardId[unit.cardId]) &&
-            !existingKeys.has(unit.key) &&
-            unitBelongsToView(unit, "discover", studyProgress) &&
-            matchesFilters(unit.card, filters),
-        ),
+      const additions = units.filter(
+        (unit) =>
+          newlyOpened.has(packIdByCardId[unit.cardId]) &&
+          !existingKeys.has(unit.key) &&
+          unitBelongsToView(unit, "discover", studyProgress) &&
+          matchesFilters(unit.card, filters),
       );
       if (additions.length === 0) return existingQueue;
       if (completed) {
@@ -328,7 +327,11 @@ export default function FlashcardApp({
         setCompleted(false);
         setRevealed(false);
       }
-      return [...existingQueue, ...additions];
+      return reshuffleDiscoverQueueAfterPackOpening(
+        existingQueue,
+        queueIndex,
+        additions,
+      );
     });
   }, [
     activeView,
@@ -336,6 +339,7 @@ export default function FlashcardApp({
     filters,
     openPackIds,
     packIdByCardId,
+    queueIndex,
     queueReady,
     studyProgress,
     units,
