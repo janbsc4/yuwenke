@@ -564,6 +564,11 @@ export default function FlashcardApp({
     setFilters((value) => ({ ...value, query: event.target.value }));
   };
 
+  const clearQuery = () => {
+    setFilters((value) => ({ ...value, query: "" }));
+    searchRef.current?.focus();
+  };
+
   const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   const changeView = (view: StudyView) => {
@@ -761,11 +766,12 @@ export default function FlashcardApp({
       ) : null}
 
       <div className="search-row">
-        <label className="search-field">
-          <span className="sr-only">Buscar en las cartas</span>
+        <div className="search-field">
           <span className="search-icon" aria-hidden="true">⌕</span>
           <input
-            type="search"
+            type="text"
+            role="searchbox"
+            aria-label="Buscar en las cartas"
             placeholder="Busca caracteres, pinyin o español…"
             value={filters.query}
             onChange={changeQuery}
@@ -775,12 +781,12 @@ export default function FlashcardApp({
             <button
               type="button"
               aria-label="Borrar búsqueda"
-              onClick={() => setFilters((value) => ({ ...value, query: "" }))}
+              onClick={clearQuery}
             >
               ×
             </button>
           ) : null}
-        </label>
+        </div>
         <PacksButton
           open={packsOpen}
           opening={packTriggerOpening}

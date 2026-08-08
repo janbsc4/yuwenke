@@ -222,6 +222,10 @@ const rows = [
   ["palabra", "comida", "拉面", "lāmiàn", "fideos chinos estirados a mano", "En mandarín se refiere a fideos hechos estirando la masa; el ramen japonés es 日式拉面.", "我想吃拉面。", "Wǒ xiǎng chī lāmiàn.", "Quiero comer fideos chinos estirados a mano.", "—", "comida;fideos"],
   ["palabra", "personas", "帅哥", "shuàigē", "chico guapo", "Forma coloquial de referirse a un hombre joven y atractivo; también puede usarse para llamar a alguien.", "他是帅哥。", "Tā shì shuàigē.", "Él es un chico guapo.", "—", "persona;coloquial"],
   ["palabra", "personas", "美女", "měinǚ", "chica guapa / mujer hermosa", "Forma coloquial de referirse a una mujer atractiva; también puede usarse para llamar a alguien.", "她是美女。", "Tā shì měinǚ.", "Ella es una mujer hermosa.", "—", "persona;coloquial"],
+  ["palabra", "personas", "朋友", "péngyou", "amigo / amiga", "Persona con la que se mantiene una relación de amistad.", "下午我和朋友去吃中国菜。", "Xiàwǔ wǒ hé péngyou qù chī Zhōngguó cài.", "Por la tarde voy con un amigo / una amiga a comer comida china.", "—", "persona;amistad"],
+  ["palabra", "personas", "男朋友", "nánpéngyou", "novio", "Pareja masculina en una relación sentimental.", "她中午和男朋友来西班牙。", "Tā zhōngwǔ hé nánpéngyou lái Xībānyá.", "Ella viene a España al mediodía con su novio.", "—", "persona;pareja"],
+  ["palabra", "personas", "女朋友", "nǚpéngyou", "novia", "Pareja femenina en una relación sentimental.", "她是我女朋友。", "Tā shì wǒ nǚpéngyou.", "Ella es mi novia.", "—", "persona;pareja"],
+  ["palabra", "acciones", "喜欢", "xǐhuan", "querer a alguien / gustar", "Expresa afecto por una persona o agrado por algo; según el contexto corresponde a «querer» o «gustar».", "我喜欢中国菜。", "Wǒ xǐhuan Zhōngguó cài.", "Me gusta la comida china.", "—", "verbo;preferencia;afecto"],
 ];
 
 // Exact visible forms that should use the proper-name colour. Keeping this
@@ -276,6 +280,9 @@ const properNamesById = new Map([
   ["FC177", "China"],
   ["FC181", "中国;Zhōngguó;China"],
   ["FC199", "中国;Zhōngguó;China"],
+  ["FC206", "中国;Zhōngguó;China"],
+  ["FC207", "西班牙;Xībānyá;España"],
+  ["FC209", "中国;Zhōngguó;China"],
 ]);
 
 const header = [

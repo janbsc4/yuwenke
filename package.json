@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
-    "build:characters": "node scripts/build_chinese_characters.mjs",
+    "build:knowledge": "node scripts/build_chinese_knowledge.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "test": "vitest run --exclude tests/firestore.rules.test.ts",

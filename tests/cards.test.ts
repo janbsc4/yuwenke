@@ -6,21 +6,43 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(205);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(205);
+    expect(cards).toHaveLength(209);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(209);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 205 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 209 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
-    expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
-      "饺子",
-      "薯条",
-      "拉面",
-      "帅哥",
-      "美女",
+    expect(cards.slice(-4).map((card) => card.hanzi)).toEqual([
+      "朋友",
+      "男朋友",
+      "女朋友",
+      "喜欢",
     ]);
+  });
+
+  it("adds friendship vocabulary and 喜欢 from the latest material", () => {
+    const cards = loadFlashcards();
+
+    expect(cards.slice(205).map((card) => card.hanzi)).toEqual([
+      "朋友",
+      "男朋友",
+      "女朋友",
+      "喜欢",
+    ]);
+    expect(cards.find((card) => card.id === "FC206")).toMatchObject({
+      ejemplo_hanzi: "下午我和朋友去吃中国菜。",
+      nombres_propios: expect.stringContaining("中国"),
+    });
+    expect(cards.find((card) => card.id === "FC207")).toMatchObject({
+      ejemplo_hanzi: "她中午和男朋友来西班牙。",
+      nombres_propios: expect.stringContaining("西班牙"),
+    });
+    expect(cards.find((card) => card.id === "FC209")).toMatchObject({
+      pinyin: "xǐhuan",
+      espanol: "querer a alguien / gustar",
+    });
   });
 
   it("adds connectors, places, actions, and countries without duplicating 家", () => {
@@ -74,7 +96,7 @@ describe("flashcard CSV", () => {
       "他中午来餐厅。",
       "他和爸爸中午去咖啡厅。",
     ]);
-    expect(cards.slice(183).map((card) => card.hanzi)).toEqual([
+    expect(cards.slice(183, 205).map((card) => card.hanzi)).toEqual([
       "吃",
       "吃饭",
       "水",

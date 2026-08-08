@@ -94,6 +94,29 @@ function savedProgress(
 }
 
 describe("FlashcardApp", () => {
+  it("uses one search clear control and returns focus after clearing", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card]);
+    const search = await screen.findByRole("searchbox", {
+      name: "Buscar en las cartas",
+    });
+
+    expect(search).toHaveAttribute("type", "text");
+    expect(container.querySelector("label.search-field")).not.toBeInTheDocument();
+
+    await user.type(search, "hola");
+    const clear = screen.getByRole("button", { name: "Borrar búsqueda" });
+    expect(screen.getAllByRole("button", { name: "Borrar búsqueda" })).toHaveLength(1);
+
+    await user.click(clear);
+
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "Borrar búsqueda" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("supports the guest discover flow and persists a decision", async () => {
     const user = userEvent.setup();
     renderApp([card]);
