@@ -69,11 +69,13 @@ export function resolveLocalePreference(
   if (saved && (available as readonly string[]).includes(saved)) {
     return saved as Locale;
   }
-  const prefersSpanish = browserLanguages.some((language) =>
-    language.toLowerCase().startsWith("es"),
-  );
-  const negotiated: Locale = prefersSpanish ? "es" : "en";
-  return available.includes(negotiated) ? negotiated : DEFAULT_LOCALE;
+  for (const language of browserLanguages) {
+    const candidate = language.toLowerCase().split("-")[0];
+    if ((available as readonly string[]).includes(candidate)) {
+      return candidate as Locale;
+    }
+  }
+  return available.includes("en") ? "en" : DEFAULT_LOCALE;
 }
 
 export function localeUrl(locale: Locale): string {

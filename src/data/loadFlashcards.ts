@@ -94,6 +94,30 @@ export function parseFlashcardsCsv(csv: string): Flashcard[] {
     throw new Error("El CSV de tarjetas está vacío.");
   }
 
+  const firstCardByEnglishPrompt = new Map<string, Flashcard>();
+  for (const card of cards) {
+    if (card.tipo === "concepto") continue;
+    if (/\p{Script=Han}/u.test(card.ingles)) {
+      throw new Error(
+        `La tarjeta ${card.id} revela Hanzi en la pregunta inversa inglesa: ${card.ingles}`,
+      );
+    }
+
+    const prompt = card.ingles
+      .normalize("NFC")
+      .toLocaleLowerCase("en")
+      .replace(/\s+/g, " ")
+      .trim();
+    const previous = firstCardByEnglishPrompt.get(prompt);
+    if (previous && previous.hanzi !== card.hanzi) {
+      throw new Error(
+        `Pregunta inversa inglesa ambigua: ${previous.id}:${previous.hanzi} y ` +
+          `${card.id}:${card.hanzi} comparten «${card.ingles}».`,
+      );
+    }
+    firstCardByEnglishPrompt.set(prompt, card);
+  }
+
   return cards;
 }
 

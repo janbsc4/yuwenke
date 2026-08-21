@@ -1,5 +1,14 @@
 # English content review (Task 3)
 
+# English review: all cards
+
+## Owner sign-off
+
+- Status: Approved for English release
+- Confirmed by: Project owner
+- Confirmation date: 2026-08-21
+- Scope: All 210 English cards reviewed against the Mandarin, pinyin, examples, and teaching intent
+
 Review each card against Mandarin + pinyin + teaching intent. Spanish is shown for comparison, not as the translation source.
 Mark any card needing changes. All 210 cards required before /en/ is enabled.
 
@@ -877,7 +886,7 @@ ES example: Japón
 EN example: Japan
 
 ES tags: pais | EN tags: country
-proper names: 日本;Rìběn;Japón
+proper names: 日本;Rìběn;Japón;Japan
 
 ## FC068 [palabra] 韩国
 pinyin: Hánguó
@@ -891,7 +900,7 @@ ES example: Corea del Sur
 EN example: South Korea
 
 ES tags: pais | EN tags: country
-proper names: 韩国;Hánguó;Corea del Sur
+proper names: 韩国;Hánguó;Corea del Sur;South Korea
 
 ## FC069 [palabra] 叫
 pinyin: jiào

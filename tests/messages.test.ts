@@ -78,9 +78,10 @@ describe("resolveLocalePreference", () => {
     expect(resolveLocalePreference("es", ["en-US"], bothLocales)).toBe("es");
   });
 
-  it("negotiates Spanish only when the browser prefers it", () => {
+  it("uses the first supported browser language and otherwise falls back to English", () => {
     expect(resolveLocalePreference(null, ["es-MX", "en"], bothLocales)).toBe("es");
-    expect(resolveLocalePreference(null, ["en-US"], bothLocales)).toBe("en");
+    expect(resolveLocalePreference(null, ["en-US", "es-ES"], bothLocales)).toBe("en");
+    expect(resolveLocalePreference(null, ["fr-FR", "es-ES"], bothLocales)).toBe("es");
     expect(resolveLocalePreference(null, ["fr-FR"], bothLocales)).toBe("en");
     expect(resolveLocalePreference(null, [], bothLocales)).toBe("en");
   });

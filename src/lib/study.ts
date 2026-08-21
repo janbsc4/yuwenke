@@ -56,27 +56,50 @@ export function createStudyUnits(cards: Flashcard[]): StudyUnit[] {
   });
 }
 
+export function canonicalProgressForCards(
+  cards: Flashcard[],
+  progress: ProgressMap,
+): ProgressMap {
+  const cardById = new Map(cards.map((card) => [card.id, card]));
+  const canonical: ProgressMap = {};
+  const sourcePriorityByKey = new Map<string, number>();
+
+  for (const entry of Object.values(progress)) {
+    const card = cardById.get(entry.cardId);
+    if (!card) continue;
+    const canonicalDirection = canonicalDirectionFor(card, entry.direction);
+    if (!canonicalDirection) continue;
+
+    const canonicalKey = unitKey(entry.cardId, canonicalDirection);
+    const candidate = { ...entry, direction: canonicalDirection };
+    const existing = canonical[canonicalKey];
+    const sourcePriority =
+      entry.direction === canonicalDirection
+        ? 2
+        : entry.direction === "es-hanzi"
+          ? 1
+          : 0;
+    const existingPriority = sourcePriorityByKey.get(canonicalKey) ?? -1;
+    const candidateWins =
+      !existing ||
+      entry.clientUpdatedAt > existing.clientUpdatedAt ||
+      (entry.clientUpdatedAt === existing.clientUpdatedAt &&
+        sourcePriority > existingPriority);
+
+    if (candidateWins) {
+      canonical[canonicalKey] = candidate;
+      sourcePriorityByKey.set(canonicalKey, sourcePriority);
+    }
+  }
+
+  return canonical;
+}
+
 export function progressForStudyUnits(
   cards: Flashcard[],
   progress: ProgressMap,
 ): ProgressMap {
-  let compatible = progress;
-
-  for (const [key, entry] of Object.entries(progress)) {
-    const card = cards.find((candidate) => candidate.id === entry.cardId);
-    if (!card) continue;
-    const canonicalDirection = canonicalDirectionFor(card, entry.direction);
-    if (!canonicalDirection) continue;
-    const canonicalKey = unitKey(entry.cardId, canonicalDirection);
-    if (canonicalKey === key) continue;
-    const existing = compatible[canonicalKey];
-    if (!existing || entry.clientUpdatedAt > existing.clientUpdatedAt) {
-      if (compatible === progress) compatible = { ...progress };
-      compatible[canonicalKey] = { ...entry, direction: canonicalDirection };
-    }
-  }
-
-  return compatible;
+  return { ...progress, ...canonicalProgressForCards(cards, progress) };
 }
 
 export function tagsFor(card: Flashcard): string[] {

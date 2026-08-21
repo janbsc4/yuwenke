@@ -116,7 +116,16 @@ function cardPackStateDoc(db: Firestore, uid: string) {
   return doc(db, "users", uid, "state", "cardPacks");
 }
 
+const WRITABLE_DIRECTIONS = new Set([
+  "hanzi-meaning",
+  "meaning-hanzi",
+  "concept",
+]);
+
 function firestoreData(entry: ProgressEntry) {
+  if (!WRITABLE_DIRECTIONS.has(entry.direction)) {
+    throw new Error(`No se puede escribir la dirección heredada: ${entry.direction}`);
+  }
   const data = {
     cardId: entry.cardId,
     direction: entry.direction,

@@ -1,3 +1,4 @@
+import { loadFlashcards } from "../src/data/loadFlashcards";
 import {
   highlightProperNames,
   properNamesFor,
@@ -51,6 +52,25 @@ describe("proper-name highlighting", () => {
       { text: "西班牙", properName: true },
       { text: "。", properName: false },
     ]);
+  });
+
+  it("annotates the English display forms for every country card", () => {
+    const cards = loadFlashcards();
+    const expectedNames = new Map([
+      ["FC066", "China"],
+      ["FC067", "Japan"],
+      ["FC068", "South Korea"],
+    ]);
+
+    for (const [cardId, name] of expectedNames) {
+      const card = cards.find((candidate) => candidate.id === cardId)!;
+      expect(properNamesFor(card.nombres_propios)).toContain(name);
+      expect(
+        highlightProperNames(card.ingles, card.nombres_propios).some(
+          (segment) => segment.properName && segment.text === name,
+        ),
+      ).toBe(true);
+    }
   });
 
   it("leaves unannotated text unchanged", () => {

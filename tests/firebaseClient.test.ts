@@ -1,6 +1,10 @@
 import { Timestamp, type DocumentSnapshot, type QuerySnapshot } from "firebase/firestore";
 
-import { snapshotCardPackState, snapshotFavorites } from "../src/lib/firebaseClient";
+import {
+  snapshotCardPackState,
+  snapshotFavorites,
+  snapshotProgress,
+} from "../src/lib/firebaseClient";
 
 function snapshot(
   documents: Array<{ id: string; data: Record<string, unknown> }>,
@@ -12,6 +16,35 @@ function snapshot(
     })),
   } as unknown as QuerySnapshot;
 }
+
+describe("Firebase progress snapshots", () => {
+  it("keeps every legacy and neutral direction readable", () => {
+    const directions = [
+      "hanzi-es",
+      "es-hanzi",
+      "hanzi-meaning",
+      "meaning-hanzi",
+      "concept",
+    ];
+    const result = snapshotProgress(
+      snapshot(
+        directions.map((direction, index) => ({
+          id: `FC00${index + 1}_${direction}`,
+          data: {
+            cardId: `FC00${index + 1}`,
+            direction,
+            status: "learning",
+            clientUpdatedAt: Timestamp.fromMillis(index + 1),
+            serverUpdatedAt: Timestamp.fromMillis(index + 2),
+            schemaVersion: 1,
+          },
+        })),
+      ),
+    );
+
+    expect(Object.values(result).map((entry) => entry.direction)).toEqual(directions);
+  });
+});
 
 describe("Firebase favorite snapshots", () => {
   it("parses true favorites and false tombstones", () => {

@@ -80,10 +80,17 @@ describe("Firestore progress rules", () => {
     );
   });
 
-  it("allows a user to create and list their own progress", async () => {
+  it("allows a user to create every neutral progress direction and list them", async () => {
     const db = environment.authenticatedContext("alice").firestore();
-    await assertSucceeds(setDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning"), validData()));
-    await assertSucceeds(getDocs(collection(db, "users/alice/progress")));
+    for (const direction of ["hanzi-meaning", "meaning-hanzi", "concept"]) {
+      await assertSucceeds(
+        setDoc(
+          doc(db, `users/alice/progress/FC001_${direction}`),
+          validData({ direction }),
+        ),
+      );
+    }
+    expect((await getDocs(collection(db, "users/alice/progress"))).size).toBe(3);
   });
 
   it("prevents access to another user's progress", async () => {

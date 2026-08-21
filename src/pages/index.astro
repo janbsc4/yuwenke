@@ -43,16 +43,18 @@ const assetUrl = (filename: string) => `${base}${filename}`;
         var target = available.indexOf(saved) >= 0 ? saved : null;
         if (!target) {
           var languages = navigator.languages || [navigator.language || ""];
-          var prefersSpanish = false;
           for (var index = 0; index < languages.length; index += 1) {
-            var language = String(languages[index] || "").toLowerCase();
-            if (language.indexOf("es") === 0) {
-              prefersSpanish = true;
+            var candidate = String(languages[index] || "")
+              .toLowerCase()
+              .split("-")[0];
+            if (available.indexOf(candidate) >= 0) {
+              target = candidate;
               break;
             }
           }
-          target = prefersSpanish ? "es" : "en";
-          if (available.indexOf(target) < 0) target = fallback;
+          if (!target) {
+            target = available.indexOf("en") >= 0 ? "en" : fallback;
+          }
         }
         window.location.replace(base + target + "/");
       })();

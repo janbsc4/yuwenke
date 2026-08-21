@@ -1,5 +1,6 @@
 import { loadFlashcards } from "../src/data/loadFlashcards";
 import {
+  canonicalProgressForCards,
   createStudyUnits,
   matchesFilters,
   mergeFavorites,
@@ -64,36 +65,57 @@ describe("study domain", () => {
     ]);
   });
 
-  it("normalizes newer legacy reverse-direction progress for concepts", () => {
+  it("normalizes both legacy concept directions and resolves conflicts deterministically", () => {
     const concept = cards.find((card) => card.tipo === "concepto")!;
     const canonicalKey = unitKey(concept.id, "concept");
-    const legacyKey = unitKey(concept.id, "es-hanzi");
-    const legacy: ProgressEntry = {
+    const hanziLegacy: ProgressEntry = {
       ...entry(20, "known"),
+      cardId: concept.id,
+      direction: "hanzi-es",
+    };
+    const meaningLegacy: ProgressEntry = {
+      ...entry(20, "learning"),
       cardId: concept.id,
       direction: "es-hanzi",
     };
 
-    expect(
-      progressForStudyUnits([concept], { [legacyKey]: legacy })[canonicalKey],
-    ).toMatchObject({
-      cardId: concept.id,
-      direction: "concept",
-      status: "known",
-      clientUpdatedAt: 20,
+    for (const legacy of [hanziLegacy, meaningLegacy]) {
+      const normalized = canonicalProgressForCards([concept], {
+        [unitKey(concept.id, legacy.direction)]: legacy,
+      });
+      expect(normalized[canonicalKey]).toMatchObject({
+        cardId: concept.id,
+        direction: "concept",
+        status: legacy.status,
+        clientUpdatedAt: 20,
+      });
+    }
+
+    const tiedLegacy = canonicalProgressForCards([concept], {
+      [unitKey(concept.id, "hanzi-es")]: hanziLegacy,
+      [unitKey(concept.id, "es-hanzi")]: meaningLegacy,
     });
+    expect(tiedLegacy[canonicalKey].status).toBe("learning");
 
     const canonical: ProgressEntry = {
-      ...entry(21, "learning"),
+      ...entry(20, "known"),
       cardId: concept.id,
       direction: "concept",
     };
     expect(
-      progressForStudyUnits([concept], {
+      canonicalProgressForCards([concept], {
+        [unitKey(concept.id, "es-hanzi")]: meaningLegacy,
         [canonicalKey]: canonical,
-        [legacyKey]: legacy,
       })[canonicalKey],
     ).toEqual(canonical);
+
+    const newerLegacy = { ...meaningLegacy, clientUpdatedAt: 21 };
+    expect(
+      canonicalProgressForCards([concept], {
+        [canonicalKey]: canonical,
+        [unitKey(concept.id, "es-hanzi")]: newerLegacy,
+      })[canonicalKey],
+    ).toMatchObject({ direction: "concept", status: "learning", clientUpdatedAt: 21 });
   });
 
   it("normalizes legacy directions for ordinary cards", () => {
@@ -121,6 +143,37 @@ describe("study domain", () => {
       direction: "meaning-hanzi",
       status: "known",
     });
+
+    const newerNeutral: ProgressEntry = {
+      ...entry(7, "known"),
+      cardId: ordinary.id,
+      direction: "hanzi-meaning",
+    };
+    expect(
+      canonicalProgressForCards([ordinary], {
+        ...source,
+        [unitKey(ordinary.id, "hanzi-meaning")]: newerNeutral,
+      })[unitKey(ordinary.id, "hanzi-meaning")],
+    ).toEqual(newerNeutral);
+
+    const newerLegacy = {
+      ...source[unitKey(ordinary.id, "es-hanzi")],
+      clientUpdatedAt: 8,
+      status: "learning" as const,
+    };
+    expect(
+      canonicalProgressForCards([ordinary], {
+        [unitKey(ordinary.id, "meaning-hanzi")]: {
+          ...newerNeutral,
+          direction: "meaning-hanzi",
+        },
+        [unitKey(ordinary.id, "es-hanzi")]: newerLegacy,
+      })[unitKey(ordinary.id, "meaning-hanzi")],
+    ).toMatchObject({
+      direction: "meaning-hanzi",
+      status: "learning",
+      clientUpdatedAt: 8,
+    });
   });
 
   it("searches pinyin without requiring tone marks", () => {
@@ -141,12 +194,25 @@ describe("study domain", () => {
     ).toBe(false);
   });
 
-  it("keeps tags searchable even though they are not rendered on cards", () => {
-    const card = cards.find((candidate) => candidate.id === "FC134");
-    expect(card).toBeDefined();
+  it("searches hidden tags only in the active locale", () => {
+    const card = cards.find((candidate) => candidate.id === "FC134")!;
+    const spanishTags = card.etiquetas.split(";");
+    const englishTags = card.etiquetas_ingles.split(";");
+    const spanishOnlyTag = spanishTags.find((tag) => !englishTags.includes(tag))!;
+    const englishOnlyTag = englishTags.find((tag) => !spanishTags.includes(tag))!;
+
     expect(
-      matchesFilters(card!, { query: "u_dieresis", topic: "all", type: "all" }, "es"),
+      matchesFilters(card, { query: spanishOnlyTag, topic: "all", type: "all" }, "es"),
     ).toBe(true);
+    expect(
+      matchesFilters(card, { query: spanishOnlyTag, topic: "all", type: "all" }, "en"),
+    ).toBe(false);
+    expect(
+      matchesFilters(card, { query: englishOnlyTag, topic: "all", type: "all" }, "en"),
+    ).toBe(true);
+    expect(
+      matchesFilters(card, { query: englishOnlyTag, topic: "all", type: "all" }, "es"),
+    ).toBe(false);
   });
 
   it("shuffles without adding or removing units", () => {

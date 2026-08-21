@@ -350,6 +350,29 @@ describe("flashcard CSV", () => {
     expect(reversePrompts).toEqual([]);
   });
 
+  it("rejects ambiguous English reverse prompts during loading", () => {
+    const first =
+      "FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,hello,A greeting.,Hello!,greeting,";
+    const second =
+      "FC002,palabra,saludos,再见,zàijiàn,adiós,Una despedida.,再见！,Zàijiàn!,Adiós.,1,despedida,hello,A farewell.,Goodbye!,farewell,";
+
+    expect(() => parseFlashcardsCsv(`${header}\n${first}\n${second}\n`)).toThrow(
+      "Pregunta inversa inglesa ambigua",
+    );
+  });
+
+  it.each(["你好", "𠀀", "龍"])(
+    "rejects Han script leakage in English reverse prompts during loading: %s",
+    (han) => {
+      const row =
+        `FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,hello ${han},A greeting.,Hello!,greeting,`;
+
+      expect(() => parseFlashcardsCsv(`${header}\n${row}\n`)).toThrow(
+        "revela Hanzi en la pregunta inversa inglesa",
+      );
+    },
+  );
+
   it("rejects duplicate IDs", () => {
     const row =
       "FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,hello,A greeting.,Hello!,greeting,";

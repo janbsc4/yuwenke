@@ -5,6 +5,7 @@ import {
   useProgressSync,
   type ProgressSyncFirebaseClient,
 } from "../src/hooks/useProgressSync";
+import { loadFlashcards } from "../src/data/loadFlashcards";
 import { localCardPacks } from "../src/lib/localCardPacks";
 import { localFavorites } from "../src/lib/localFavorites";
 import { localProgress } from "../src/lib/localProgress";
@@ -18,6 +19,7 @@ const user = {
 } as User;
 
 const options = {
+  cards: loadFlashcards(),
   orderedPackIds: ["CP001", "CP002"],
   packIdByCardId: { FC001: "CP001", FC002: "CP002" },
 };
@@ -59,12 +61,20 @@ function favoriteEntry(): FavoriteEntry {
 
 interface AdapterControls {
   client: ProgressSyncFirebaseClient;
+  publishProgress: (
+    progress: Record<string, ProgressEntry>,
+    serverConfirmed?: boolean,
+    pendingWrites?: boolean,
+  ) => void;
   publishPackState: (state: CardPackState) => void;
 }
 
 function firebaseAdapter(
   overrides: Partial<ProgressSyncFirebaseClient> = {},
 ): AdapterControls {
+  let progressObserver:
+    | Parameters<ProgressSyncFirebaseClient["observeCloudProgress"]>[1]
+    | null = null;
   let packStateObserver:
     | Parameters<ProgressSyncFirebaseClient["observeCloudCardPackState"]>[1]
     | null = null;
@@ -74,7 +84,10 @@ function firebaseAdapter(
       onUser(user);
       return () => undefined;
     }),
-    observeCloudProgress: vi.fn(() => () => undefined),
+    observeCloudProgress: vi.fn((_uid, onProgress) => {
+      progressObserver = onProgress;
+      return () => undefined;
+    }),
     observeCloudFavorites: vi.fn(() => () => undefined),
     observeCloudCardPackState: vi.fn((_uid, onState) => {
       packStateObserver = onState;
@@ -93,6 +106,8 @@ function firebaseAdapter(
 
   return {
     client,
+    publishProgress: (progress, serverConfirmed = true, pendingWrites = false) =>
+      progressObserver?.(progress, serverConfirmed, pendingWrites),
     publishPackState: (state) => packStateObserver?.(state, true, false),
   };
 }
@@ -135,15 +150,48 @@ describe("authenticated progress synchronization", () => {
     );
     expect(client.writeCloudProgressBatch).toHaveBeenCalledWith(
       "alice",
-      expect.objectContaining({
-        [unitKey(progress.cardId, progress.direction)]: expect.objectContaining(
-          {
-            resetAt: 0,
-            schemaVersion: 2,
-          },
-        ),
+      {
+        [unitKey(progress.cardId, "hanzi-meaning")]: expect.objectContaining({
+          direction: "hanzi-meaning",
+          resetAt: 0,
+          schemaVersion: 2,
+        }),
+      },
+    );
+  });
+
+  it("lets a tied neutral cloud record beat legacy local progress without re-uploading it", async () => {
+    const legacy = { ...progressEntry(), serverUpdatedAt: 100 };
+    localProgress.writeGuest({
+      [unitKey(legacy.cardId, legacy.direction)]: legacy,
+    });
+    const { client, publishProgress } = firebaseAdapter();
+    const { result } = renderAuthenticatedSync(client);
+
+    await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalled());
+    vi.mocked(client.writeCloudProgressBatch).mockClear();
+
+    const cloud: ProgressEntry = {
+      ...legacy,
+      direction: "hanzi-meaning",
+      status: "known",
+      serverUpdatedAt: 11,
+      resetAt: 0,
+      schemaVersion: 2,
+    };
+    act(() =>
+      publishProgress({
+        [unitKey(cloud.cardId, cloud.direction)]: cloud,
       }),
     );
+
+    await waitFor(() =>
+      expect(result.current.progress[unitKey(cloud.cardId, cloud.direction)]).toEqual(cloud),
+    );
+    expect(client.writeCloudProgressBatch).not.toHaveBeenCalled();
+    expect(
+      localProgress.readUser("alice").value[unitKey(legacy.cardId, legacy.direction)],
+    ).toEqual(legacy);
   });
 
   it("drops local and pending state when a newer Reset Boundary arrives", async () => {
@@ -238,6 +286,15 @@ describe("authenticated progress synchronization", () => {
     await waitFor(() =>
       expect(writeCloudProgressBatch).toHaveBeenCalledTimes(2),
     );
+    for (const [, uploaded] of writeCloudProgressBatch.mock.calls) {
+      expect(Object.values(uploaded)).toEqual([
+        expect.objectContaining({
+          direction: "hanzi-meaning",
+          resetAt: 0,
+          schemaVersion: 2,
+        }),
+      ]);
+    }
     expect(localProgress.readOutbox("alice").value).toEqual({});
   });
 });

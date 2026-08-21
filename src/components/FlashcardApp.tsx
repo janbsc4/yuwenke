@@ -158,7 +158,7 @@ export default function FlashcardApp({
     signOut,
     retry,
     clearNotice,
-  } = useProgressSync({ orderedPackIds, packIdByCardId });
+  } = useProgressSync({ cards, orderedPackIds, packIdByCardId });
   const openPackIdSet = useMemo(() => new Set(openPackIds), [openPackIds]);
 
   const [activeView, setActiveView] = useState<StudyView>("discover");

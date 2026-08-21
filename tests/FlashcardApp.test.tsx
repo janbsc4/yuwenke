@@ -782,6 +782,31 @@ describe("FlashcardApp localization", () => {
     expect(screen.getByText("FC001 · Cards")).toBeInTheDocument();
   });
 
+  it("highlights English proper names in study content", async () => {
+    const user = userEvent.setup();
+    const countryCard: Flashcard = {
+      ...bilingualCard,
+      id: "FC067",
+      hanzi: "日本",
+      pinyin: "Rìběn",
+      espanol: "Japón",
+      ingles: "Japan",
+      ejemplo_hanzi: "日本",
+      ejemplo_pinyin: "Rìběn",
+      ejemplo_espanol: "Japón",
+      ejemplo_ingles: "Japan",
+      nombres_propios: "日本;Rìběn;Japón;Japan",
+    };
+    renderLocalizedApp([countryCard], "en");
+
+    await user.click(await screen.findByRole("button", { name: /Show answer/ }));
+    expect(
+      screen.getAllByText("Japan").some((element) =>
+        element.classList.contains("proper-name"),
+      ),
+    ).toBe(true);
+  });
+
   it("studies a concept as one English question with an English answer", async () => {
     const user = userEvent.setup();
     const conceptCard: Flashcard = {
@@ -835,9 +860,14 @@ describe("FlashcardApp localization", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("switches locale in place, preserving the study session", async () => {
+  it("switches locale in place, preserving filters, queue position, and revealed state", async () => {
     const user = userEvent.setup();
     renderLocalizedApp([bilingualCard], "es");
+
+    const search = await screen.findByRole("searchbox", { name: "Buscar en las cartas" });
+    await user.type(search, "ni");
+    const promptBeforeSwitch = document.querySelector(".card-prompt h2")?.textContent;
+    expect(promptBeforeSwitch).toBeTruthy();
 
     await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
     expect(screen.getByText("Un saludo básico.")).toBeInTheDocument();
@@ -848,7 +878,10 @@ describe("FlashcardApp localization", () => {
     expect(await screen.findByText("A basic greeting.")).toBeInTheDocument();
     expect(screen.queryByText("Un saludo básico.")).not.toBeInTheDocument();
     expect(screen.getAllByText(/Card 1 of 2/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toHaveValue("ni");
+    expect(document.querySelector(".card-prompt h2")).toHaveTextContent(
+      promptBeforeSwitch === "hola" ? "hello" : promptBeforeSwitch!,
+    );
     expect(window.location.pathname).toBe("/en/");
     expect(document.documentElement.lang).toBe("en");
     expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("en");
