@@ -8,6 +8,8 @@ The source material contains Mandarin characters, pinyin, Spanish meanings, gram
 
 The application is a static Astro website with a single React study interface. It is designed to be hosted for free on GitHub Pages.
 
+The site is localized. Both `src/pages/index.astro` (a client-side locale resolver that honors the saved choice, then browser language, then English fallback) and the dynamic `src/pages/[locale]/index.astro` page generate static routes under the `/yuwenke/es/` base path. The English route (`/yuwenke/en/`) is generated only when `ENGLISH_RELEASED` in `src/lib/locale.ts` flips to true; Spanish is the only shipped locale until then. In-app locale switching updates the URL, document language, and metadata through browser history without remounting the study session, and the choice is saved on-device only (never in Firestore).
+
 ## Architecture
 
 Astro parses and validates `chino_flashcards.csv`, `card_packs.json`, and `card_pack_membership.csv` while building the static site. The separate `scripts/build_flashcards.mjs` authoring script regenerates the flashcard CSV when run explicitly; it is not part of `npm run build`.
@@ -23,6 +25,7 @@ The main project areas are:
 * `scripts/build_chinese_knowledge.mjs` — derives `chinese-knowledge.md` (deduplicated Hanzi-only tokens) from the CSV. A separate, optional authoring script, not part of `npm run build`.
 * `chinese-knowledge.md` — generated file; do not edit by hand, edit the CSV and rerun the script instead.
 * `src/` — Astro pages, React UI, study logic, and persistence.
+* `src/lib/messages.ts` — typed Spanish and English message dictionaries with shared keys for all interface copy, notices, labels, and metadata.
 * `tests/` — unit and integration tests.
 * `firestore.rules` — Firestore security rules.
 * `CONTEXT.md` — canonical domain vocabulary.

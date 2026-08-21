@@ -12,6 +12,7 @@ import type {
   CardPack,
   Filters,
   Flashcard,
+  Locale,
   SessionTally,
   ProgressStatus,
   StudyUnit,
@@ -28,8 +29,16 @@ import {
   unitBelongsToView,
   visibleUnits,
 } from "../lib/study";
-import { plural, topicLabel } from "../lib/labels";
-import { localized, DEFAULT_LOCALE } from "../lib/locale";
+import {
+  AVAILABLE_LOCALES,
+  DEFAULT_LOCALE,
+  LOCALE_STORAGE_KEY,
+  localeUrl,
+  localized,
+  parseLocaleFromPath,
+} from "../lib/locale";
+import { applyLocaleMetadata } from "../lib/documentMetadata";
+import { messages, topicDisplayLabel, type Messages } from "../lib/messages";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
@@ -39,23 +48,12 @@ interface FlashcardAppProps {
   cards: Flashcard[];
   packs: CardPack[];
   packIdByCardId: PackIdByCardId;
+  initialLocale?: Locale;
+  enabledLocales?: readonly Locale[];
 }
-
-const VIEW_LABELS: Record<StudyView, string> = {
-  study: "Estudiar",
-  discover: "Descubrir",
-  mastered: "Dominadas",
-  favorites: "Favoritas",
-};
 
 const PACK_OPENING_DURATION_MS = 1050;
 const PACK_TRIGGER_OPENING_DURATION_MS = 160;
-
-const TYPE_LABELS: Record<CardType, string> = {
-  palabra: "Palabra",
-  frase: "Frase",
-  concepto: "Concepto",
-};
 
 const EMPTY_FILTERS: Filters = { query: "", topic: "all", type: "all" };
 const EMPTY_TALLY: SessionTally = { primary: 0, secondary: 0, skipped: 0 };
@@ -67,8 +65,12 @@ function reducedMotionRequested(): boolean {
   );
 }
 
-function initials(name: string | null, email: string | null): string {
-  const source = name?.trim() || email?.split("@")[0] || "Tú";
+function initials(
+  name: string | null,
+  email: string | null,
+  fallback: string,
+): string {
+  const source = name?.trim() || email?.split("@")[0] || fallback;
   return source
     .split(/\s+/)
     .slice(0, 2)
@@ -93,42 +95,48 @@ function writePreference(key: string, value: string): void {
 }
 
 function primaryDecisionLabel(
+  m: Messages,
   view: StudyView,
   status: ProgressStatus | undefined,
 ): string {
-  if (view === "study") return "Seguir aprendiendo";
-  if (view === "discover") return "Añadir a aprendizaje";
-  if (view === "mastered" || status === "known") return "Sigue dominada";
-  return status === "learning" ? "Seguir aprendiendo" : "Añadir a aprendizaje";
+  if (view === "study") return m.decisions.keepLearning;
+  if (view === "discover") return m.decisions.addToLearning;
+  if (view === "mastered" || status === "known") return m.decisions.staysMastered;
+  return status === "learning" ? m.decisions.keepLearning : m.decisions.addToLearning;
 }
 
 function secondaryDecisionLabel(
+  m: Messages,
   view: StudyView,
   status: ProgressStatus | undefined,
 ): string {
   if (view === "mastered" || (view === "favorites" && status === "known")) {
-    return "Volver a aprendizaje";
+    return m.decisions.backToLearning;
   }
-  return "Ya la sé";
+  return m.decisions.alreadyKnow;
 }
 
 export default function FlashcardApp({
   cards,
   packs,
   packIdByCardId,
+  initialLocale = DEFAULT_LOCALE,
+  enabledLocales = AVAILABLE_LOCALES,
 }: FlashcardAppProps) {
+  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const m = messages[locale];
   const orderedPackIds = useMemo(() => packs.map((pack) => pack.id), [packs]);
   const packTitleById = useMemo(
     () =>
       Object.fromEntries(
-        packs.map((pack) => [pack.id, localized(pack.title, DEFAULT_LOCALE)]),
+        packs.map((pack) => [pack.id, localized(pack.title, locale)]),
       ),
-    [packs],
+    [packs, locale],
   );
   const units = useMemo(() => createStudyUnits(cards), [cards]);
   const topics = useMemo(
-    () => [...new Set(cards.map((card) => card.tema))].sort((a, b) => a.localeCompare(b, "es")),
-    [cards],
+    () => [...new Set(cards.map((card) => card.tema))].sort((a, b) => a.localeCompare(b, locale)),
+    [cards, locale],
   );
   const {
     progress,
@@ -224,7 +232,7 @@ export default function FlashcardApp({
   );
 
   const counts = useMemo(() => {
-    const filtered = units.filter((unit) => matchesFilters(unit.card, filters));
+    const filtered = units.filter((unit) => matchesFilters(unit.card, filters, locale));
     return {
       study: filtered.filter((unit) =>
         unitBelongsToView(unit, "study", studyProgress),
@@ -240,7 +248,7 @@ export default function FlashcardApp({
         unitBelongsToView(unit, "favorites", studyProgress, favorites),
       ).length,
     };
-  }, [favorites, filters, openPackIdSet, packIdByCardId, studyProgress, units]);
+  }, [favorites, filters, locale, openPackIdSet, packIdByCardId, studyProgress, units]);
 
   const hasFilters = filters.query.trim() !== "" || filters.topic !== "all" || filters.type !== "all";
   const filterCount = Number(filters.topic !== "all") + Number(filters.type !== "all");
@@ -264,6 +272,26 @@ export default function FlashcardApp({
     [activeView, filters, ownerKey, sessionNonce],
   );
   const queueReady = queueContext === desiredQueueContext;
+
+  useEffect(() => {
+    applyLocaleMetadata(locale);
+  }, [locale]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const fromPath = parseLocaleFromPath(window.location.pathname);
+      if (
+        fromPath &&
+        fromPath !== locale &&
+        enabledLocales.includes(fromPath)
+      ) {
+        setLocale(fromPath);
+        writePreference(LOCALE_STORAGE_KEY, fromPath);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [enabledLocales, locale]);
 
   useEffect(() => {
     if (!ready || viewInitialized) return;
@@ -294,6 +322,7 @@ export default function FlashcardApp({
         favorites,
         openPackIdSet,
         packIdByCardId,
+        locale,
       ),
     );
     setQueue(nextQueue);
@@ -302,6 +331,8 @@ export default function FlashcardApp({
     setCompleted(false);
     setTally(EMPTY_TALLY);
     setQueueContext(desiredQueueContext);
+    // Locale is deliberately excluded: switching language must preserve the
+    // current card, revealed state, filters, and queue order.
   }, [desiredQueueContext, ready, units, viewInitialized]);
 
   useEffect(() => {
@@ -323,7 +354,7 @@ export default function FlashcardApp({
           newlyOpened.has(packIdByCardId[unit.cardId]) &&
           !existingKeys.has(unit.key) &&
           unitBelongsToView(unit, "discover", studyProgress) &&
-          matchesFilters(unit.card, filters),
+          matchesFilters(unit.card, filters, locale),
       );
       if (additions.length === 0) return existingQueue;
       if (completed) {
@@ -341,6 +372,7 @@ export default function FlashcardApp({
     activeView,
     completed,
     filters,
+    locale,
     openPackIds,
     packIdByCardId,
     queueIndex,
@@ -421,6 +453,16 @@ export default function FlashcardApp({
       else filterButtonRef.current?.focus();
     }, 0);
   }, []);
+
+  const changeLocale = useCallback(
+    (next: Locale) => {
+      if (next === locale) return;
+      setLocale(next);
+      writePreference(LOCALE_STORAGE_KEY, next);
+      window.history.pushState(null, "", localeUrl(next));
+    },
+    [locale],
+  );
 
   const advance = useCallback(() => {
     let nextIndex = queueIndex + 1;
@@ -645,7 +687,7 @@ export default function FlashcardApp({
         <div className="loading-brand skeleton" />
         <div className="loading-progress skeleton" />
         <div className="loading-card skeleton" />
-        <p>Preparando tus cartas…</p>
+        <p>{m.session.loading}</p>
       </div>
     );
   }
@@ -653,7 +695,7 @@ export default function FlashcardApp({
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Yuwenke, inicio">
+        <a className="brand" href={localeUrl(locale)} aria-label={m.brand.homeAria}>
           <img
             className="brand-mark"
             src={`${import.meta.env.BASE_URL}yuwenke-mark.png`}
@@ -663,27 +705,46 @@ export default function FlashcardApp({
           />
           <span>
             <strong>Yuwenke</strong>
-            <small>Aprende Mucho Chino</small>
+            <small>{m.brand.tagline}</small>
           </span>
         </a>
 
         <div className="account-area">
+          {enabledLocales.length > 1 ? (
+            <div
+              className="locale-switcher"
+              role="group"
+              aria-label={m.localeSwitcher.aria}
+            >
+              {enabledLocales.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={option === locale ? "is-active" : ""}
+                  aria-pressed={option === locale}
+                  onClick={() => changeLocale(option)}
+                >
+                  {m.localeSwitcher.label[option]}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <span className={`sync-label sync-${syncState}`}>
             {user
               ? syncState === "syncing"
-                ? "Sincronizando…"
+                ? m.sync.syncing
                 : syncState === "synced"
-                  ? "Sincronizado"
+                  ? m.sync.synced
                   : syncState === "offline"
-                    ? "Sin conexión · cambios pendientes"
+                    ? m.sync.offline
                     : syncState === "error"
-                      ? "No se pudo sincronizar"
-                      : "Guardado local"
-              : "Solo en este dispositivo"}
+                      ? m.sync.error
+                      : m.sync.local
+              : m.sync.guest}
           </span>
           {syncState === "error" && user ? (
             <button className="text-button" type="button" onClick={() => void retry()}>
-              Reintentar
+              {m.sync.retry}
             </button>
           ) : null}
           {user ? (
@@ -691,15 +752,15 @@ export default function FlashcardApp({
               <button
                 type="button"
                 className="avatar-button"
-                aria-label="Abrir menú de cuenta"
+                aria-label={m.account.menuAria}
                 aria-expanded={accountOpen}
                 onClick={() => setAccountOpen((value) => !value)}
               >
-                {initials(user.displayName, user.email)}
+                {initials(user.displayName, user.email, m.account.initialsFallback)}
               </button>
               {accountOpen ? (
                 <div className="account-menu" role="menu">
-                  <strong>{user.displayName || "Tu cuenta"}</strong>
+                  <strong>{user.displayName || m.account.yourAccount}</strong>
                   <span>{user.email}</span>
                   <button
                     type="button"
@@ -709,10 +770,10 @@ export default function FlashcardApp({
                       setResetConfirmOpen(true);
                     }}
                   >
-                    Restablecer estudio
+                    {m.account.resetStudy}
                   </button>
                   <button type="button" role="menuitem" onClick={() => void signOut()}>
-                    Cerrar sesión
+                    {m.account.signOut}
                   </button>
                 </div>
               ) : null}
@@ -723,16 +784,16 @@ export default function FlashcardApp({
               className="button button-small button-ink"
               onClick={() => setLoginOpen(true)}
               ref={loginButtonRef}
-              title={firebaseConfigured ? undefined : "La sincronización aún no está configurada"}
+              title={firebaseConfigured ? undefined : m.account.syncUnavailableTitle}
             >
-              Iniciar sesión
+              {m.account.signIn}
             </button>
           )}
         </div>
       </header>
 
-      <nav className="view-tabs" aria-label="Modos de estudio">
-        {(Object.keys(VIEW_LABELS) as StudyView[]).map((view) => (
+      <nav className="view-tabs" aria-label={m.viewsAria}>
+        {(Object.keys(m.views) as StudyView[]).map((view) => (
           <button
             type="button"
             key={view}
@@ -740,7 +801,7 @@ export default function FlashcardApp({
             aria-current={view === activeView ? "page" : undefined}
             onClick={() => changeView(view)}
           >
-            <span>{VIEW_LABELS[view]}</span>
+            <span>{m.views[view]}</span>
             <span className="count-pill">{counts[view]}</span>
           </button>
         ))}
@@ -748,26 +809,23 @@ export default function FlashcardApp({
 
       {!user ? (
         <aside className="guest-note">
-          <p>
-            Estás estudiando como invitado. Tu progreso, favoritas y packs se guardan en
-            este dispositivo.
-          </p>
+          <p>{m.guestNote.body}</p>
           <button type="button" className="text-button" onClick={() => setLoginOpen(true)}>
-            Sincronizar con Google
+            {m.guestNote.cta}
           </button>
         </aside>
       ) : null}
 
       {!storageAvailable ? (
         <div className="inline-alert" role="status">
-          Tu progreso, favoritas y packs no se guardarán en este dispositivo.
+          {m.storageWarning}
         </div>
       ) : null}
 
       {notice ? (
         <div className="toast" role="status">
-          <span>{notice}</span>
-          <button type="button" aria-label="Cerrar aviso" onClick={clearNotice}>
+          <span>{m.notices[notice]}</span>
+          <button type="button" aria-label={m.toastCloseAria} onClick={clearNotice}>
             ×
           </button>
         </div>
@@ -779,8 +837,8 @@ export default function FlashcardApp({
           <input
             type="text"
             role="searchbox"
-            aria-label="Buscar en las cartas"
-            placeholder="Busca caracteres, pinyin o español…"
+            aria-label={m.search.aria}
+            placeholder={m.search.placeholder}
             value={filters.query}
             onChange={changeQuery}
             ref={searchRef}
@@ -788,7 +846,7 @@ export default function FlashcardApp({
           {filters.query ? (
             <button
               type="button"
-              aria-label="Borrar búsqueda"
+              aria-label={m.search.clearAria}
               onClick={clearQuery}
             >
               ×
@@ -799,6 +857,7 @@ export default function FlashcardApp({
           open={packsOpen}
           opening={packTriggerOpening}
           onClick={requestPacksFromTrigger}
+          m={m}
         />
         <button
           type="button"
@@ -806,90 +865,90 @@ export default function FlashcardApp({
           onClick={() => setFilterSheetOpen(true)}
           ref={filterButtonRef}
         >
-          {filterCount > 0 ? `Filtros · ${filterCount}` : "Filtros"}
+          {filterCount > 0 ? m.filters.triggerWithCount(filterCount) : m.filters.trigger}
         </button>
       </div>
 
       <main className="study-layout">
-        <aside className="filter-panel" aria-label="Filtros">
+        <aside className="filter-panel" aria-label={m.filters.panelAria}>
           <div className="panel-heading">
-            <p className="eyebrow">Tu colección</p>
-            <p>{plural(openUnitCount, "carta")}</p>
+            <p className="eyebrow">{m.filters.collectionEyebrow}</p>
+            <p>{m.filters.cardCount(openUnitCount)}</p>
           </div>
           <label>
-            Tema
+            {m.filters.topicLabel}
             <select
               value={filters.topic}
               onChange={(event) => setFilters((value) => ({ ...value, topic: event.target.value }))}
             >
-              <option value="all">Todos los temas</option>
+              <option value="all">{m.filters.allTopics}</option>
               {topics.map((topic) => (
                 <option value={topic} key={topic}>
-                  {topicLabel(topic)}
+                  {topicDisplayLabel(locale, topic)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            Tipo
+            {m.filters.typeLabel}
             <select
               value={filters.type}
               onChange={(event) =>
                 setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
               }
             >
-              <option value="all">Todos los tipos</option>
-              {(Object.keys(TYPE_LABELS) as CardType[]).map((type) => (
+              <option value="all">{m.filters.allTypes}</option>
+              {(Object.keys(m.cardTypes) as CardType[]).map((type) => (
                 <option value={type} key={type}>
-                  {TYPE_LABELS[type]}
+                  {m.cardTypes[type]}
                 </option>
               ))}
             </select>
           </label>
           {hasFilters ? (
             <button type="button" className="text-button align-left" onClick={resetFilters}>
-              Limpiar filtros
+              {m.filters.clear}
             </button>
           ) : null}
           <div className="direction-legend">
-            <span>中 → ES</span>
-            <span>ES → 中</span>
+            <span>{m.directions.legendToMeaning}</span>
+            <span>{m.directions.legendToHanzi}</span>
             <button
               type="button"
               className="text-button how-it-works"
               onClick={(event) => openHelp(event.currentTarget)}
             >
-              ¿Cómo funciona?
+              {m.help.trigger}
             </button>
           </div>
         </aside>
 
-        <section className="session-panel" aria-label={`${VIEW_LABELS[activeView]} cartas`}>
+        <section className="session-panel" aria-label={m.session.panelAria(m.views[activeView])}>
           {!queueReady ? (
             <div className="queue-loading" aria-live="polite">
               <div className="loading-progress skeleton" />
               <div className="loading-card skeleton" />
-              <p>Preparando esta cola…</p>
+              <p>{m.session.queueLoading}</p>
             </div>
           ) : current && !completed ? (
             <>
               <div className="session-progress" aria-live="polite">
                 <div>
                   <span>
-                    Carta {queueIndex + 1} de {queue.length}
+                    {m.session.progressLabel(queueIndex + 1, queue.length)}
                   </span>
                   <span className="direction-badge">
                     {current.card.tipo === "concepto"
-                      ? "Concepto · Español"
+                      ? m.directions.concept
                       : current.direction === "hanzi-meaning"
-                        ? "Chino → Español"
-                        : "Español → Chino"}
+                        ? m.directions.toMeaning
+                        : m.directions.toHanzi}
                   </span>
                 </div>
                 <div
                   className="progress-track"
                   role="progressbar"
-                  aria-label="Progreso de la sesión"
+                  aria-label={m.session.progressAria}
                   aria-valuemin={0}
                   aria-valuemax={queue.length}
                   aria-valuenow={queueIndex + 1}
@@ -908,28 +967,30 @@ export default function FlashcardApp({
                 }
                 promptRef={promptRef}
                 ref={answerRef}
+                m={m}
+                locale={locale}
               />
 
               <div className="decision-area">
                 {!revealed ? (
                   <button type="button" className="button button-primary reveal-button" onClick={() => setRevealed(true)}>
-                    Mostrar respuesta <kbd>Espacio</kbd>
+                    {m.session.reveal} <kbd>{m.session.spaceKey}</kbd>
                   </button>
                 ) : (
                   <div className="decision-buttons">
                     <button type="button" className="button button-primary" onClick={choosePrimary}>
-                      {primaryDecisionLabel(activeView, currentStatus)}
+                      {primaryDecisionLabel(m, activeView, currentStatus)}
                       <kbd>1</kbd>
                     </button>
                     <button type="button" className="button button-secondary" onClick={chooseSecondary}>
-                      {secondaryDecisionLabel(activeView, currentStatus)}
+                      {secondaryDecisionLabel(m, activeView, currentStatus)}
                       <kbd>2</kbd>
                     </button>
                   </div>
                 )}
                 {activeView === "discover" ? (
                   <button type="button" className="skip-button" onClick={skip}>
-                    Saltar <kbd>3</kbd>
+                    {m.session.skip} <kbd>3</kbd>
                   </button>
                 ) : null}
               </div>
@@ -954,6 +1015,8 @@ export default function FlashcardApp({
               packsOpen={packsOpen}
               packsOpening={packTriggerOpening}
               onOpenPacks={requestPacksFromTrigger}
+              m={m}
+              locale={locale}
             />
           ) : (
             <EmptyState
@@ -965,6 +1028,7 @@ export default function FlashcardApp({
               packsOpen={packsOpen}
               packsOpening={packTriggerOpening}
               onOpenPacks={requestPacksFromTrigger}
+              m={m}
             />
           )}
         </section>
@@ -1000,6 +1064,8 @@ export default function FlashcardApp({
         }}
         onCancelReset={() => setResetConfirmOpen(false)}
         onConfirmReset={() => void confirmReset()}
+        m={m}
+        locale={locale}
       />
 
       {filterSheetOpen ? (
@@ -1013,50 +1079,50 @@ export default function FlashcardApp({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
-              <h2 id="filter-title">Filtrar cartas</h2>
-              <button type="button" aria-label="Cerrar filtros" onClick={closeFilterSheet}>×</button>
+              <h2 id="filter-title">{m.filters.sheetTitle}</h2>
+              <button type="button" aria-label={m.filters.sheetCloseAria} onClick={closeFilterSheet}>×</button>
             </div>
             <label>
-              Tema
+              {m.filters.topicLabel}
               <select
                 value={filters.topic}
                 onChange={(event) => setFilters((value) => ({ ...value, topic: event.target.value }))}
               >
-                <option value="all">Todos los temas</option>
+                <option value="all">{m.filters.allTopics}</option>
                 {topics.map((topic) => (
-                  <option value={topic} key={topic}>{topicLabel(topic)}</option>
+                  <option value={topic} key={topic}>{topicDisplayLabel(locale, topic)}</option>
                 ))}
               </select>
             </label>
             <label>
-              Tipo
+              {m.filters.typeLabel}
               <select
                 value={filters.type}
                 onChange={(event) =>
                   setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
                 }
               >
-                <option value="all">Todos los tipos</option>
-                {(Object.keys(TYPE_LABELS) as CardType[]).map((type) => (
-                  <option value={type} key={type}>{TYPE_LABELS[type]}</option>
+                <option value="all">{m.filters.allTypes}</option>
+                {(Object.keys(m.cardTypes) as CardType[]).map((type) => (
+                  <option value={type} key={type}>{m.cardTypes[type]}</option>
                 ))}
               </select>
             </label>
             <button type="button" className="button button-primary" onClick={closeFilterSheet}>
-              Aplicar filtros
+              {m.filters.apply}
             </button>
             <button type="button" className="text-button" onClick={resetFilters}>
-              Limpiar filtros
+              {m.filters.clear}
             </button>
             <div className="direction-legend sheet-direction-legend">
-              <span>中 → ES</span>
-              <span>ES → 中</span>
+              <span>{m.directions.legendToMeaning}</span>
+              <span>{m.directions.legendToHanzi}</span>
               <button
                 type="button"
                 className="text-button how-it-works"
                 onClick={(event) => openHelp(event.currentTarget)}
               >
-                ¿Cómo funciona?
+                {m.help.trigger}
               </button>
             </div>
           </section>
@@ -1074,65 +1140,27 @@ export default function FlashcardApp({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
-              <h2 id="help-title">Cómo funciona Yuwenke</h2>
-              <button type="button" aria-label="Cerrar explicación" onClick={closeHelp}>×</button>
+              <h2 id="help-title">{m.help.title}</h2>
+              <button type="button" aria-label={m.help.closeAria} onClick={closeHelp}>×</button>
             </div>
 
             <ol className="help-steps">
-              <li>
-                <strong>Descubrir</strong>
-                <p>
-                  Mira cartas nuevas y decide si quieres añadirlas a aprendizaje,
-                  marcarlas como dominadas o saltarlas por ahora.
-                </p>
-              </li>
-              <li>
-                <strong>Estudiar</strong>
-                <p>
-                  Practica lo que estás aprendiendo. Después de ver la respuesta,
-                  mantenlo en estudio o pásalo a Dominadas.
-                </p>
-              </li>
-              <li>
-                <strong>Dominadas</strong>
-                <p>
-                  Repasa lo que ya sabes y devuelve a Estudiar cualquier ficha que
-                  quieras reforzar.
-                </p>
-              </li>
-              <li>
-                <strong>Favoritas</strong>
-                <p>
-                  Marca una carta con la estrella para tener sus cartas
-                  siempre disponibles en una cola personal.
-                </p>
-              </li>
-              <li>
-                <strong>Packs</strong>
-                <p>
-                  Abre cualquier colección cuando quieras para añadir material nuevo
-                  a Descubrir. Los packs abiertos permanecen disponibles.
-                </p>
-              </li>
+              {Object.values(m.help.steps).map((step) => (
+                <li key={step.title}>
+                  <strong>{step.title}</strong>
+                  <p>{step.body}</p>
+                </li>
+              ))}
             </ol>
 
             <div className="help-details">
+              <p>{m.help.detailsFlow}</p>
               <p>
-                Las palabras y frases se practican por separado en chino → español
-                y español → chino. Los conceptos plantean una sola pregunta en
-                español para recordar la regla. La búsqueda y los filtros solo
-                cambian qué fichas ves en la cola actual.
+                {m.help.properNames.before}
+                <span className="proper-name">{m.help.properNames.highlight}</span>
+                {m.help.properNames.after}
               </p>
-              <p>
-                Los nombres propios se muestran en{" "}
-                <span className="proper-name">lila</span> en caracteres chinos,
-                pinyin y español.
-              </p>
-              <p>
-                Como invitado, el progreso se guarda en este dispositivo. Si inicias
-                sesión con Google, tus estados, favoritas y packs también se sincronizan
-                entre dispositivos.
-              </p>
+              <p>{m.help.detailsAccount}</p>
             </div>
           </section>
         </div>
@@ -1149,11 +1177,8 @@ export default function FlashcardApp({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="dialog-mark" lang="zh-Hans" aria-hidden="true">记</div>
-            <h2 id="login-title">Guarda tu progreso</h2>
-            <p>
-              Inicia sesión para continuar en otros dispositivos. El progreso y las
-              favoritas y packs guardados aquí se conservarán al sincronizar.
-            </p>
+            <h2 id="login-title">{m.login.title}</h2>
+            <p>{m.login.body}</p>
             {firebaseConfigured ? (
               <button
                 type="button"
@@ -1165,21 +1190,19 @@ export default function FlashcardApp({
                 }}
               >
                 <span aria-hidden="true">G</span>{" "}
-                {firebaseReady ? "Continuar con Google" : "Preparando Google…"}
+                {firebaseReady ? m.login.googleReady : m.login.googlePreparing}
               </button>
             ) : (
-              <p className="config-note">
-                La sincronización todavía no está configurada. Puedes seguir estudiando en este dispositivo.
-              </p>
+              <p className="config-note">{m.login.configNote}</p>
             )}
-            <button type="button" className="text-button" onClick={closeLogin}>Ahora no</button>
+            <button type="button" className="text-button" onClick={closeLogin}>{m.login.notNow}</button>
           </section>
         </div>
       ) : null}
 
       <div className="sr-only" aria-live="polite">
         {queueReady && current && !completed
-          ? `Carta ${queueIndex + 1} de ${queue.length}`
+          ? m.session.progressLabel(queueIndex + 1, queue.length)
           : ""}
       </div>
     </div>
@@ -1195,15 +1218,17 @@ interface EmptyStateProps {
   packsOpen: boolean;
   packsOpening: boolean;
   onOpenPacks: () => void;
+  m: Messages;
 }
 
 interface PacksButtonProps {
   open: boolean;
   opening: boolean;
   onClick: () => void;
+  m: Messages;
 }
 
-function PacksButton({ open, opening, onClick }: PacksButtonProps) {
+function PacksButton({ open, opening, onClick, m }: PacksButtonProps) {
   return (
     <button
       type="button"
@@ -1213,7 +1238,7 @@ function PacksButton({ open, opening, onClick }: PacksButtonProps) {
       disabled={opening}
       onClick={onClick}
     >
-      Packs
+      {m.packs.button}
     </button>
   );
 }
@@ -1227,13 +1252,14 @@ function EmptyState({
   packsOpen,
   packsOpening,
   onOpenPacks,
+  m,
 }: EmptyStateProps) {
   if (filtered) {
     return (
       <div className="empty-state">
         <span aria-hidden="true">空</span>
-        <h2>No hay cartas que coincidan con estos filtros.</h2>
-        <button type="button" className="button button-primary" onClick={onClear}>Limpiar filtros</button>
+        <h2>{m.empty.filteredTitle}</h2>
+        <button type="button" className="button button-primary" onClick={onClear}>{m.filters.clear}</button>
       </div>
     );
   }
@@ -1241,9 +1267,9 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">学</span>
-        <h2>Aún no tienes cartas en aprendizaje.</h2>
-        <p>Clasifica algunas cartas para empezar a practicar.</p>
-        <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>Ir a Descubrir</button>
+        <h2>{m.empty.studyTitle}</h2>
+        <p>{m.empty.studyBody}</p>
+        <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
       </div>
     );
   }
@@ -1251,13 +1277,13 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">完</span>
-        <h2>Ya has clasificado todas las cartas.</h2>
+        <h2>{m.empty.discoverTitle}</h2>
         <div className="empty-actions">
           {learningCount > 0 ? (
-            <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>Ir a Estudiar</button>
+            <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>{m.nav.goToStudy}</button>
           ) : null}
-          <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>Ver dominadas</button>
-          <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} />
+          <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>{m.empty.discoverViewMastered}</button>
+          <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} m={m} />
         </div>
       </div>
     );
@@ -1266,14 +1292,14 @@ function EmptyState({
     return (
       <div className="empty-state">
         <span aria-hidden="true">★</span>
-        <h2>Aún no tienes cartas favoritas.</h2>
-        <p>Usa la estrella de cualquier carta para añadirla a esta cola.</p>
+        <h2>{m.empty.favoritesTitle}</h2>
+        <p>{m.empty.favoritesBody}</p>
         <button
           type="button"
           className="button button-primary"
           onClick={() => onChangeView("discover")}
         >
-          Ir a Descubrir
+          {m.nav.goToDiscover}
         </button>
       </div>
     );
@@ -1281,8 +1307,8 @@ function EmptyState({
   return (
     <div className="empty-state">
       <span aria-hidden="true">熟</span>
-      <h2>Aún no has marcado ninguna carta como dominada.</h2>
-      <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>Ir a Descubrir</button>
+      <h2>{m.empty.masteredTitle}</h2>
+      <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
     </div>
   );
 }
@@ -1300,6 +1326,8 @@ interface SessionSummaryProps {
   packsOpen: boolean;
   packsOpening: boolean;
   onOpenPacks: () => void;
+  m: Messages;
+  locale: Locale;
 }
 
 function SessionSummary({
@@ -1315,15 +1343,9 @@ function SessionSummary({
   packsOpen,
   packsOpening,
   onOpenPacks,
+  m,
+  locale,
 }: SessionSummaryProps) {
-  const title =
-    view === "study"
-      ? "Sesión completada"
-      : view === "discover"
-        ? "Selección completada"
-        : view === "favorites"
-          ? "Repaso de favoritas completado"
-          : "Revisión completada";
   const secondaryView: StudyView =
     view === "study"
       ? "discover"
@@ -1334,50 +1356,41 @@ function SessionSummary({
           : "discover";
   const secondaryLabel =
     secondaryView === "study"
-      ? "Ir a Estudiar"
-      : "Ir a Descubrir";
+      ? m.nav.goToStudy
+      : m.nav.goToDiscover;
 
   return (
     <div className="summary-card">
       <span className="summary-mark" lang="zh-Hans" aria-hidden="true">好</span>
-      <p className="eyebrow">Buen trabajo</p>
-      <h2>{title}</h2>
+      <p className="eyebrow">{m.summary.eyebrow}</p>
+      <h2>{m.summary.title(view)}</h2>
       <div className="summary-stats">
         {view === "study" ? (
           <>
-            <p><strong>{tally.primary}</strong><span>{tally.primary === 1 ? "sigue en aprendizaje" : "siguen en aprendizaje"}</span></p>
-            <p><strong>{tally.secondary}</strong><span>{tally.secondary === 1 ? "pasó a Dominadas" : "pasaron a Dominadas"}</span></p>
+            <p><strong>{tally.primary}</strong><span>{m.summary.studyPrimary(tally.primary)}</span></p>
+            <p><strong>{tally.secondary}</strong><span>{m.summary.studySecondary(tally.secondary)}</span></p>
           </>
         ) : view === "discover" ? (
           <>
-            <p><strong>{tally.primary}</strong><span>{tally.primary === 1 ? "añadida a aprendizaje" : "añadidas a aprendizaje"}</span></p>
-            <p><strong>{tally.secondary}</strong><span>{tally.secondary === 1 ? "marcada como dominada" : "marcadas como dominadas"}</span></p>
-            <p><strong>{tally.skipped}</strong><span>{tally.skipped === 1 ? "saltada" : "saltadas"}</span></p>
+            <p><strong>{tally.primary}</strong><span>{m.summary.discoverPrimary(tally.primary)}</span></p>
+            <p><strong>{tally.secondary}</strong><span>{m.summary.discoverSecondary(tally.secondary)}</span></p>
+            <p><strong>{tally.skipped}</strong><span>{m.summary.discoverSkipped(tally.skipped)}</span></p>
           </>
         ) : view === "favorites" ? (
           <p>
             <strong>{tally.primary + tally.secondary}</strong>
-            <span>
-              {tally.primary + tally.secondary === 1
-                ? "carta favorita practicada"
-                : "cartas favoritas practicadas"}
-            </span>
+            <span>{m.summary.favoritesPracticed(tally.primary + tally.secondary)}</span>
           </p>
         ) : (
           <>
-            <p><strong>{tally.primary}</strong><span>{tally.primary === 1 ? "sigue dominada" : "siguen dominadas"}</span></p>
-            <p><strong>{tally.secondary}</strong><span>{tally.secondary === 1 ? "volvió a aprendizaje" : "volvieron a aprendizaje"}</span></p>
+            <p><strong>{tally.primary}</strong><span>{m.summary.masteredPrimary(tally.primary)}</span></p>
+            <p><strong>{tally.secondary}</strong><span>{m.summary.masteredSecondary(tally.secondary)}</span></p>
           </>
         )}
       </div>
       {view === "discover" && discoverRemaining > 0 ? (
         <p className="summary-remaining">
-          {plural(
-            discoverRemaining,
-            "carta sigue sin clasificar",
-            "cartas siguen sin clasificar",
-          )}
-          .
+          {m.summary.discoverRemaining(discoverRemaining)}.
         </p>
       ) : null}
       {view === "discover" && suggestedPack ? (
@@ -1386,20 +1399,22 @@ function SessionSummary({
             pack={suggestedPack}
             unitCount={suggestedPackUnitCount}
             compact
+            m={m}
+            locale={locale}
           />
           <div className="pack-suggestion__copy">
-            <p className="eyebrow">Siguiente sugerencia</p>
-            <h3>{localized(suggestedPack.title, DEFAULT_LOCALE)}</h3>
-            <p>{localized(suggestedPack.description, DEFAULT_LOCALE)}</p>
+            <p className="eyebrow">{m.summary.suggestionEyebrow}</p>
+            <h3>{localized(suggestedPack.title, locale)}</h3>
+            <p>{localized(suggestedPack.description, locale)}</p>
             <div className="summary-actions">
               <button
                 type="button"
                 className="button button-primary"
                 onClick={() => onSuggestPack(suggestedPack)}
               >
-                Abrir «{localized(suggestedPack.title, DEFAULT_LOCALE)}»
+                {m.summary.openPack(localized(suggestedPack.title, locale))}
               </button>
-              <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} />
+              <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} m={m} />
             </div>
           </div>
         </article>
@@ -1407,13 +1422,7 @@ function SessionSummary({
       <div className="summary-actions">
         {view !== "discover" || discoverRemaining > 0 ? (
           <button type="button" className="button button-primary" onClick={onRestart}>
-            {view === "study"
-              ? "Nueva sesión"
-              : view === "discover"
-                ? `Volver a las que saltaste (${discoverRemaining})`
-                : view === "favorites"
-                  ? "Repasar de nuevo"
-                  : "Revisar de nuevo"}
+            {m.summary.restart(view, discoverRemaining)}
           </button>
         ) : null}
         <button

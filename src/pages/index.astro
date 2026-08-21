@@ -1,63 +1,68 @@
 ---
-import FlashcardApp from "../components/FlashcardApp";
-import { loadFlashcards } from "../data/loadFlashcards";
-import { loadCardPackData } from "../data/loadCardPacks";
+import {
+  AVAILABLE_LOCALES,
+  DEFAULT_LOCALE,
+  LOCALE_STORAGE_KEY,
+} from "../lib/locale";
+import { messages } from "../lib/messages";
 import "../styles/global.css";
 
-const cards = loadFlashcards();
-const { packs, packIdByCardId } = loadCardPackData(cards);
-const canonicalUrl = new URL(import.meta.env.BASE_URL, Astro.site);
-const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
-const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
+const base = import.meta.env.BASE_URL;
+const canonicalUrl = new URL(base, Astro.site);
+const meta = messages[DEFAULT_LOCALE].metadata;
+const assetUrl = (filename: string) => `${base}${filename}`;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={DEFAULT_LOCALE}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="Cartas de vocabulario, frases y conceptos de mandarín con explicaciones en español."
-    />
+    <meta name="description" content={meta.description} />
     <meta name="theme-color" content="#ffffff" />
-    <meta name="apple-mobile-web-app-title" content="Yuwenke" />
     <link rel="icon" href={assetUrl("favicon.ico")} sizes="16x16 32x32 48x48" />
     <link rel="icon" href={assetUrl("favicon-32.png")} type="image/png" sizes="32x32" />
-    <link
-      rel="apple-touch-icon"
-      href={assetUrl("apple-touch-icon.png")}
-      sizes="180x180"
-    />
-    <link rel="manifest" href={assetUrl("site.webmanifest")} />
     <link rel="canonical" href={canonicalUrl} />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="es_ES" />
-    <meta property="og:site_name" content="Yuwenke" />
-    <meta property="og:title" content="Yuwenke" />
-    <meta
-      property="og:description"
-      content="Mandarín y español en dos sentidos, a partir de mis notas de clase."
-    />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content={socialImageUrl} />
-    <meta
-      property="og:image:alt"
-      content="Yuwenke, cartas de mandarín y español"
-    />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Yuwenke" />
-    <meta
-      name="twitter:description"
-      content="Mandarín y español en dos sentidos, a partir de mis notas de clase."
-    />
-    <meta name="twitter:image" content={socialImageUrl} />
     <title>Yuwenke</title>
+    <script
+      is:inline
+      define:vars={{
+        storageKey: LOCALE_STORAGE_KEY,
+        available: AVAILABLE_LOCALES,
+        fallback: DEFAULT_LOCALE,
+        base,
+      }}
+    >
+      // Root locale resolver: saved choice first, then browser negotiation with
+      // English as the fallback. Mirrors resolveLocalePreference in locale.ts.
+      (function () {
+        var saved = null;
+        try {
+          saved = window.localStorage.getItem(storageKey);
+        } catch (error) {}
+        var target = available.indexOf(saved) >= 0 ? saved : null;
+        if (!target) {
+          var languages = navigator.languages || [navigator.language || ""];
+          var prefersSpanish = false;
+          for (var index = 0; index < languages.length; index += 1) {
+            var language = String(languages[index] || "").toLowerCase();
+            if (language.indexOf("es") === 0) {
+              prefersSpanish = true;
+              break;
+            }
+          }
+          target = prefersSpanish ? "es" : "en";
+          if (available.indexOf(target) < 0) target = fallback;
+        }
+        window.location.replace(base + target + "/");
+      })();
+    </script>
   </head>
   <body>
-    <FlashcardApp cards={cards} packs={packs} packIdByCardId={packIdByCardId} client:load />
     <noscript>
-      <p class="noscript-message">Necesitas activar JavaScript para usar las cartas.</p>
+      <p class="noscript-message">
+        <a href={`${base}${DEFAULT_LOCALE}/`}>{meta.noscript}</a>
+      </p>
     </noscript>
   </body>
 </html>

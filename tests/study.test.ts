@@ -125,19 +125,19 @@ describe("study domain", () => {
 
   it("searches pinyin without requiring tone marks", () => {
     expect(
-      matchesFilters(cards[1], { query: "ni", topic: "all", type: "all" }),
+      matchesFilters(cards[1], { query: "ni", topic: "all", type: "all" }, "es"),
     ).toBe(true);
     expect(
-      matchesFilters(cards[1], { query: "como te llamas", topic: "all", type: "all" }),
+      matchesFilters(cards[1], { query: "como te llamas", topic: "all", type: "all" }, "es"),
     ).toBe(true);
   });
 
   it("filters by topic and type", () => {
     expect(
-      matchesFilters(cards[0], { query: "", topic: "pronombres", type: "palabra" }),
+      matchesFilters(cards[0], { query: "", topic: "pronombres", type: "palabra" }, "es"),
     ).toBe(true);
     expect(
-      matchesFilters(cards[0], { query: "", topic: "saludos", type: "palabra" }),
+      matchesFilters(cards[0], { query: "", topic: "saludos", type: "palabra" }, "es"),
     ).toBe(false);
   });
 
@@ -145,7 +145,7 @@ describe("study domain", () => {
     const card = cards.find((candidate) => candidate.id === "FC134");
     expect(card).toBeDefined();
     expect(
-      matchesFilters(card!, { query: "u_dieresis", topic: "all", type: "all" }),
+      matchesFilters(card!, { query: "u_dieresis", topic: "all", type: "all" }, "es"),
     ).toBe(true);
   });
 
@@ -203,6 +203,7 @@ describe("study domain", () => {
         {},
         new Set(["CP001"]),
         packIdByCardId,
+        "es",
       ).map((unit) => unit.cardId),
     ).toEqual(["FC001", "FC001"]);
     expect(unitBelongsToView(units[2], "study", progress)).toBe(true);
@@ -382,6 +383,7 @@ describe("study domain", () => {
       favorites,
       new Set(["CP001"]),
       Object.fromEntries(selected.map((card) => [card.id, "CP001"])),
+      "es",
     );
 
     expect(result).toHaveLength(2);

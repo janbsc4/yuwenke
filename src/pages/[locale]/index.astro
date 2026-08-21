@@ -1,0 +1,75 @@
+---
+import FlashcardApp from "../../components/FlashcardApp";
+import { loadFlashcards } from "../../data/loadFlashcards";
+import { loadCardPackData } from "../../data/loadCardPacks";
+import { AVAILABLE_LOCALES, localeUrl } from "../../lib/locale";
+import { messages } from "../../lib/messages";
+import type { Locale } from "../../types";
+import "../../styles/global.css";
+
+export function getStaticPaths() {
+  return AVAILABLE_LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const meta = messages[locale].metadata;
+const cards = loadFlashcards();
+const { packs, packIdByCardId } = loadCardPackData(cards);
+const canonicalUrl = new URL(localeUrl(locale), Astro.site);
+const rootUrl = new URL(import.meta.env.BASE_URL, Astro.site);
+const socialImageUrl = new URL(`${import.meta.env.BASE_URL}og.png`, Astro.site);
+const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content={meta.description} />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-title" content="Yuwenke" />
+    <link rel="icon" href={assetUrl("favicon.ico")} sizes="16x16 32x32 48x48" />
+    <link rel="icon" href={assetUrl("favicon-32.png")} type="image/png" sizes="32x32" />
+    <link
+      rel="apple-touch-icon"
+      href={assetUrl("apple-touch-icon.png")}
+      sizes="180x180"
+    />
+    <link rel="manifest" href={assetUrl("site.webmanifest")} />
+    <link rel="canonical" href={canonicalUrl} />
+    {AVAILABLE_LOCALES.map((available) => (
+      <link
+        rel="alternate"
+        hreflang={available}
+        href={new URL(localeUrl(available), Astro.site)}
+      />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={rootUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={meta.ogLocale} />
+    <meta property="og:site_name" content="Yuwenke" />
+    <meta property="og:title" content="Yuwenke" />
+    <meta property="og:description" content={meta.socialDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:alt" content={meta.ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Yuwenke" />
+    <meta name="twitter:description" content={meta.socialDescription} />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <title>Yuwenke</title>
+  </head>
+  <body>
+    <FlashcardApp
+      cards={cards}
+      packs={packs}
+      packIdByCardId={packIdByCardId}
+      initialLocale={locale}
+      client:load
+    />
+    <noscript>
+      <p class="noscript-message">{meta.noscript}</p>
+    </noscript>
+  </body>
+</html>

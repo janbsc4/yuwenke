@@ -1,6 +1,8 @@
 import { Fragment, forwardRef, type RefObject } from "react";
 
-import type { StudyUnit } from "../types";
+import type { Locale, StudyUnit } from "../types";
+import { localizedCardContent } from "../lib/locale";
+import type { Messages } from "../lib/messages";
 import { highlightProperNames } from "../lib/properNames";
 
 interface StudyCardProps {
@@ -10,6 +12,8 @@ interface StudyCardProps {
   favorite: boolean;
   onToggleFavorite: () => void;
   promptRef: RefObject<HTMLHeadingElement | null>;
+  m: Messages;
+  locale: Locale;
 }
 
 interface HighlightedTextProps {
@@ -34,22 +38,23 @@ export function HighlightedText({ text, properNames }: HighlightedTextProps) {
 }
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
-  { unit, packTitle, revealed, favorite, onToggleFavorite, promptRef },
+  { unit, packTitle, revealed, favorite, onToggleFavorite, promptRef, m, locale },
   answerRef,
 ) {
   const { card, direction } = unit;
+  const content = localizedCardContent(card, locale);
   const conceptCard = card.tipo === "concepto";
   const hanziPrompt = !conceptCard && direction === "hanzi-meaning";
   const hanziAnswer = !conceptCard && direction === "meaning-hanzi";
   const promptText = conceptCard
-    ? card.espanol
+    ? content.meaning
     : hanziPrompt
       ? card.hanzi
-      : card.espanol;
+      : content.meaning;
   const answerText = conceptCard
-    ? card.explicacion
+    ? content.explanation
     : hanziPrompt
-      ? card.espanol
+      ? content.meaning
       : card.hanzi;
 
   return (
@@ -57,19 +62,17 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
       <button
         type="button"
         className={`favorite-button ${favorite ? "is-favorite" : ""}`}
-        aria-label={
-          favorite ? "Quitar carta de favoritas" : "Añadir carta a favoritas"
-        }
+        aria-label={favorite ? m.card.favoriteRemove : m.card.favoriteAdd}
         aria-pressed={favorite}
         onClick={onToggleFavorite}
       >
         <span aria-hidden="true">{favorite ? "★" : "☆"}</span>
       </button>
       <div className="card-prompt">
-        <p className="eyebrow">Tu pregunta</p>
+        <p className="eyebrow">{m.card.promptEyebrow}</p>
         <h2
           className={hanziPrompt ? "prompt-hanzi" : "prompt-spanish"}
-          lang={hanziPrompt ? "zh-Hans" : "es"}
+          lang={hanziPrompt ? "zh-Hans" : locale}
           ref={promptRef}
           tabIndex={-1}
         >
@@ -84,7 +87,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
         <section className="card-answer" ref={answerRef} tabIndex={-1} aria-labelledby="answer-title">
           <div className="answer-heading">
             <h3 className="eyebrow" id="answer-title">
-              Respuesta
+              {m.card.answerTitle}
             </h3>
             <p className="card-reference">
               {card.id} · {packTitle}
@@ -92,7 +95,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
           </div>
           <p
             className={hanziAnswer ? "answer-hanzi" : "answer-spanish"}
-            lang={hanziAnswer ? "zh-Hans" : "es"}
+            lang={hanziAnswer ? "zh-Hans" : locale}
           >
             <HighlightedText
               text={answerText}
@@ -103,30 +106,30 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
           {!conceptCard ? (
             <dl className="answer-details">
               <div>
-                <dt>Pinyin</dt>
+                <dt>{m.card.pinyin}</dt>
                 <dd lang="zh-Latn">
                   <HighlightedText text={card.pinyin} properNames={card.nombres_propios} />
                 </dd>
               </div>
               <div>
-                <dt>Explicación</dt>
-                <dd lang="es">
-                  <HighlightedText text={card.explicacion} properNames={card.nombres_propios} />
+                <dt>{m.card.explanation}</dt>
+                <dd lang={locale}>
+                  <HighlightedText text={content.explanation} properNames={card.nombres_propios} />
                 </dd>
               </div>
             </dl>
           ) : null}
 
           <div className="example-block">
-            <h3>Ejemplo</h3>
+            <h3>{m.card.example}</h3>
             <p className="example-hanzi" lang="zh-Hans">
               <HighlightedText text={card.ejemplo_hanzi} properNames={card.nombres_propios} />
             </p>
             <p lang="zh-Latn">
               <HighlightedText text={card.ejemplo_pinyin} properNames={card.nombres_propios} />
             </p>
-            <p lang="es">
-              <HighlightedText text={card.ejemplo_espanol} properNames={card.nombres_propios} />
+            <p lang={locale}>
+              <HighlightedText text={content.example} properNames={card.nombres_propios} />
             </p>
           </div>
         </section>

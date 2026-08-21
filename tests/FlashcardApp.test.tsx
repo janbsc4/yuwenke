@@ -738,3 +738,140 @@ describe("FlashcardApp", () => {
     );
   });
 });
+
+describe("FlashcardApp localization", () => {
+  const bilingualCard: Flashcard = {
+    ...card,
+    ingles: "hello",
+    explicacion_ingles: "A basic greeting.",
+    ejemplo_ingles: "Hello!",
+    etiquetas_ingles: "greeting",
+  };
+
+  function renderLocalizedApp(cards: Flashcard[], initialLocale: "es" | "en") {
+    return render(
+      <FlashcardApp
+        cards={cards}
+        packs={[{
+          id: "CP001",
+          title: { es: "Cartas", en: "Cards" },
+          description: { es: "Para practicar.", en: "For practice." },
+          mark: "文",
+          theme: "cinnabar",
+        }]}
+        packIdByCardId={Object.fromEntries(cards.map((item) => [item.id, "CP001"]))}
+        initialLocale={initialLocale}
+        enabledLocales={["es", "en"]}
+      />,
+    );
+  }
+
+  it("renders English interface copy and card content in the English locale", async () => {
+    const user = userEvent.setup();
+    renderLocalizedApp([bilingualCard], "en");
+
+    expect(await screen.findByText("Learn Lots of Chinese")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Show answer/ })).toBeInTheDocument();
+    expect(document.querySelector(".direction-badge")?.textContent).toContain("English");
+
+    await user.click(screen.getByRole("button", { name: /Show answer/ }));
+    expect(screen.getByText("A basic greeting.")).toBeInTheDocument();
+    expect(screen.getByText("Hello!")).toBeInTheDocument();
+    expect(screen.getByText("Explanation")).toBeInTheDocument();
+    expect(screen.getByText("FC001 · Cards")).toBeInTheDocument();
+  });
+
+  it("studies a concept as one English question with an English answer", async () => {
+    const user = userEvent.setup();
+    const conceptCard: Flashcard = {
+      ...card,
+      id: "FC133",
+      tipo: "concepto",
+      tema: "pronunciacion",
+      hanzi: "每个音节最多一个声调符号",
+      pinyin: "měi ge yīnjié zuìduō yí ge shēngdiào fúhào",
+      espanol: "¿Cuántas marcas tonales puede haber por sílaba?",
+      explicacion: "Solo puede haber una.",
+      ejemplo_hanzi: "好",
+      ejemplo_pinyin: "hǎo",
+      ejemplo_espanol: "bien",
+      ingles: "How many tone marks can there be per syllable?",
+      explicacion_ingles: "Only one.",
+      ejemplo_ingles: "good",
+    };
+
+    renderLocalizedApp([conceptCard], "en");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "How many tone marks can there be per syllable?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Concept · English")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Show answer/ }));
+    expect(screen.getByText("Only one.")).toBeInTheDocument();
+    expect(screen.queryByText("Explanation")).not.toBeInTheDocument();
+  });
+
+  it("searches only the active locale's content", async () => {
+    const user = userEvent.setup();
+    renderLocalizedApp([bilingualCard], "en");
+    const search = await screen.findByRole("searchbox", { name: "Search the cards" });
+
+    await user.type(search, "hola");
+    expect(
+      await screen.findByText("No cards match these filters."),
+    ).toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "hello");
+    expect(
+      await screen.findByRole("button", { name: /Show answer/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No cards match these filters."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("switches locale in place, preserving the study session", async () => {
+    const user = userEvent.setup();
+    renderLocalizedApp([bilingualCard], "es");
+
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    expect(screen.getByText("Un saludo básico.")).toBeInTheDocument();
+    expect(screen.getAllByText(/Carta 1 de 2/).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: "EN" }));
+
+    expect(await screen.findByText("A basic greeting.")).toBeInTheDocument();
+    expect(screen.queryByText("Un saludo básico.")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Card 1 of 2/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/en/");
+    expect(document.documentElement.lang).toBe("en");
+    expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("en");
+    expect(screen.getByRole("button", { name: "EN" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("follows browser history when navigating back to another locale", async () => {
+    const user = userEvent.setup();
+    renderLocalizedApp([bilingualCard], "es");
+
+    await user.click(await screen.findByRole("button", { name: "EN" }));
+    expect(await screen.findByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+
+    window.history.pushState(null, "", "/es/");
+    fireEvent(window, new Event("popstate"));
+
+    expect(
+      await screen.findByRole("searchbox", { name: "Buscar en las cartas" }),
+    ).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("es");
+    expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("es");
+  });
+});

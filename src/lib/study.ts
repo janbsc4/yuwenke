@@ -6,6 +6,7 @@ import {
   type CardPackState,
   type Filters,
   type Flashcard,
+  type Locale,
   type NeutralDirection,
   type ProgressEntry,
   type ProgressMap,
@@ -14,6 +15,8 @@ import {
   type StudyUnit,
   type StudyView,
 } from "../types";
+import { localizedCardContent } from "./locale";
+import { messages, topicDisplayLabel } from "./messages";
 
 export function unitKey(cardId: string, direction: StudyDirection): string {
   return `${cardId}::${direction}`;
@@ -83,33 +86,40 @@ export function tagsFor(card: Flashcard): string[] {
     .filter(Boolean);
 }
 
-export function normalizeSearch(value: string): string {
+export function normalizeSearch(value: string, locale: Locale): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("es")
+    .toLocaleLowerCase(locale)
     .trim();
 }
 
-export function matchesFilters(card: Flashcard, filters: Filters): boolean {
+export function matchesFilters(
+  card: Flashcard,
+  filters: Filters,
+  locale: Locale,
+): boolean {
   if (filters.topic !== "all" && card.tema !== filters.topic) return false;
   if (filters.type !== "all" && card.tipo !== filters.type) return false;
 
-  const query = normalizeSearch(filters.query);
+  const query = normalizeSearch(filters.query, locale);
   if (!query) return true;
 
+  const content = localizedCardContent(card, locale);
   return normalizeSearch(
     [
       card.hanzi,
       card.pinyin,
-      card.espanol,
-      card.explicacion,
+      content.meaning,
+      content.explanation,
       card.ejemplo_hanzi,
       card.ejemplo_pinyin,
-      card.ejemplo_espanol,
-      card.etiquetas,
-      card.tema,
+      content.example,
+      content.tags,
+      topicDisplayLabel(locale, card.tema),
+      messages[locale].cardTypes[card.tipo],
     ].join(" "),
+    locale,
   ).includes(query);
 }
 
@@ -134,13 +144,14 @@ export function visibleUnits(
   favorites: FavoriteMap,
   openPackIds: ReadonlySet<string>,
   packIdByCardId: PackIdByCardId,
+  locale: Locale,
 ): StudyUnit[] {
   return units.filter(
     (unit) =>
       unitBelongsToView(unit, view, progress, favorites) &&
       (view !== "discover" ||
         openPackIds.has(packIdByCardId[unit.cardId])) &&
-      matchesFilters(unit.card, filters),
+      matchesFilters(unit.card, filters, locale),
   );
 }
 

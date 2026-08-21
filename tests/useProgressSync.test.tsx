@@ -215,9 +215,7 @@ describe("authenticated progress synchronization", () => {
 
     expect(reset).toBe(false);
     expect(result.current.progress).not.toEqual({});
-    expect(result.current.notice).toBe(
-      "No se pudo confirmar el restablecimiento. No hemos borrado tus datos locales.",
-    );
+    expect(result.current.notice).toBe("accountResetFailed");
   });
 
   it("retries a failed authenticated outbox without losing the pending change", async () => {

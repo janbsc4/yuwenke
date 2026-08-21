@@ -12,6 +12,7 @@ import type {
   StudyDirection,
 } from "../types";
 import { isFirebaseConfigured } from "../lib/firebaseConfig";
+import type { NoticeKey } from "../lib/messages";
 import { localFavorites } from "../lib/localFavorites";
 import { localCardPacks } from "../lib/localCardPacks";
 import { localProgress } from "../lib/localProgress";
@@ -80,7 +81,7 @@ interface UseProgressSyncResult {
   syncState: SyncState;
   firebaseConfigured: boolean;
   firebaseReady: boolean;
-  notice: string;
+  notice: NoticeKey | null;
   resetting: boolean;
   setStatus: (
     cardId: string,
@@ -193,7 +194,7 @@ export function useProgressSync(
   const [user, setUser] = useState<User | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("local");
   const [firebaseReady, setFirebaseReady] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<NoticeKey | null>(null);
   const [resetting, setResetting] = useState(false);
 
   const progressRef = useRef<ProgressMap>({});
@@ -354,7 +355,7 @@ export function useProgressSync(
           confirmedRef.current.favorites = true;
         }
         settleSyncState(uid);
-        setNotice("Progreso, favoritas y packs sincronizados.");
+        setNotice("syncCompleted");
         succeeded = true;
       } catch {
         if (generation === generationRef.current) {
@@ -363,7 +364,7 @@ export function useProgressSync(
               ? "offline"
               : "error",
           );
-          setNotice("Guardaremos este cambio cuando vuelva la conexión.");
+          setNotice("willSyncWhenOnline");
         }
       } finally {
         flushingRef.current = false;
@@ -672,18 +673,14 @@ export function useProgressSync(
           },
           () => {
             setSyncState("error");
-            setNotice(
-              "No se pudo iniciar la sincronización. Tu progreso local sigue a salvo.",
-            );
+            setNotice("syncStartFailed");
           },
         );
       })
       .catch(() => {
         if (!cancelled) {
           setSyncState("error");
-          setNotice(
-            "No se pudo preparar la sincronización. Tu progreso local sigue a salvo.",
-          );
+          setNotice("syncPrepareFailed");
         }
       });
 
@@ -776,7 +773,7 @@ export function useProgressSync(
                 ? "offline"
                 : "error",
             );
-            setNotice("Guardaremos este cambio cuando vuelva la conexión.");
+            setNotice("willSyncWhenOnline");
           }
         });
     },
@@ -842,7 +839,7 @@ export function useProgressSync(
                 ? "offline"
                 : "error",
             );
-            setNotice("Guardaremos este cambio cuando vuelva la conexión.");
+            setNotice("willSyncWhenOnline");
           }
         });
     },
@@ -903,17 +900,17 @@ export function useProgressSync(
       replaceProgress({});
       replaceFavorites({});
       replacePackState(next);
-      setNotice("Tu progreso se ha restablecido en este dispositivo.");
+      setNotice("localResetDone");
       return true;
     }
 
     const firebase = firebaseClientRef.current;
     if (!firebase) {
-      setNotice("Necesitas conexión para restablecer una cuenta sincronizada.");
+      setNotice("resetNeedsConnection");
       return false;
     }
     setResetting(true);
-    setNotice("");
+    setNotice(null);
     guestPackMergeRef.current.active = false;
     const generation = generationRef.current;
     try {
@@ -941,10 +938,10 @@ export function useProgressSync(
       replacePackState(next);
       confirmedRef.current = { progress: true, favorites: true, cardPacks: true };
       setSyncState("synced");
-      setNotice("Tu cuenta se ha restablecido.");
+      setNotice("accountResetDone");
       return true;
     } catch {
-      setNotice("No se pudo confirmar el restablecimiento. No hemos borrado tus datos locales.");
+      setNotice("accountResetFailed");
       return false;
     } finally {
       setResetting(false);
@@ -952,18 +949,16 @@ export function useProgressSync(
   }, [orderedPackIds, replaceFavorites, replacePackState, replaceProgress]);
 
   const signIn = useCallback(async () => {
-    setNotice("");
+    setNotice(null);
     const firebase = firebaseClientRef.current;
     if (!firebase) {
-      setNotice(
-        "La sincronización se está preparando. Inténtalo de nuevo en un momento.",
-      );
+      setNotice("syncPreparing");
       return;
     }
     try {
       await firebase.signInWithGoogle();
     } catch {
-      setNotice("No se pudo iniciar sesión. Tu progreso local sigue a salvo.");
+      setNotice("signInFailed");
     }
   }, []);
 
@@ -1006,7 +1001,7 @@ export function useProgressSync(
     } catch {
       // Local account state has already been isolated from the fresh guest session.
     } finally {
-      setNotice("Sesión cerrada. Ahora estudias como invitado.");
+      setNotice("signedOut");
     }
   }, [orderedPackIds, replaceFavorites, replacePackState, replaceProgress]);
 
@@ -1017,7 +1012,7 @@ export function useProgressSync(
     }
   }, [flushOutboxes]);
 
-  const clearNotice = useCallback(() => setNotice(""), []);
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   return {
     progress,
