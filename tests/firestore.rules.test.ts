@@ -21,7 +21,7 @@ let environment: RulesTestEnvironment;
 
 const validData = (overrides: Record<string, unknown> = {}) => ({
   cardId: "FC001",
-  direction: "hanzi-es",
+  direction: "hanzi-meaning",
   status: "learning",
   clientUpdatedAt: Timestamp.fromMillis(1000),
   serverUpdatedAt: serverTimestamp(),
@@ -72,8 +72,8 @@ afterAll(async () => {
 describe("Firestore progress rules", () => {
   it("denies unauthenticated reads and writes", async () => {
     const db = environment.unauthenticatedContext().firestore();
-    await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-es")));
-    await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-es"), validData()));
+    await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning")));
+    await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning"), validData()));
     await assertFails(getDoc(doc(db, "users/alice/favorites/FC001")));
     await assertFails(
       setDoc(doc(db, "users/alice/favorites/FC001"), validFavoriteData()),
@@ -82,14 +82,14 @@ describe("Firestore progress rules", () => {
 
   it("allows a user to create and list their own progress", async () => {
     const db = environment.authenticatedContext("alice").firestore();
-    await assertSucceeds(setDoc(doc(db, "users/alice/progress/FC001_hanzi-es"), validData()));
+    await assertSucceeds(setDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning"), validData()));
     await assertSucceeds(getDocs(collection(db, "users/alice/progress")));
   });
 
   it("prevents access to another user's progress", async () => {
     const db = environment.authenticatedContext("bob").firestore();
-    await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-es")));
-    await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-es"), validData()));
+    await assertFails(getDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning")));
+    await assertFails(setDoc(doc(db, "users/alice/progress/FC001_hanzi-meaning"), validData()));
     await assertFails(getDoc(doc(db, "users/alice/favorites/FC001")));
     await assertFails(
       setDoc(doc(db, "users/alice/favorites/FC001"), validFavoriteData()),
@@ -103,7 +103,7 @@ describe("Firestore progress rules", () => {
 
   it("rejects missing, extra, malformed and client-authored server fields", async () => {
     const db = environment.authenticatedContext("alice").firestore();
-    const ref = doc(db, "users/alice/progress/FC001_hanzi-es");
+    const ref = doc(db, "users/alice/progress/FC001_hanzi-meaning");
     const missing = validData();
     delete (missing as Record<string, unknown>).status;
     await assertFails(setDoc(ref, missing));
@@ -114,9 +114,25 @@ describe("Firestore progress rules", () => {
     await assertFails(setDoc(ref, validData({ serverUpdatedAt: Timestamp.fromMillis(1000) })));
   });
 
+  it("rejects legacy Spanish-coded direction writes after the neutral-direction release", async () => {
+    const db = environment.authenticatedContext("alice").firestore();
+    await assertFails(
+      setDoc(
+        doc(db, "users/alice/progress/FC001_hanzi-es"),
+        validData({ direction: "hanzi-es", clientUpdatedAt: Timestamp.fromMillis(1) }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, "users/alice/progress/FC001_es-hanzi"),
+        validData({ direction: "es-hanzi", clientUpdatedAt: Timestamp.fromMillis(1) }),
+      ),
+    );
+  });
+
   it("rejects stale updates and permits monotonic updates", async () => {
     const db = environment.authenticatedContext("alice").firestore();
-    const ref = doc(db, "users/alice/progress/FC001_hanzi-es");
+    const ref = doc(db, "users/alice/progress/FC001_hanzi-meaning");
     await assertSucceeds(setDoc(ref, validData()));
     await assertFails(
       updateDoc(ref, validData({ clientUpdatedAt: Timestamp.fromMillis(999), status: "known" })),
@@ -129,9 +145,9 @@ describe("Firestore progress rules", () => {
   it("rejects an entire batch when one progress entry is invalid", async () => {
     const db = environment.authenticatedContext("alice").firestore();
     const batch = writeBatch(db);
-    batch.set(doc(db, "users/alice/progress/FC001_hanzi-es"), validData());
+    batch.set(doc(db, "users/alice/progress/FC001_hanzi-meaning"), validData());
     batch.set(
-      doc(db, "users/alice/progress/FC002_es-hanzi"),
+      doc(db, "users/alice/progress/FC002_hanzi-meaning"),
       validData({ cardId: "FC002", direction: "invalid" }),
     );
     await assertFails(batch.commit());
@@ -205,12 +221,12 @@ describe("Firestore progress rules", () => {
   it("requires reset-aware study writes to match the current reset boundary", async () => {
     const db = environment.authenticatedContext("alice").firestore();
     const stateRef = doc(db, "users/alice/state/cardPacks");
-    const progressRef = doc(db, "users/alice/progress/FC001_hanzi-es");
+    const progressRef = doc(db, "users/alice/progress/FC001_hanzi-meaning");
     await assertSucceeds(setDoc(stateRef, validPackState()));
     await assertSucceeds(setDoc(progressRef, validResetAwareProgress()));
     await assertFails(
       setDoc(
-        doc(db, "users/alice/progress/FC002_hanzi-es"),
+        doc(db, "users/alice/progress/FC002_hanzi-meaning"),
         validResetAwareProgress({
           cardId: "FC002",
           resetAt: Timestamp.fromMillis(999),
@@ -219,7 +235,7 @@ describe("Firestore progress rules", () => {
     );
     await assertFails(
       setDoc(
-        doc(db, "users/alice/progress/FC003_hanzi-es"),
+        doc(db, "users/alice/progress/FC003_hanzi-meaning"),
         validData({ cardId: "FC003" }),
       ),
     );
@@ -248,7 +264,7 @@ describe("Firestore progress rules", () => {
     );
     await assertFails(
       setDoc(
-        doc(db, "users/alice/progress/FC001_hanzi-es"),
+        doc(db, "users/alice/progress/FC001_hanzi-meaning"),
         validResetAwareProgress(),
       ),
     );

@@ -32,7 +32,9 @@ service cloud.firestore {
       return data.keys().hasAll(commonFields)
         && data.cardId is string
         && data.cardId.matches('^FC[0-9]{3}$')
-        && (data.direction == 'hanzi-es' || data.direction == 'es-hanzi')
+        && (data.direction == 'hanzi-meaning'
+          || data.direction == 'meaning-hanzi'
+          || data.direction == 'concept')
         && (data.status == 'learning' || data.status == 'known')
         && data.clientUpdatedAt is timestamp
         && data.serverUpdatedAt is timestamp

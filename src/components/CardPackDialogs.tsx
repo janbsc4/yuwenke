@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 import { plural } from "../lib/labels";
+import { localized, DEFAULT_LOCALE } from "../lib/locale";
 import type { CardPack } from "../types";
 import { CardPackBooster } from "./CardPackBooster";
 
@@ -79,7 +80,7 @@ export function CardPackDialogs({
             </p>
             {openedOutsideDiscover ? (
               <div className="pack-opened-notice" role="status">
-                <p>«{openedOutsideDiscover.title}» ya está abierto.</p>
+                <p>«{localized(openedOutsideDiscover.title, DEFAULT_LOCALE)}» ya está abierto.</p>
                 <button type="button" className="button button-primary" onClick={onGoToDiscover}>
                   Ir a Descubrir
                 </button>
@@ -99,15 +100,15 @@ export function CardPackDialogs({
                         <button
                           type="button"
                           className="pack-choice__booster"
-                          aria-label={`Abrir ${pack.title}: ${plural(unitCount, "carta")}. ${pack.description}`}
+                          aria-label={`Abrir ${localized(pack.title, DEFAULT_LOCALE)}: ${plural(unitCount, "carta")}. ${localized(pack.description, DEFAULT_LOCALE)}`}
                           onClick={() => onRequestOpen(pack)}
                         >
                           <CardPackBooster pack={pack} unitCount={unitCount} />
                         </button>
                         <div className="pack-choice__details">
                           <span className="pack-status">Sin abrir</span>
-                          <h4>{pack.title}</h4>
-                          <p>{pack.description}</p>
+                          <h4>{localized(pack.title, DEFAULT_LOCALE)}</h4>
+                          <p>{localized(pack.description, DEFAULT_LOCALE)}</p>
                         </div>
                       </article>
                     );
@@ -126,14 +127,14 @@ export function CardPackDialogs({
                   return (
                     <article
                       className="pack-choice pack-choice--opened"
-                      aria-label={`${pack.title}, abierto: ${plural(unitCount, "carta")}. ${pack.description}`}
+                      aria-label={`${localized(pack.title, DEFAULT_LOCALE)}, abierto: ${plural(unitCount, "carta")}. ${localized(pack.description, DEFAULT_LOCALE)}`}
                       key={pack.id}
                     >
                       <CardPackBooster pack={pack} unitCount={unitCount} state="opened" />
                       <div className="pack-choice__details">
                         <span className="pack-status">Abierto</span>
-                        <h4>{pack.title}</h4>
-                        <p>{pack.description}</p>
+                        <h4>{localized(pack.title, DEFAULT_LOCALE)}</h4>
+                        <p>{localized(pack.description, DEFAULT_LOCALE)}</p>
                       </div>
                     </article>
                   );
@@ -173,13 +174,13 @@ export function CardPackDialogs({
             </div>
             <div className="pack-opening-copy">
               <p className="eyebrow">{packOpening ? "Abriendo pack" : "Listo para abrir"}</p>
-              <h2 id="open-pack-title">Abrir {packToConfirm.title}</h2>
+              <h2 id="open-pack-title">Abrir {localized(packToConfirm.title, DEFAULT_LOCALE)}</h2>
               <p>
                 Sus {plural(packUnitCounts[packToConfirm.id] ?? 0, "carta")} nuevas
                 estarán disponibles en Descubrir. Este pack no se podrá cerrar por separado.
               </p>
               <p className="sr-only" role="status" aria-live="polite">
-                {packOpening ? `Abriendo ${packToConfirm.title}…` : ""}
+                {packOpening ? `Abriendo ${localized(packToConfirm.title, DEFAULT_LOCALE)}…` : ""}
               </p>
               <div className="confirm-actions">
                 <button
@@ -188,7 +189,7 @@ export function CardPackDialogs({
                   disabled={packOpening}
                   onClick={onConfirmOpen}
                 >
-                  {packOpening ? "Abriendo…" : `Abrir «${packToConfirm.title}»`}
+                  {packOpening ? "Abriendo…" : `Abrir «${localized(packToConfirm.title, DEFAULT_LOCALE)}»`}
                 </button>
                 <button
                   type="button"
@@ -218,7 +219,7 @@ export function CardPackDialogs({
             <h2 id="reset-title">Restablecer estudio</h2>
             <p>
               Se borrarán el progreso y las favoritas, y solo quedará abierto
-              «{packs[0].title}». Tus preferencias {authenticated ? "y tu sesión" : "de interfaz"} se conservarán.
+              «{localized(packs[0].title, DEFAULT_LOCALE)}». Tus preferencias {authenticated ? "y tu sesión" : "de interfaz"} se conservarán.
             </p>
             {authenticated ? <p>Necesitamos confirmación del servidor antes de borrar los datos locales.</p> : null}
             <div className="confirm-actions">

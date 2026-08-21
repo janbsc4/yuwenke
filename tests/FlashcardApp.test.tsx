@@ -24,6 +24,10 @@ const card: Flashcard = {
   pagina: "1",
   etiquetas: "saludo;basico",
   nombres_propios: "",
+  ingles: "",
+  explicacion_ingles: "",
+  ejemplo_ingles: "",
+  etiquetas_ingles: "",
 };
 
 const secondCard: Flashcard = {
@@ -38,15 +42,15 @@ const secondCard: Flashcard = {
 const packs = [
   {
     id: "CP001",
-    title: "Primeros pasos",
-    description: "La base.",
+    title: { es: "Primeros pasos", en: "First steps" },
+    description: { es: "La base.", en: "The basics." },
     mark: "启",
     theme: "cinnabar" as const,
   },
   {
     id: "CP002",
-    title: "Saludos",
-    description: "Para conversar.",
+    title: { es: "Saludos", en: "Greetings" },
+    description: { es: "Para conversar.", en: "For conversation." },
     mark: "礼",
     theme: "jade" as const,
   },
@@ -59,8 +63,8 @@ function renderApp(cards: Flashcard[]) {
       cards={cards}
       packs={[{
         id: "CP001",
-        title: "Cartas",
-        description: "Para practicar.",
+        title: { es: "Cartas", en: "Cards" },
+        description: { es: "Para practicar.", en: "For practice." },
         mark: "文",
         theme: "cinnabar",
       }]}

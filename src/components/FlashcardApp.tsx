@@ -29,6 +29,7 @@ import {
   visibleUnits,
 } from "../lib/study";
 import { plural, topicLabel } from "../lib/labels";
+import { localized, DEFAULT_LOCALE } from "../lib/locale";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
@@ -118,7 +119,10 @@ export default function FlashcardApp({
 }: FlashcardAppProps) {
   const orderedPackIds = useMemo(() => packs.map((pack) => pack.id), [packs]);
   const packTitleById = useMemo(
-    () => Object.fromEntries(packs.map((pack) => [pack.id, pack.title])),
+    () =>
+      Object.fromEntries(
+        packs.map((pack) => [pack.id, localized(pack.title, DEFAULT_LOCALE)]),
+      ),
     [packs],
   );
   const units = useMemo(() => createStudyUnits(cards), [cards]);
@@ -877,7 +881,7 @@ export default function FlashcardApp({
                   <span className="direction-badge">
                     {current.card.tipo === "concepto"
                       ? "Concepto · Español"
-                      : current.direction === "hanzi-es"
+                      : current.direction === "hanzi-meaning"
                         ? "Chino → Español"
                         : "Español → Chino"}
                   </span>
@@ -1385,15 +1389,15 @@ function SessionSummary({
           />
           <div className="pack-suggestion__copy">
             <p className="eyebrow">Siguiente sugerencia</p>
-            <h3>{suggestedPack.title}</h3>
-            <p>{suggestedPack.description}</p>
+            <h3>{localized(suggestedPack.title, DEFAULT_LOCALE)}</h3>
+            <p>{localized(suggestedPack.description, DEFAULT_LOCALE)}</p>
             <div className="summary-actions">
               <button
                 type="button"
                 className="button button-primary"
                 onClick={() => onSuggestPack(suggestedPack)}
               >
-                Abrir «{suggestedPack.title}»
+                Abrir «{localized(suggestedPack.title, DEFAULT_LOCALE)}»
               </button>
               <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} />
             </div>

@@ -1,71 +1,101 @@
 [
   {
     "id": "CP001",
-    "title": "Primeros pasos",
-    "description": "Pronombres, escritura y componentes básicos de los caracteres.",
+    "title": { "es": "Primeros pasos", "en": "First steps" },
+    "description": {
+      "es": "Pronombres, escritura y componentes básicos de los caracteres.",
+      "en": "Pronouns, writing, and the basic components of characters."
+    },
     "mark": "启",
     "theme": "cinnabar"
   },
   {
     "id": "CP002",
-    "title": "Saludos y conversación",
-    "description": "Saludos, estados, preguntas sencillas y notas culturales.",
+    "title": { "es": "Saludos y conversación", "en": "Greetings and conversation" },
+    "description": {
+      "es": "Saludos, estados, preguntas sencillas y notas culturales.",
+      "en": "Greetings, states, simple questions, and cultural notes."
+    },
     "mark": "礼",
     "theme": "jade"
   },
   {
     "id": "CP003",
-    "title": "Familia y países",
-    "description": "La familia cercana, la posesión y tres países de Asia oriental.",
+    "title": { "es": "Familia y países", "en": "Family and countries" },
+    "description": {
+      "es": "La familia cercana, la posesión y tres países de Asia oriental.",
+      "en": "The close family, possession, and three East Asian countries."
+    },
     "mark": "家",
     "theme": "lilac"
   },
   {
     "id": "CP004",
-    "title": "Nombres y presentaciones",
-    "description": "Cómo decir el nombre y el apellido y presentar a otras personas.",
+    "title": { "es": "Nombres y presentaciones", "en": "Names and introductions" },
+    "description": {
+      "es": "Cómo decir el nombre y el apellido y presentar a otras personas.",
+      "en": "How to say given names and surnames and introduce other people."
+    },
     "mark": "名",
     "theme": "amber"
   },
   {
     "id": "CP005",
-    "title": "Preguntar por personas",
-    "description": "Preguntas con qué y quién sobre nombres y relaciones familiares.",
+    "title": { "es": "Preguntar por personas", "en": "Asking about people" },
+    "description": {
+      "es": "Preguntas con qué y quién sobre nombres y relaciones familiares.",
+      "en": "Questions with what and who about names and family relations."
+    },
     "mark": "问",
     "theme": "cinnabar"
   },
   {
     "id": "CP006",
-    "title": "Momentos del día",
-    "description": "Partes del día, saludos según la hora y vocabulario de bebidas.",
+    "title": { "es": "Momentos del día", "en": "Moments of the day" },
+    "description": {
+      "es": "Partes del día, saludos según la hora y vocabulario de bebidas.",
+      "en": "Parts of the day, greetings by time of day, and drinks vocabulary."
+    },
     "mark": "时",
     "theme": "jade"
   },
   {
     "id": "CP007",
-    "title": "Pronunciación y rutina",
-    "description": "Reglas de pinyin y expresiones cotidianas para seguir practicando.",
+    "title": { "es": "Pronunciación y rutina", "en": "Pronunciation and routine" },
+    "description": {
+      "es": "Reglas de pinyin y expresiones cotidianas para seguir practicando.",
+      "en": "Pinyin rules and everyday expressions to keep practicing."
+    },
     "mark": "音",
     "theme": "lilac"
   },
   {
     "id": "CP008",
-    "title": "Números",
-    "description": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve.",
+    "title": { "es": "Números", "en": "Numbers" },
+    "description": {
+      "es": "Los números del cero al diez y ejemplos para formar números hasta el noventa y nueve.",
+      "en": "Numbers from zero to ten and examples for forming numbers up to ninety-nine."
+    },
     "mark": "数",
     "theme": "amber"
   },
   {
     "id": "CP009",
-    "title": "Moverse y preguntar",
-    "description": "Ir, venir y volver, destinos cotidianos y preguntas sobre dónde y cuándo.",
+    "title": { "es": "Moverse y preguntar", "en": "Moving around and asking" },
+    "description": {
+      "es": "Ir, venir y volver, destinos cotidianos y preguntas sobre dónde y cuándo.",
+      "en": "Going, coming, and returning, everyday destinations, and questions about where and when."
+    },
     "mark": "行",
     "theme": "cinnabar"
   },
   {
     "id": "CP010",
-    "title": "Comer y beber",
-    "description": "Comidas, bebidas y frases prácticas para hablar de lo que quieres comer o beber.",
+    "title": { "es": "Comer y beber", "en": "Eating and drinking" },
+    "description": {
+      "es": "Comidas, bebidas y frases prácticas para hablar de lo que quieres comer o beber.",
+      "en": "Food, drinks, and practical phrases for talking about what you want to eat or drink."
+    },
     "mark": "食",
     "theme": "jade"
   }

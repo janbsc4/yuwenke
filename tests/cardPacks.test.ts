@@ -84,8 +84,8 @@ describe("card pack authoring data", () => {
     expect(() =>
       parseCardPackCatalog(
         JSON.stringify([
-          { id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" },
-          { id: "CP001", title: "Dos", description: "Segundo.", mark: "二", theme: "jade" },
+          { id: "CP001", title: { es: "Uno", en: "One" }, description: { es: "Primero.", en: "First." }, mark: "一", theme: "cinnabar" },
+          { id: "CP001", title: { es: "Dos", en: "Two" }, description: { es: "Segundo.", en: "Second." }, mark: "二", theme: "jade" },
         ]),
       ),
     ).toThrow("ID de pack duplicado: CP001");
@@ -95,7 +95,7 @@ describe("card pack authoring data", () => {
     expect(() =>
       parseCardPackCatalog(
         JSON.stringify([
-          { id: "CP001", title: "Uno", description: "Primero.", theme: "jade" },
+          { id: "CP001", title: { es: "Uno", en: "One" }, description: { es: "Primero.", en: "First." }, theme: "jade" },
         ]),
       ),
     ).toThrow("Catálogo de packs inválido");
@@ -105,8 +105,8 @@ describe("card pack authoring data", () => {
         JSON.stringify([
           {
             id: "CP001",
-            title: "Uno",
-            description: "Primero.",
+            title: { es: "Uno", en: "One" },
+            description: { es: "Primero.", en: "First." },
             mark: "一",
             theme: "neon",
           },
@@ -124,7 +124,7 @@ describe("card pack authoring data", () => {
 
     expect(() =>
       validateCardPackData(
-        [{ id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" }],
+        [{ id: "CP001", title: { es: "Uno", en: "One" }, description: { es: "Primero.", en: "First." }, mark: "一", theme: "cinnabar" }],
         { FC001: "CP999" },
         [loadFlashcards()[0]],
       ),
@@ -134,8 +134,8 @@ describe("card pack authoring data", () => {
   it("rejects missing memberships, unknown cards, and empty packs", () => {
     const cards = loadFlashcards().slice(0, 2);
     const packs = [
-      { id: "CP001", title: "Uno", description: "Primero.", mark: "一", theme: "cinnabar" as const },
-      { id: "CP002", title: "Dos", description: "Segundo.", mark: "二", theme: "jade" as const },
+      { id: "CP001", title: { es: "Uno", en: "One" }, description: { es: "Primero.", en: "First." }, mark: "一", theme: "cinnabar" as const },
+      { id: "CP002", title: { es: "Dos", en: "Two" }, description: { es: "Segundo.", en: "Second." }, mark: "二", theme: "jade" as const },
     ];
 
     expect(() => validateCardPackData(packs, { FC001: "CP001" }, cards)).toThrow(

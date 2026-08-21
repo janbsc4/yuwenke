@@ -9,7 +9,7 @@ const OUTBOX_PREFIX = "yuwenke:user-outbox:v1:";
 
 const entrySchema = z.object({
   cardId: z.string().regex(/^FC\d{3}$/),
-  direction: z.enum(["hanzi-es", "es-hanzi"]),
+  direction: z.enum(["hanzi-es", "es-hanzi", "hanzi-meaning", "meaning-hanzi", "concept"]),
   status: z.enum(["learning", "known"]),
   clientUpdatedAt: z.number().int().nonnegative(),
   serverUpdatedAt: z.number().int().nonnegative().nullable(),

@@ -1,4 +1,5 @@
 import { plural } from "../lib/labels";
+import { localized, DEFAULT_LOCALE } from "../lib/locale";
 import type { CardPack } from "../types";
 
 interface CardPackBoosterProps {
@@ -29,7 +30,7 @@ export function CardPackBooster({
         <span className="booster-pack__crimp booster-pack__crimp--top" />
         <span className="booster-pack__edition">Yuwenke · {pack.id}</span>
         <span className="booster-pack__mark" lang="zh-Hans">{pack.mark}</span>
-        <span className="booster-pack__title">{pack.title}</span>
+        <span className="booster-pack__title">{localized(pack.title, DEFAULT_LOCALE)}</span>
         <span className="booster-pack__count">{plural(unitCount, "carta")}</span>
         <span className="booster-pack__seal">文</span>
         <span className="booster-pack__crimp booster-pack__crimp--bottom" />

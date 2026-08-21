@@ -299,12 +299,19 @@ const header = [
   "ejemplo_espanol",
   "pagina",
   "etiquetas",
+  "ingles",
+  "explicacion_ingles",
+  "ejemplo_ingles",
+  "etiquetas_ingles",
   "nombres_propios",
 ];
 
+// English study content is authored separately (see the English-translations
+// plan). These fields are part of the stable schema now; their values are
+// still empty and are filled in a later, content-focused pass.
 for (const [index, row] of rows.entries()) {
-  if (row.length !== header.length - 2) {
-    throw new Error(`Fila ${index + 1}: se esperaban ${header.length - 2} campos y hay ${row.length}`);
+  if (row.length !== header.length - 6) {
+    throw new Error(`Fila ${index + 1}: se esperaban ${header.length - 6} campos y hay ${row.length}`);
   }
 }
 
@@ -342,7 +349,7 @@ const lines = [
   header,
   ...rows.map((row, index) => {
     const id = `FC${String(index + 1).padStart(3, "0")}`;
-    return [id, ...row, properNamesById.get(id) ?? ""];
+    return [id, ...row, "", "", "", "", properNamesById.get(id) ?? ""];
   }),
 ]
   .map((row) => row.map(escapeCsv).join(","));

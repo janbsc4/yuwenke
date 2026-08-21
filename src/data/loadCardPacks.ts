@@ -7,8 +7,14 @@ import type { CardPack, Flashcard, PackIdByCardId } from "../types";
 
 const cardPackSchema = z.object({
   id: z.string().regex(/^CP\d{3}$/, "debe tener el formato CP001"),
-  title: z.string().trim().min(1),
-  description: z.string().trim().min(1),
+  title: z.object({
+    es: z.string().trim().min(1),
+    en: z.string().trim().min(1),
+  }),
+  description: z.object({
+    es: z.string().trim().min(1),
+    en: z.string().trim().min(1),
+  }),
   mark: z.string().trim().min(1).max(2),
   theme: z.enum(["cinnabar", "jade", "amber", "lilac"]),
 });

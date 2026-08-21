@@ -39,8 +39,8 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
 ) {
   const { card, direction } = unit;
   const conceptCard = card.tipo === "concepto";
-  const hanziPrompt = !conceptCard && direction === "hanzi-es";
-  const hanziAnswer = !conceptCard && direction === "es-hanzi";
+  const hanziPrompt = !conceptCard && direction === "hanzi-meaning";
+  const hanziAnswer = !conceptCard && direction === "meaning-hanzi";
   const promptText = conceptCard
     ? card.espanol
     : hanziPrompt

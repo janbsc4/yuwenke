@@ -37,6 +37,7 @@ import type {
   ProgressEntry,
   ProgressMap,
   PackIdByCardId,
+  StudyDirection,
 } from "../types";
 import { firebaseConfig, isFirebaseConfigured } from "./firebaseConfig";
 import {
@@ -156,6 +157,14 @@ function timestampMillis(value: unknown): number | null {
   return value instanceof Timestamp ? value.toMillis() : null;
 }
 
+const ACCEPTED_DIRECTIONS = new Set([
+  "hanzi-es",
+  "es-hanzi",
+  "hanzi-meaning",
+  "meaning-hanzi",
+  "concept",
+]);
+
 export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
   const progress: ProgressMap = {};
   for (const document of snapshot.docs) {
@@ -163,7 +172,8 @@ export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
     const clientUpdatedAt = timestampMillis(data.clientUpdatedAt);
     if (
       typeof data.cardId !== "string" ||
-      (data.direction !== "hanzi-es" && data.direction !== "es-hanzi") ||
+      typeof data.direction !== "string" ||
+      !ACCEPTED_DIRECTIONS.has(data.direction) ||
       (data.status !== "learning" && data.status !== "known") ||
       clientUpdatedAt === null ||
       (data.schemaVersion !== 1 && data.schemaVersion !== 2) ||
@@ -174,7 +184,7 @@ export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
 
     const entry: ProgressEntry = {
       cardId: data.cardId,
-      direction: data.direction,
+      direction: data.direction as StudyDirection,
       status: data.status,
       clientUpdatedAt,
       serverUpdatedAt: timestampMillis(data.serverUpdatedAt),

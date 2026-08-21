@@ -18,6 +18,10 @@ const EXPECTED_COLUMNS = [
   "ejemplo_espanol",
   "pagina",
   "etiquetas",
+  "ingles",
+  "explicacion_ingles",
+  "ejemplo_ingles",
+  "etiquetas_ingles",
   "nombres_propios",
 ] as const;
 
@@ -34,6 +38,10 @@ const flashcardSchema = z.object({
   ejemplo_espanol: z.string(),
   pagina: z.string().min(1),
   etiquetas: z.string(),
+  ingles: z.string(),
+  explicacion_ingles: z.string(),
+  ejemplo_ingles: z.string(),
+  etiquetas_ingles: z.string(),
   nombres_propios: z.string(),
 });
 

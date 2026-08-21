@@ -51,22 +51,22 @@ function favoriteEntry(timestamp: number, favorite = true): FavoriteEntry {
 describe("study domain", () => {
   const cards = loadFlashcards();
 
-  it("creates two units for language cards and one Spanish unit for concepts", () => {
+  it("creates two units for language cards and one concept unit for concepts", () => {
     const units = createStudyUnits(cards);
     expect(units).toHaveLength(397);
     expect(units.slice(0, 2).map((unit) => unit.direction)).toEqual([
-      "hanzi-es",
-      "es-hanzi",
+      "hanzi-meaning",
+      "meaning-hanzi",
     ]);
     const concept = cards.find((card) => card.tipo === "concepto")!;
     expect(units.filter((unit) => unit.cardId === concept.id)).toMatchObject([
-      { direction: "hanzi-es" },
+      { direction: "concept" },
     ]);
   });
 
-  it("honors newer legacy reverse-direction progress for concepts", () => {
+  it("normalizes newer legacy reverse-direction progress for concepts", () => {
     const concept = cards.find((card) => card.tipo === "concepto")!;
-    const canonicalKey = unitKey(concept.id, "hanzi-es");
+    const canonicalKey = unitKey(concept.id, "concept");
     const legacyKey = unitKey(concept.id, "es-hanzi");
     const legacy: ProgressEntry = {
       ...entry(20, "known"),
@@ -78,7 +78,7 @@ describe("study domain", () => {
       progressForStudyUnits([concept], { [legacyKey]: legacy })[canonicalKey],
     ).toMatchObject({
       cardId: concept.id,
-      direction: "hanzi-es",
+      direction: "concept",
       status: "known",
       clientUpdatedAt: 20,
     });
@@ -86,6 +86,7 @@ describe("study domain", () => {
     const canonical: ProgressEntry = {
       ...entry(21, "learning"),
       cardId: concept.id,
+      direction: "concept",
     };
     expect(
       progressForStudyUnits([concept], {
@@ -93,6 +94,33 @@ describe("study domain", () => {
         [legacyKey]: legacy,
       })[canonicalKey],
     ).toEqual(canonical);
+  });
+
+  it("normalizes legacy directions for ordinary cards", () => {
+    const ordinary = cards.find((card) => card.tipo !== "concepto")!;
+    const source: ProgressMap = {
+      [unitKey(ordinary.id, "hanzi-es")]: {
+        ...entry(5, "learning"),
+        cardId: ordinary.id,
+        direction: "hanzi-es",
+      },
+      [unitKey(ordinary.id, "es-hanzi")]: {
+        ...entry(6, "known"),
+        cardId: ordinary.id,
+        direction: "es-hanzi",
+      },
+    };
+    const normalized = progressForStudyUnits([ordinary], source);
+    expect(normalized[unitKey(ordinary.id, "hanzi-meaning")]).toMatchObject({
+      cardId: ordinary.id,
+      direction: "hanzi-meaning",
+      status: "learning",
+    });
+    expect(normalized[unitKey(ordinary.id, "meaning-hanzi")]).toMatchObject({
+      cardId: ordinary.id,
+      direction: "meaning-hanzi",
+      status: "known",
+    });
   });
 
   it("searches pinyin without requiring tone marks", () => {

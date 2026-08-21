@@ -1,10 +1,12 @@
 import {
-  STUDY_DIRECTIONS,
+  CONCEPT_DIRECTION,
+  NEUTRAL_STUDY_DIRECTIONS,
   type FavoriteEntry,
   type FavoriteMap,
   type CardPackState,
   type Filters,
   type Flashcard,
+  type NeutralDirection,
   type ProgressEntry,
   type ProgressMap,
   type PackIdByCardId,
@@ -21,15 +23,34 @@ export function progressDocumentId(cardId: string, direction: StudyDirection): s
   return `${cardId}_${direction}`;
 }
 
+export function canonicalDirectionFor(
+  card: Flashcard,
+  direction: StudyDirection,
+): NeutralDirection | null {
+  if (card.tipo === "concepto") {
+    return direction === "hanzi-es" || direction === "es-hanzi"
+      ? CONCEPT_DIRECTION
+      : direction === CONCEPT_DIRECTION
+        ? CONCEPT_DIRECTION
+        : null;
+  }
+  if (direction === "hanzi-es") return "hanzi-meaning";
+  if (direction === "es-hanzi") return "meaning-hanzi";
+  if (direction === "hanzi-meaning" || direction === "meaning-hanzi") return direction;
+  return null;
+}
+
 export function createStudyUnits(cards: Flashcard[]): StudyUnit[] {
-  return cards.flatMap((card) =>
-    (card.tipo === "concepto" ? STUDY_DIRECTIONS.slice(0, 1) : STUDY_DIRECTIONS).map((direction) => ({
+  return cards.flatMap((card) => {
+    const directions: readonly NeutralDirection[] =
+      card.tipo === "concepto" ? [CONCEPT_DIRECTION] : NEUTRAL_STUDY_DIRECTIONS;
+    return directions.map((direction) => ({
       key: unitKey(card.id, direction),
       cardId: card.id,
       direction,
       card,
-    })),
-  );
+    }));
+  });
 }
 
 export function progressForStudyUnits(
@@ -38,21 +59,17 @@ export function progressForStudyUnits(
 ): ProgressMap {
   let compatible = progress;
 
-  for (const card of cards) {
-    if (card.tipo !== "concepto") continue;
-    const canonicalKey = unitKey(card.id, "hanzi-es");
-    const legacyKey = unitKey(card.id, "es-hanzi");
-    const canonical = progress[canonicalKey];
-    const legacy = progress[legacyKey];
-    if (
-      legacy &&
-      (!canonical || legacy.clientUpdatedAt > canonical.clientUpdatedAt)
-    ) {
+  for (const [key, entry] of Object.entries(progress)) {
+    const card = cards.find((candidate) => candidate.id === entry.cardId);
+    if (!card) continue;
+    const canonicalDirection = canonicalDirectionFor(card, entry.direction);
+    if (!canonicalDirection) continue;
+    const canonicalKey = unitKey(entry.cardId, canonicalDirection);
+    if (canonicalKey === key) continue;
+    const existing = compatible[canonicalKey];
+    if (!existing || entry.clientUpdatedAt > existing.clientUpdatedAt) {
       if (compatible === progress) compatible = { ...progress };
-      compatible[canonicalKey] = {
-        ...legacy,
-        direction: "hanzi-es",
-      };
+      compatible[canonicalKey] = { ...entry, direction: canonicalDirection };
     }
   }
 
