@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import Papa from "papaparse";
+import { englishById } from "./english_content.mjs";
 
 const outputPath = new URL("../chino_flashcards.csv", import.meta.url);
 
@@ -268,21 +269,21 @@ const properNamesById = new Map([
   ["FC101", "王强;Wáng Qiáng;Wang Qiang"],
   ["FC102", "王强;Wáng Qiáng;Wang Qiang"],
   ["FC113", "王芳;Wáng Fāng;Wang Fang"],
-  ["FC115", "Taiwán;China"],
+  ["FC115", "Taiwán;Taiwan;China"],
   ["FC116", "China"],
   ["FC120", "孙;Sūn;Sun"],
   ["FC121", "孙;Sūn;Sun"],
   ["FC122", "王芳;Wáng Fāng;Wang Fang"],
   ["FC123", "王芳;Wáng Fāng;Wang Fang"],
-  ["FC170", "西班牙;Xībānyá;España"],
-  ["FC171", "法国;Fǎguó;Francia"],
+  ["FC170", "西班牙;Xībānyá;España;Spain"],
+  ["FC171", "法国;Fǎguó;Francia;France"],
   ["FC172", "中国;Zhōngguó;China"],
   ["FC176", "巴塞罗那;Bāsàiluónà;Barcelona"],
   ["FC177", "China"],
   ["FC181", "中国;Zhōngguó;China"],
   ["FC199", "中国;Zhōngguó;China"],
   ["FC206", "中国;Zhōngguó;China"],
-  ["FC207", "西班牙;Xībānyá;España"],
+  ["FC207", "西班牙;Xībānyá;España;Spain"],
   ["FC209", "中国;Zhōngguó;China"],
 ]);
 
@@ -306,9 +307,9 @@ const header = [
   "nombres_propios",
 ];
 
-// English study content is authored separately (see the English-translations
-// plan). These fields are part of the stable schema now; their values are
-// still empty and are filled in a later, content-focused pass.
+// English study content is authored separately in english_content.mjs (see the
+// English-translations plan). The row validation below guards the Spanish
+// fields; English completeness is enforced when the CSV lines are assembled.
 for (const [index, row] of rows.entries()) {
   if (row.length !== header.length - 6) {
     throw new Error(`Fila ${index + 1}: se esperaban ${header.length - 6} campos y hay ${row.length}`);
@@ -345,11 +346,17 @@ const escapeCsv = (value) => {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
+// English content is complete for every card, so the generated CSV must never
+// contain an empty English meaning, explanation, example, or tag field.
 const lines = [
   header,
   ...rows.map((row, index) => {
     const id = `FC${String(index + 1).padStart(3, "0")}`;
-    return [id, ...row, "", "", "", "", properNamesById.get(id) ?? ""];
+    const english = englishById.get(id);
+    if (!english || english.length !== 4 || english.some((field) => !field)) {
+      throw new Error(`Falta contenido en inglés completo en ${id}.`);
+    }
+    return [id, ...row, ...english, properNamesById.get(id) ?? ""];
   }),
 ]
   .map((row) => row.map(escapeCsv).join(","));

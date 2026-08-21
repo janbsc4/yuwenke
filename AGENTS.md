@@ -22,6 +22,7 @@ The main project areas are:
 * `card_packs.json` — ordered Card Pack catalog.
 * `card_pack_membership.csv` — one Card Pack assignment per Source Flashcard.
 * `scripts/build_flashcards.mjs` — rebuilds `chino_flashcards.csv` while preserving card identities.
+* `scripts/english_content.mjs` — English study fields for every Source Flashcard, keyed by FC id; `build_flashcards.mjs` requires all four English fields per card before writing the CSV.
 * `scripts/build_chinese_knowledge.mjs` — derives `chinese-knowledge.md` (deduplicated Hanzi-only tokens) from the CSV. A separate, optional authoring script, not part of `npm run build`.
 * `chinese-knowledge.md` — generated file; do not edit by hand, edit the CSV and rerun the script instead.
 * `src/` — Astro pages, React UI, study logic, and persistence.

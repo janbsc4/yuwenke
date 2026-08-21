@@ -12,6 +12,7 @@ describe("flashcard CSV", () => {
       Array.from({ length: 210 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
+    expect(cards.every((card) => card.ingles && card.explicacion_ingles && card.ejemplo_ingles && card.etiquetas_ingles)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
     expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
@@ -316,9 +317,42 @@ describe("flashcard CSV", () => {
     });
   });
 
+  it("does not expect different Hanzi for the same English prompt", () => {
+    const cards = loadFlashcards().filter((card) => card.tipo !== "concepto");
+    const firstAnswerByPrompt = new Map<string, { id: string; hanzi: string }>();
+    const conflicts: string[] = [];
+
+    for (const card of cards) {
+      const prompt = card.ingles
+        .normalize("NFC")
+        .toLocaleLowerCase("en")
+        .replace(/\s+/g, " ")
+        .trim();
+      const previous = firstAnswerByPrompt.get(prompt);
+      if (previous && previous.hanzi !== card.hanzi) {
+        conflicts.push(
+          `${previous.id}:${previous.hanzi} y ${card.id}:${card.hanzi} comparten «${card.ingles}»`,
+        );
+      } else if (!previous) {
+        firstAnswerByPrompt.set(prompt, { id: card.id, hanzi: card.hanzi });
+      }
+    }
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it("does not reveal the Hanzi answer inside English reverse prompts", () => {
+    const reversePrompts = loadFlashcards()
+      .filter((card) => card.tipo !== "concepto")
+      .map((card) => ({ id: card.id, prompt: card.ingles }))
+      .filter(({ prompt }) => /[\u3400-\u9fff]/u.test(prompt));
+
+    expect(reversePrompts).toEqual([]);
+  });
+
   it("rejects duplicate IDs", () => {
     const row =
-      "FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,,,,,";
+      "FC001,palabra,saludos,你好,nǐ hǎo,hola,Un saludo.,你好！,Nǐ hǎo!,Hola.,1,saludo,hello,A greeting.,Hello!,greeting,";
     expect(() => parseFlashcardsCsv(`${header}\n${row}\n${row}\n`)).toThrow(
       "ID de tarjeta duplicado",
     );
