@@ -3,9 +3,9 @@ import type { Flashcard, Locale, LocalizedText } from "../types";
 export const DEFAULT_LOCALE: Locale = "es";
 export const SUPPORTED_LOCALES: readonly Locale[] = ["es", "en"];
 
-// English stays private until every card has reviewed English content (Part 3
-// of grilled-plan-001 flips this flag and adds the release validation).
-export const ENGLISH_RELEASED = false;
+// English is public: every card has complete, owner-reviewed English content
+// (Part 3 of grilled-plan-001) and the release validation is in place.
+export const ENGLISH_RELEASED = true;
 export const AVAILABLE_LOCALES: readonly Locale[] = ENGLISH_RELEASED
   ? SUPPORTED_LOCALES
   : [DEFAULT_LOCALE];
