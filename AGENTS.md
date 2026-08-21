@@ -19,7 +19,9 @@ The main project areas are:
 * `chino_flashcards.csv` — structured flashcard dataset.
 * `card_packs.json` — ordered Card Pack catalog.
 * `card_pack_membership.csv` — one Card Pack assignment per Source Flashcard.
-* `scripts/build_flashcards.mjs` — rebuilds the dataset while preserving card identities.
+* `scripts/build_flashcards.mjs` — rebuilds `chino_flashcards.csv` while preserving card identities.
+* `scripts/build_chinese_knowledge.mjs` — derives `chinese-knowledge.md` (deduplicated Hanzi-only tokens) from the CSV. A separate, optional authoring script, not part of `npm run build`.
+* `chinese-knowledge.md` — generated file; do not edit by hand, edit the CSV and rerun the script instead.
 * `src/` — Astro pages, React UI, study logic, and persistence.
 * `tests/` — unit and integration tests.
 * `firestore.rules` — Firestore security rules.
@@ -81,6 +83,8 @@ Firestore rule tests additionally require Java 21:
 ```sh
 npm run test:rules
 ```
+
+Note: the default `npm test` excludes `tests/firestore.rules.test.ts` because the Firestore rules suite runs against the emulator and needs Java 21. `npm run test:rules` covers just that suite; `npm run test:all` runs both. Use `npm run test:watch` for a re-running test loop.
 
 ## Engineering priorities
 
