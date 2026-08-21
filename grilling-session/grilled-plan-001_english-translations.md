@@ -8,6 +8,24 @@ Grilling complete and shared understanding confirmed. This document records repo
 
 Define what "add an English translation to the app" means for Yuwenke, then produce a design that preserves stable card identities, offline guest use, static GitHub Pages deployment, and coherent Mandarin learning units.
 
+## Three sessions
+
+This plan is split into three sequential parts, each sized for one working session. Each part ends with the repository in a buildable, passing state on the main branch (`npm test`, `npm run test:rules`, `npm run check`, `npm run build`). Do not start a part until the previous one is merged.
+
+| Part | Scope | Implementation steps |
+| --- | --- | --- |
+| 1. Data, schema, and migration foundation | The data layer that everything else consumes: add the English fields, locale types, typed message dictionaries, localized Card Pack schema, loaders, validation, and the progress-direction migration across local storage, Firestore keys, and security rules. No rendering or routing changes. | 1–2 |
+| 2. Localized rendering and routing | The application layer: refactor card, filter, pack, help, and metadata rendering to consume localized display content, add `/yuwenke/es/` and `/yuwenke/en/` routes plus the root locale resolver, implement in-place locale switching that preserves the study session, and translate all interface copy. | 3–5 |
+| 3. English content and release | The content layer: draft all English card fields from Mandarin with machine assistance, obtain human review of every card, add English proper-name forms, correct any source discrepancy in both languages, and enable the English route only once all acceptance checks pass. | 6–7 |
+
+Rationale for the split:
+
+- **Data before UI.** Steps 1–2 change the schema and progress keys. They must exist before any component consumes English content or any route serves it. Keeping them isolated avoids mixing a persistence migration into a rendering refactor.
+- **Rendering before content.** Steps 3–5 make the app fully bilingual-capable without requiring any card to be translated. This lets the locale plumbing be verified end to end (routes, switching, search, metadata) before the large content effort begins.
+- **Content last.** Step 6 is the largest and least mechanical effort (210 cards of Mandarin-aware review) and the release gate. Keeping it separate lets sessions 1 and 2 ship measurable value without blocking on translation, and gives the no-partial-release rule a natural boundary.
+
+Each part builds on the previous: the neutral direction identifiers, shared progress, and locale dictionaries from Part 1 are required by the rendering work in Part 2; both are required before the English route in Part 3 is enabled or any card is translated.
+
 ## Repository facts
 
 - Spanish is study content, not only interface copy. Each Source Flashcard has `espanol`, `explicacion`, and `ejemplo_espanol` fields.
@@ -216,11 +234,21 @@ Consequences:
 
 ## Implementation sequence
 
+Steps are grouped into the three sessions above (Part 1: steps 1–2, Part 2: steps 3–5, Part 3: steps 6–7). Each session must leave the build passing before merging to `main`.
+
+**Part 1 — Data, schema, and migration foundation**
+
 1. Introduce the locale types, typed message dictionaries, localized Card Pack schema, and four new flashcard fields. Update loaders and validation before changing rendering.
 2. Migrate study directions and compatibility readers. Update local progress, synchronization, Firestore document-key handling, security rules, Reset Boundary behavior, and conflict merging.
+
+**Part 2 — Localized rendering and routing**
+
 3. Refactor card, filter, pack, help, and metadata rendering to consume localized display content. Add `/es/`, `/en/`, and the root locale resolver.
 4. Implement in-place locale switching with history and metadata updates while preserving React session state.
 5. Translate all interface messages, topic/type labels, Card Pack copy, accessibility text, and metadata.
+
+**Part 3 — English content and release**
+
 6. Draft all English card fields from Mandarin with machine assistance. Review every card manually, add English proper-name forms, and correct source discrepancies in both languages.
 7. Enable the English route only after all content and acceptance checks pass.
 
