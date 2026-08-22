@@ -709,7 +709,69 @@ export default function FlashcardApp({
           </span>
         </a>
 
-        <div className="account-area">
+        <div className="header-tools">
+          <div className="account-area">
+            <span className={`sync-label sync-${syncState}`}>
+              {user
+                ? syncState === "syncing"
+                  ? m.sync.syncing
+                  : syncState === "synced"
+                    ? m.sync.synced
+                    : syncState === "offline"
+                      ? m.sync.offline
+                      : syncState === "error"
+                        ? m.sync.error
+                        : m.sync.local
+                : m.sync.guest}
+            </span>
+            {syncState === "error" && user ? (
+              <button className="text-button" type="button" onClick={() => void retry()}>
+                {m.sync.retry}
+              </button>
+            ) : null}
+            {user ? (
+              <div className="account-menu-wrap">
+                <button
+                  type="button"
+                  className="avatar-button"
+                  aria-label={m.account.menuAria}
+                  aria-expanded={accountOpen}
+                  onClick={() => setAccountOpen((value) => !value)}
+                >
+                  {initials(user.displayName, user.email, m.account.initialsFallback)}
+                </button>
+                {accountOpen ? (
+                  <div className="account-menu" role="menu">
+                    <strong>{user.displayName || m.account.yourAccount}</strong>
+                    <span>{user.email}</span>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setResetConfirmOpen(true);
+                      }}
+                    >
+                      {m.account.resetStudy}
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => void signOut()}>
+                      {m.account.signOut}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="button button-small button-ink"
+                onClick={() => setLoginOpen(true)}
+                ref={loginButtonRef}
+                title={firebaseConfigured ? undefined : m.account.syncUnavailableTitle}
+              >
+                {m.account.signIn}
+              </button>
+            )}
+          </div>
           {enabledLocales.length > 1 ? (
             <div
               className="locale-switcher"
@@ -729,66 +791,6 @@ export default function FlashcardApp({
               ))}
             </div>
           ) : null}
-          <span className={`sync-label sync-${syncState}`}>
-            {user
-              ? syncState === "syncing"
-                ? m.sync.syncing
-                : syncState === "synced"
-                  ? m.sync.synced
-                  : syncState === "offline"
-                    ? m.sync.offline
-                    : syncState === "error"
-                      ? m.sync.error
-                      : m.sync.local
-              : m.sync.guest}
-          </span>
-          {syncState === "error" && user ? (
-            <button className="text-button" type="button" onClick={() => void retry()}>
-              {m.sync.retry}
-            </button>
-          ) : null}
-          {user ? (
-            <div className="account-menu-wrap">
-              <button
-                type="button"
-                className="avatar-button"
-                aria-label={m.account.menuAria}
-                aria-expanded={accountOpen}
-                onClick={() => setAccountOpen((value) => !value)}
-              >
-                {initials(user.displayName, user.email, m.account.initialsFallback)}
-              </button>
-              {accountOpen ? (
-                <div className="account-menu" role="menu">
-                  <strong>{user.displayName || m.account.yourAccount}</strong>
-                  <span>{user.email}</span>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setAccountOpen(false);
-                      setResetConfirmOpen(true);
-                    }}
-                  >
-                    {m.account.resetStudy}
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => void signOut()}>
-                    {m.account.signOut}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="button button-small button-ink"
-              onClick={() => setLoginOpen(true)}
-              ref={loginButtonRef}
-              title={firebaseConfigured ? undefined : m.account.syncUnavailableTitle}
-            >
-              {m.account.signIn}
-            </button>
-          )}
         </div>
       </header>
 

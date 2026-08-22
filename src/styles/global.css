@@ -128,37 +128,58 @@ a {
   font-size: 0.76rem;
 }
 
+.header-tools,
 .account-area {
-  position: relative;
   display: flex;
   align-items: center;
+}
+
+.header-tools {
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-area {
+  position: relative;
   justify-content: flex-end;
   gap: 10px;
 }
 
 .locale-switcher {
   display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
   overflow: hidden;
-  border: 1px solid var(--border-dark);
-  border-radius: 10px;
-  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-warm);
 }
 
 .locale-switcher button {
-  min-height: 36px;
-  padding: 6px 10px;
+  min-width: 36px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 999px;
   color: var(--muted);
-  font-size: 0.78rem;
+  background: transparent;
+  font-size: 0.72rem;
   font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.locale-switcher button + button {
-  border-left: 1px solid var(--border);
+.locale-switcher button:hover {
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .locale-switcher button.is-active {
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--cinnabar);
+  color: #fffdf8;
+  box-shadow: 0 2px 5px rgba(166, 61, 50, 0.2);
 }
 
 .sync-label {
