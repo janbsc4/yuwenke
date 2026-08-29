@@ -177,7 +177,7 @@ const ACCEPTED_DIRECTIONS = new Set([
 export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
   const progress: ProgressMap = {};
   for (const document of snapshot.docs) {
-    const data = document.data();
+    const data: Record<string, unknown> = document.data();
     const clientUpdatedAt = timestampMillis(data.clientUpdatedAt);
     if (
       typeof data.cardId !== "string" ||
@@ -208,7 +208,7 @@ export function snapshotProgress(snapshot: QuerySnapshot): ProgressMap {
 export function snapshotFavorites(snapshot: QuerySnapshot): FavoriteMap {
   const favorites: FavoriteMap = {};
   for (const document of snapshot.docs) {
-    const data = document.data();
+    const data: Record<string, unknown> = document.data();
     const clientUpdatedAt = timestampMillis(data.clientUpdatedAt);
     if (
       typeof data.cardId !== "string" ||
@@ -273,12 +273,11 @@ export function observeCloudProgress(
   return onSnapshot(
     progressCollection(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) =>
-      onProgress(
+    (snapshot) => { onProgress(
         snapshotProgress(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ),
+      ); },
     onError,
   );
 }
@@ -298,12 +297,11 @@ export function observeCloudFavorites(
   return onSnapshot(
     favoritesCollection(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) =>
-      onFavorites(
+    (snapshot) => { onFavorites(
         snapshotFavorites(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ),
+      ); },
     onError,
   );
 }
@@ -318,12 +316,11 @@ export function observeCloudCardPackState(
   return onSnapshot(
     cardPackStateDoc(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) =>
-      onState(
+    (snapshot) => { onState(
         snapshotCardPackState(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ),
+      ); },
     onError,
   );
 }

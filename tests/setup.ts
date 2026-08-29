@@ -26,7 +26,7 @@ class MemoryStorage implements Storage {
   }
 
   setItem(key: string, value: string) {
-    this.values.set(key, String(value));
+    this.values.set(key, value);
   }
 }
 

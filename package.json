@@ -9,6 +9,8 @@
     "build:knowledge": "node scripts/build_chinese_knowledge.mjs",
     "preview": "astro preview",
     "check": "astro check",
+    "lint": "eslint .",
+    "prepare": "husky",
     "test": "vitest run --exclude tests/firestore.rules.test.ts",
     "test:watch": "vitest --exclude tests/firestore.rules.test.ts",
     "test:rules": "firebase emulators:exec --project demo-yuwenke --only firestore \"vitest run --config vitest.rules.config.ts\"",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.1",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
@@ -35,9 +38,13 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "firebase-tools": "^15.24.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
     "vitest": "^4.1.10"
   }
 }

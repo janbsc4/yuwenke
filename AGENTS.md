@@ -79,8 +79,11 @@ npm install
 npm run dev
 npm test
 npm run check
+npm run lint
 npm run build
 ```
+
+A husky `pre-push` hook (`.husky/pre-push`) runs `npm run lint`, `npm run check`, and `npm test` before every push. It activates automatically after `npm install` and can be bypassed only with `git push --no-verify`; the CI workflow is the unskippable enforcement layer and also runs on pull requests.
 
 Firestore rule tests additionally require Java 21:
 

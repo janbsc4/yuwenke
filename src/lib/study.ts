@@ -152,7 +152,7 @@ export function unitBelongsToView(
   progress: ProgressMap,
   favorites: FavoriteMap = {},
 ): boolean {
-  if (view === "favorites") return favorites[unit.cardId]?.favorite === true;
+  if (view === "favorites") return favorites[unit.cardId]?.favorite ?? false;
   const status = progress[unit.key]?.status;
   if (view === "study") return status === "learning";
   if (view === "mastered") return status === "known";
@@ -283,7 +283,9 @@ export function entriesAtResetBoundary<T extends ResettableMap>(
   resetAt: number,
 ): T {
   return Object.fromEntries(
-    Object.entries(entries).filter(([, entry]) => (entry.resetAt ?? 0) === resetAt),
+    Object.entries(entries).filter(
+      ([, entry]) => ((entry as { resetAt?: number }).resetAt ?? 0) === resetAt,
+    ),
   ) as T;
 }
 

@@ -580,7 +580,7 @@ describe("FlashcardApp", () => {
   });
 
   it("opens immediately when reduced motion is requested", async () => {
-    const originalMatchMedia = window.matchMedia;
+    const originalMatchMedia = window.matchMedia?.bind(window);
     Object.defineProperty(window, "matchMedia", {
       configurable: true,
       value: (query: string) => ({

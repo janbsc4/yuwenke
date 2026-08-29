@@ -214,6 +214,14 @@ export function useProgressSync(
   const guestPackMergeRef = useRef({ active: false, openPackIds: [] as string[] });
   const confirmedRef = useRef({ progress: false, favorites: false, cardPacks: false });
 
+  // The Firebase client loader is part of the hook's injectable dependencies
+  // and is not guaranteed to be referentially stable across renders, so the
+  // async flows read it through a ref instead of capturing it in closures.
+  const loadFirebaseClientRef = useRef(loadFirebaseClient);
+  useEffect(() => {
+    loadFirebaseClientRef.current = loadFirebaseClient;
+  }, [loadFirebaseClient]);
+
   const replaceProgress = useCallback((next: ProgressMap) => {
     progressRef.current = next;
     setProgress(next);
@@ -249,12 +257,16 @@ export function useProgressSync(
             localFavorites.readOutbox(uid).value,
             next.resetAt,
           );
-          Object.keys(pendingProgress).length > 0
-            ? localProgress.writeOutbox(uid, pendingProgress)
-            : localProgress.clearOutbox(uid);
-          Object.keys(pendingFavorites).length > 0
-            ? localFavorites.writeOutbox(uid, pendingFavorites)
-            : localFavorites.clearOutbox(uid);
+          if (Object.keys(pendingProgress).length > 0) {
+            localProgress.writeOutbox(uid, pendingProgress);
+          } else {
+            localProgress.clearOutbox(uid);
+          }
+          if (Object.keys(pendingFavorites).length > 0) {
+            localFavorites.writeOutbox(uid, pendingFavorites);
+          } else {
+            localFavorites.clearOutbox(uid);
+          }
         }
       }
       replacePackState(next);
@@ -286,6 +298,13 @@ export function useProgressSync(
     }
   }, []);
 
+  // flushOutboxes re-enqueues itself after a successful flush while entries
+  // remain pending. The self call goes through a ref because a callback
+  // cannot memoize a reference to itself.
+  const flushOutboxesRef = useRef<(uid: string, generation: number) => Promise<void>>(
+    async () => {},
+  );
+
   const flushOutboxes = useCallback(
     async (uid: string, generation: number) => {
       if (flushingRef.current || generation !== generationRef.current) return;
@@ -312,7 +331,7 @@ export function useProgressSync(
       setSyncState("syncing");
       let succeeded = false;
       try {
-        const firebase = await loadFirebaseClient();
+        const firebase = await loadFirebaseClientRef.current();
         firebaseClientRef.current = firebase;
         if (pendingCardPacks) {
           const merged = await firebase.mergeCloudCardPackState(
@@ -398,7 +417,7 @@ export function useProgressSync(
             Object.keys(localProgress.readOutbox(uid).value).length > 0 ||
             Object.keys(localFavorites.readOutbox(uid).value).length > 0 ||
             localCardPacks.readOutbox(uid).value !== null;
-          if (stillPending) void flushOutboxes(uid, generation);
+          if (stillPending) void flushOutboxesRef.current(uid, generation);
         }
       }
     },
@@ -406,6 +425,13 @@ export function useProgressSync(
   );
 
   useEffect(() => {
+    flushOutboxesRef.current = flushOutboxes;
+  }, [flushOutboxes]);
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration of
+       localStorage state into React; reading storage during render would be a
+       side effect and break strict-mode double invocation. */
     const guestProgress = localProgress.readGuest();
     const guestFavorites = localFavorites.readGuest();
     const storedGuestPacks = localCardPacks.readGuest();
@@ -425,12 +451,13 @@ export function useProgressSync(
       guestProgress.available && guestFavorites.available && storedGuestPacks.available,
     );
     setReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     if (!firebaseConfigured) return undefined;
 
     let cancelled = false;
     let unsubscribeAuth: () => void = () => undefined;
-    void loadFirebaseClient()
+    void loadFirebaseClientRef.current()
       .then((firebase) => {
         if (cancelled) return;
         firebaseClientRef.current = firebase;
@@ -754,6 +781,7 @@ export function useProgressSync(
     replacePackState,
     replaceProgress,
     settleSyncState,
+    firebaseConfigured,
   ]);
 
   const setStatus = useCallback(
@@ -786,7 +814,7 @@ export function useProgressSync(
       confirmedRef.current.progress = false;
       setSyncState("syncing");
       const generation = generationRef.current;
-      void loadFirebaseClient()
+      void loadFirebaseClientRef.current()
         .then((firebase) => {
           firebaseClientRef.current = firebase;
           return firebase.writeCloudProgress(currentUser.uid, entry);
@@ -800,9 +828,11 @@ export function useProgressSync(
           }
           const latest = localProgress.readOutbox(currentUser.uid).value;
           if (latest[key]?.clientUpdatedAt === entry.clientUpdatedAt) {
-            delete latest[key];
-            if (Object.keys(latest).length > 0) {
-              localProgress.writeOutbox(currentUser.uid, latest);
+            const remaining = Object.fromEntries(
+              Object.entries(latest).filter(([entryKey]) => entryKey !== key),
+            );
+            if (Object.keys(remaining).length > 0) {
+              localProgress.writeOutbox(currentUser.uid, remaining);
             } else {
               localProgress.clearOutbox(currentUser.uid);
             }
@@ -852,7 +882,7 @@ export function useProgressSync(
       confirmedRef.current.favorites = false;
       setSyncState("syncing");
       const generation = generationRef.current;
-      void loadFirebaseClient()
+      void loadFirebaseClientRef.current()
         .then((firebase) => {
           firebaseClientRef.current = firebase;
           return firebase.writeCloudFavorite(currentUser.uid, entry);
@@ -866,9 +896,11 @@ export function useProgressSync(
           }
           const latest = localFavorites.readOutbox(currentUser.uid).value;
           if (latest[cardId]?.clientUpdatedAt === entry.clientUpdatedAt) {
-            delete latest[cardId];
-            if (Object.keys(latest).length > 0) {
-              localFavorites.writeOutbox(currentUser.uid, latest);
+            const remaining = Object.fromEntries(
+              Object.entries(latest).filter(([entryKey]) => entryKey !== cardId),
+            );
+            if (Object.keys(remaining).length > 0) {
+              localFavorites.writeOutbox(currentUser.uid, remaining);
             } else {
               localFavorites.clearOutbox(currentUser.uid);
             }
@@ -1056,7 +1088,7 @@ export function useProgressSync(
     }
   }, [flushOutboxes]);
 
-  const clearNotice = useCallback(() => setNotice(null), []);
+  const clearNotice = useCallback(() => { setNotice(null); }, []);
 
   return {
     progress,
