@@ -1,4 +1,4 @@
-Absolutely. Agentic coding changes the optimization target: you're no longer just designing code for humans to read and modify—you’re designing a system that an AI can repeatedly inspect, change, validate, and recover within.
+Agentic coding changes the optimization target: you're no longer just designing code for humans to read and modify—you're designing a system that an AI can repeatedly inspect, change, validate, and recover within.
 
 A useful way to think about the principles is: make the repository maximally legible, mechanically verifiable, and difficult to put into an invalid state.
 
