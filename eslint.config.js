@@ -1,11 +1,10 @@
 import eslint from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
-  {
-    ignores: ["dist/**", ".astro/**", "node_modules/**", "public/**"],
-  },
+export default defineConfig(
+  globalIgnores(["dist/**", ".astro/**", "node_modules/**", "public/**"]),
   eslint.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
@@ -20,6 +19,11 @@ export default tseslint.config(
       // The dataset is parsed at runtime from CSV/JSON files, so index access
       // guards are intentional even when index signatures hide undefined.
       "@typescript-eslint/no-unnecessary-condition": "off",
+      // Concise event handlers and cleanup callbacks are idiomatic and readable.
+      "@typescript-eslint/no-confusing-void-expression": [
+        "error",
+        { ignoreArrowShorthand: true },
+      ],
       // Row numbers and counts legitimately appear in messages and labels.
       "@typescript-eslint/restrict-template-expressions": [
         "error",
@@ -47,8 +51,6 @@ export default tseslint.config(
     rules: {
       // Test fixtures rely on non-null assertions after find().
       "@typescript-eslint/no-non-null-assertion": "off",
-      // expect(() => ...).toThrow() and void-returning mocks are idiomatic.
-      "@typescript-eslint/no-confusing-void-expression": "off",
       // Mock implementations mirror async Firebase signatures without awaiting.
       "@typescript-eslint/require-await": "off",
       // Untyped mock boundary objects for the Firebase SDK.

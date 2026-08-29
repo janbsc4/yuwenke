@@ -41,7 +41,7 @@ The flashcard content and pack membership are compiled from repository files dur
 
 ## Local development
 
-Node.js 22.12 or newer is required.
+Node.js 22.13 or newer is required.
 
 ```sh
 npm install

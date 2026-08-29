@@ -290,7 +290,7 @@ export default function FlashcardApp({
       }
     };
     window.addEventListener("popstate", handlePopState);
-    return () => { window.removeEventListener("popstate", handlePopState); };
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [enabledLocales, locale]);
 
   useEffect(() => {
@@ -397,7 +397,7 @@ export default function FlashcardApp({
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(clearNotice, 6000);
-    return () => { window.clearTimeout(timeout); };
+    return () => window.clearTimeout(timeout);
   }, [clearNotice, notice]);
 
   useEffect(() => {
@@ -435,7 +435,7 @@ export default function FlashcardApp({
       }
     };
     dialog.addEventListener("keydown", trapFocus);
-    return () => { dialog.removeEventListener("keydown", trapFocus); };
+    return () => dialog.removeEventListener("keydown", trapFocus);
   }, [filterSheetOpen, helpOpen, loginOpen, packToConfirm, packsOpen, resetConfirmOpen]);
 
   const closeFilterSheet = useCallback(() => {
@@ -599,7 +599,7 @@ export default function FlashcardApp({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     accountOpen,
     activeView,
@@ -630,14 +630,14 @@ export default function FlashcardApp({
     searchRef.current?.focus();
   };
 
-  const resetFilters = () => { setFilters(EMPTY_FILTERS); };
+  const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   const changeView = (view: StudyView) => {
     setActiveView(view);
     setAccountOpen(false);
   };
 
-  const startNewSession = () => { setSessionNonce((value) => value + 1); };
+  const startNewSession = () => setSessionNonce((value) => value + 1);
 
   const requestOpenPack = (pack: CardPack) => {
     setPacksOpen(false);
@@ -666,7 +666,7 @@ export default function FlashcardApp({
       setPackTriggerOpening(false);
       setPacksOpen(true);
     }, PACK_TRIGGER_OPENING_DURATION_MS);
-    return () => { window.clearTimeout(timeout); };
+    return () => window.clearTimeout(timeout);
   }, [packTriggerOpening]);
 
   useEffect(() => {
@@ -680,7 +680,7 @@ export default function FlashcardApp({
       setPackOpening(false);
       setPackToConfirm(null);
     }, reducedMotionRequested() ? 0 : PACK_OPENING_DURATION_MS);
-    return () => { window.clearTimeout(timeout); };
+    return () => window.clearTimeout(timeout);
   }, [activeView, openPack, packOpening, packToConfirm]);
 
   const confirmReset = async () => {
@@ -747,7 +747,7 @@ export default function FlashcardApp({
                   className="avatar-button"
                   aria-label={m.account.menuAria}
                   aria-expanded={accountOpen}
-                  onClick={() => { setAccountOpen((value) => !value); }}
+                  onClick={() => setAccountOpen((value) => !value)}
                 >
                   {initials(user.displayName, user.email, m.account.initialsFallback)}
                 </button>
@@ -775,7 +775,7 @@ export default function FlashcardApp({
               <button
                 type="button"
                 className="button button-small button-ink"
-                onClick={() => { setLoginOpen(true); }}
+                onClick={() => setLoginOpen(true)}
                 ref={loginButtonRef}
                 title={firebaseConfigured ? undefined : m.account.syncUnavailableTitle}
               >
@@ -795,7 +795,7 @@ export default function FlashcardApp({
                   type="button"
                   className={option === locale ? "is-active" : ""}
                   aria-pressed={option === locale}
-                  onClick={() => { changeLocale(option); }}
+                  onClick={() => changeLocale(option)}
                 >
                   {m.localeSwitcher.label[option]}
                 </button>
@@ -812,7 +812,7 @@ export default function FlashcardApp({
             key={view}
             className={view === activeView ? "is-active" : ""}
             aria-current={view === activeView ? "page" : undefined}
-            onClick={() => { changeView(view); }}
+            onClick={() => changeView(view)}
           >
             <span>{m.views[view]}</span>
             <span className="count-pill">{counts[view]}</span>
@@ -823,7 +823,7 @@ export default function FlashcardApp({
       {!user ? (
         <aside className="guest-note">
           <p>{m.guestNote.body}</p>
-          <button type="button" className="text-button" onClick={() => { setLoginOpen(true); }}>
+          <button type="button" className="text-button" onClick={() => setLoginOpen(true)}>
             {m.guestNote.cta}
           </button>
         </aside>
@@ -875,7 +875,7 @@ export default function FlashcardApp({
         <button
           type="button"
           className="button filter-trigger"
-          onClick={() => { setFilterSheetOpen(true); }}
+          onClick={() => setFilterSheetOpen(true)}
           ref={filterButtonRef}
         >
           {filterCount > 0 ? m.filters.triggerWithCount(filterCount) : m.filters.trigger}
@@ -892,7 +892,7 @@ export default function FlashcardApp({
             {m.filters.topicLabel}
             <select
               value={filters.topic}
-              onChange={(event) => { setFilters((value) => ({ ...value, topic: event.target.value })); }}
+              onChange={(event) => setFilters((value) => ({ ...value, topic: event.target.value }))}
             >
               <option value="all">{m.filters.allTopics}</option>
               {topics.map((topic) => (
@@ -906,7 +906,8 @@ export default function FlashcardApp({
             {m.filters.typeLabel}
             <select
               value={filters.type}
-              onChange={(event) => { setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] })); }
+              onChange={(event) =>
+                setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
               }
             >
               <option value="all">{m.filters.allTypes}</option>
@@ -928,7 +929,7 @@ export default function FlashcardApp({
             <button
               type="button"
               className="text-button how-it-works"
-              onClick={(event) => { openHelp(event.currentTarget); }}
+              onClick={(event) => openHelp(event.currentTarget)}
             >
               {m.help.trigger}
             </button>
@@ -974,7 +975,8 @@ export default function FlashcardApp({
                 packTitle={packTitleById[packIdByCardId[current.cardId]]}
                 revealed={revealed}
                 favorite={currentFavorite}
-                onToggleFavorite={() => { setFavorite(current.cardId, !currentFavorite); }
+                onToggleFavorite={() =>
+                  setFavorite(current.cardId, !currentFavorite)
                 }
                 promptRef={promptRef}
                 ref={answerRef}
@@ -984,7 +986,7 @@ export default function FlashcardApp({
 
               <div className="decision-area">
                 {!revealed ? (
-                  <button type="button" className="button button-primary reveal-button" onClick={() => { setRevealed(true); }}>
+                  <button type="button" className="button button-primary reveal-button" onClick={() => setRevealed(true)}>
                     {m.session.reveal} <kbd>{m.session.spaceKey}</kbd>
                   </button>
                 ) : (
@@ -1022,7 +1024,7 @@ export default function FlashcardApp({
               suggestedPackUnitCount={
                 suggestedPack ? packUnitCounts[suggestedPack.id] ?? 0 : 0
               }
-              onSuggestPack={(pack) => { requestOpenPack(pack); }}
+              onSuggestPack={(pack) => requestOpenPack(pack)}
               packsOpen={packsOpen}
               packsOpening={packTriggerOpening}
               onOpenPacks={requestPacksFromTrigger}
@@ -1059,7 +1061,7 @@ export default function FlashcardApp({
         panelRef={packsDialogRef}
         packConfirmRef={packConfirmDialogRef}
         resetRef={resetDialogRef}
-        onClosePanel={() => { setPacksOpen(false); }}
+        onClosePanel={() => setPacksOpen(false)}
         onRequestOpen={requestOpenPack}
         onCancelOpen={() => {
           if (!packOpening) setPackToConfirm(null);
@@ -1073,7 +1075,7 @@ export default function FlashcardApp({
           setPacksOpen(false);
           setResetConfirmOpen(true);
         }}
-        onCancelReset={() => { setResetConfirmOpen(false); }}
+        onCancelReset={() => setResetConfirmOpen(false)}
         onConfirmReset={() => void confirmReset()}
         m={m}
         locale={locale}
@@ -1087,7 +1089,7 @@ export default function FlashcardApp({
             aria-modal="true"
             aria-labelledby="filter-title"
             ref={filterDialogRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
               <h2 id="filter-title">{m.filters.sheetTitle}</h2>
@@ -1097,7 +1099,7 @@ export default function FlashcardApp({
               {m.filters.topicLabel}
               <select
                 value={filters.topic}
-                onChange={(event) => { setFilters((value) => ({ ...value, topic: event.target.value })); }}
+                onChange={(event) => setFilters((value) => ({ ...value, topic: event.target.value }))}
               >
                 <option value="all">{m.filters.allTopics}</option>
                 {topics.map((topic) => (
@@ -1109,7 +1111,8 @@ export default function FlashcardApp({
               {m.filters.typeLabel}
               <select
                 value={filters.type}
-                onChange={(event) => { setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] })); }
+                onChange={(event) =>
+                  setFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
                 }
               >
                 <option value="all">{m.filters.allTypes}</option>
@@ -1130,7 +1133,7 @@ export default function FlashcardApp({
               <button
                 type="button"
                 className="text-button how-it-works"
-                onClick={(event) => { openHelp(event.currentTarget); }}
+                onClick={(event) => openHelp(event.currentTarget)}
               >
                 {m.help.trigger}
               </button>
@@ -1147,7 +1150,7 @@ export default function FlashcardApp({
             aria-modal="true"
             aria-labelledby="help-title"
             ref={helpDialogRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
               <h2 id="help-title">{m.help.title}</h2>
@@ -1184,7 +1187,7 @@ export default function FlashcardApp({
             aria-modal="true"
             aria-labelledby="login-title"
             ref={loginDialogRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="dialog-mark" lang="zh-Hans" aria-hidden="true">记</div>
             <h2 id="login-title">{m.login.title}</h2>
@@ -1279,7 +1282,7 @@ function EmptyState({
         <span aria-hidden="true">学</span>
         <h2>{m.empty.studyTitle}</h2>
         <p>{m.empty.studyBody}</p>
-        <button type="button" className="button button-primary" onClick={() => { onChangeView("discover"); }}>{m.nav.goToDiscover}</button>
+        <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
       </div>
     );
   }
@@ -1290,9 +1293,9 @@ function EmptyState({
         <h2>{m.empty.discoverTitle}</h2>
         <div className="empty-actions">
           {learningCount > 0 ? (
-            <button type="button" className="button button-primary" onClick={() => { onChangeView("study"); }}>{m.nav.goToStudy}</button>
+            <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>{m.nav.goToStudy}</button>
           ) : null}
-          <button type="button" className="button button-secondary" onClick={() => { onChangeView("mastered"); }}>{m.empty.discoverViewMastered}</button>
+          <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>{m.empty.discoverViewMastered}</button>
           <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} m={m} />
         </div>
       </div>
@@ -1307,7 +1310,7 @@ function EmptyState({
         <button
           type="button"
           className="button button-primary"
-          onClick={() => { onChangeView("discover"); }}
+          onClick={() => onChangeView("discover")}
         >
           {m.nav.goToDiscover}
         </button>
@@ -1318,7 +1321,7 @@ function EmptyState({
     <div className="empty-state">
       <span aria-hidden="true">熟</span>
       <h2>{m.empty.masteredTitle}</h2>
-      <button type="button" className="button button-primary" onClick={() => { onChangeView("discover"); }}>{m.nav.goToDiscover}</button>
+      <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
     </div>
   );
 }
@@ -1420,7 +1423,7 @@ function SessionSummary({
               <button
                 type="button"
                 className="button button-primary"
-                onClick={() => { onSuggestPack(suggestedPack); }}
+                onClick={() => onSuggestPack(suggestedPack)}
               >
                 {m.summary.openPack(localized(suggestedPack.title, locale))}
               </button>
@@ -1438,7 +1441,7 @@ function SessionSummary({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => { onChangeView(secondaryView); }}
+          onClick={() => onChangeView(secondaryView)}
         >
           {secondaryLabel}
         </button>

@@ -69,7 +69,7 @@ export function CardPackDialogs({
             aria-modal="true"
             aria-labelledby="packs-title"
             ref={panelRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="modal-heading">
               <div>
@@ -106,7 +106,7 @@ export function CardPackDialogs({
                             unitCount,
                             localized(pack.description, locale),
                           )}
-                          onClick={() => { onRequestOpen(pack); }}
+                          onClick={() => onRequestOpen(pack)}
                         >
                           <CardPackBooster pack={pack} unitCount={unitCount} m={m} locale={locale} />
                         </button>
@@ -163,9 +163,7 @@ export function CardPackDialogs({
         <div
           className="modal-backdrop pack-confirm-backdrop"
           role="presentation"
-          onMouseDown={() => {
-            if (!packOpening) onCancelOpen();
-          }}
+          onMouseDown={() => !packOpening && onCancelOpen()}
         >
           <section
             className="confirm-dialog pack-opening-dialog"
@@ -174,7 +172,7 @@ export function CardPackDialogs({
             aria-labelledby="open-pack-title"
             aria-busy={packOpening}
             ref={packConfirmRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="pack-opening-stage">
               <CardPackBooster
@@ -224,20 +222,14 @@ export function CardPackDialogs({
       ) : null}
 
       {resetOpen ? (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={() => {
-            if (!resetting) onCancelReset();
-          }}
-        >
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => !resetting && onCancelReset()}>
           <section
             className="confirm-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="reset-title"
             ref={resetRef}
-            onMouseDown={(event) => { event.stopPropagation(); }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <p className="eyebrow">{m.packs.resetEyebrow}</p>
             <h2 id="reset-title">{m.account.resetStudy}</h2>

@@ -273,11 +273,12 @@ export function observeCloudProgress(
   return onSnapshot(
     progressCollection(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) => { onProgress(
+    (snapshot) =>
+      onProgress(
         snapshotProgress(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ); },
+      ),
     onError,
   );
 }
@@ -297,11 +298,12 @@ export function observeCloudFavorites(
   return onSnapshot(
     favoritesCollection(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) => { onFavorites(
+    (snapshot) =>
+      onFavorites(
         snapshotFavorites(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ); },
+      ),
     onError,
   );
 }
@@ -316,11 +318,12 @@ export function observeCloudCardPackState(
   return onSnapshot(
     cardPackStateDoc(services.db, uid),
     { includeMetadataChanges: true },
-    (snapshot) => { onState(
+    (snapshot) =>
+      onState(
         snapshotCardPackState(snapshot),
         !snapshot.metadata.fromCache,
         snapshot.metadata.hasPendingWrites,
-      ); },
+      ),
     onError,
   );
 }

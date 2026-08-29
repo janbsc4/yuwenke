@@ -1088,7 +1088,7 @@ export function useProgressSync(
     }
   }, [flushOutboxes]);
 
-  const clearNotice = useCallback(() => { setNotice(null); }, []);
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   return {
     progress,

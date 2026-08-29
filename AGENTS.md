@@ -70,7 +70,7 @@ For example: `¿Cuántas marcas tonales puede haber por sílaba?` → `Solo pued
 
 ## Development
 
-Node.js 22.12+ is required.
+Node.js 22.13+ is required.
 
 Useful commands:
 
