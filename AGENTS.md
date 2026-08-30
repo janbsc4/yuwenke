@@ -1,168 +1,60 @@
 # AGENTS.md
 
-## Project overview
+## What this is
 
-Yuwenke is a personal experiment that transforms Chinese class notes into a structured flashcard application.
-
-The source material contains Mandarin characters, pinyin, Spanish meanings, grammar notes, explanations, examples, and cultural context. It is based on personal notes rather than being an authoritative Mandarin reference.
-
-The application is a static Astro website with a single React study interface. It is designed to be hosted for free on GitHub Pages.
-
-The site is localized. Both `src/pages/index.astro` (a client-side locale resolver that honors the saved choice, then browser language, then English fallback) and the dynamic `src/pages/[locale]/index.astro` page generate static routes under the `/yuwenke/` base path: `/yuwenke/es/` and `/yuwenke/en/`, both released since every card carries complete owner-reviewed English content (`ENGLISH_RELEASED` in `src/lib/locale.ts`). In-app locale switching updates the URL, document language, and metadata through browser history without remounting the study session, and the choice is saved on-device only (never in Firestore).
+Yuwenke turns personal Chinese class notes into flashcards. Static Astro site with a React study interface, hosted on GitHub Pages under the `/yuwenke/` base path, localized to Spanish and English. Content comes from personal class notes, not an authoritative Mandarin reference.
 
 ## Architecture
 
-Astro parses and validates `chino_flashcards.csv`, `card_packs.json`, and `card_pack_membership.csv` while building the static site. The separate `scripts/build_flashcards.mjs` authoring script regenerates the flashcard CSV when run explicitly; it is not part of `npm run build`.
+`chino_flashcards.csv` is the dataset; `card_packs.json` and `card_pack_membership.csv` assign every card to exactly one pack. Astro validates all three at build time (`src/data/`), so malformed data fails the deploy instead of shipping.
 
-Firestore **does not** store flashcard content or Card Pack definitions. It stores only learner state: progress, card-level favorites, Open Packs, and the Reset Boundary. The application therefore works completely offline or as a guest without any backend configuration.
+Firestore stores only learner state (progress, favorites, Open Packs, Reset Boundary), never card content. The app works offline and as a guest without backend configuration; do not break guest mode when touching Firebase sync.
 
-The main project areas are:
+`chinese-knowledge.md` is generated from the CSV by `scripts/build_chinese_knowledge.mjs`. Never edit generated files; edit the source and rerun the generator. Tests diff committed generated files against generator output, so hand edits fail CI.
 
-* `chino_flashcards.csv` — structured flashcard dataset.
-* `card_packs.json` — ordered Card Pack catalog.
-* `card_pack_membership.csv` — one Card Pack assignment per Source Flashcard.
-* `scripts/build_flashcards.mjs` — rebuilds `chino_flashcards.csv` while preserving card identities.
-* `scripts/english_content.mjs` — English study fields for every Source Flashcard, keyed by FC id; `build_flashcards.mjs` requires all four English fields per card before writing the CSV.
-* `scripts/build_chinese_knowledge.mjs` — derives `chinese-knowledge.md` (deduplicated Hanzi-only tokens) from the CSV. A separate, optional authoring script, not part of `npm run build`.
-* `chinese-knowledge.md` — generated file; do not edit by hand, edit the CSV and rerun the script instead.
-* `src/` — Astro pages, React UI, study logic, and persistence.
-* `src/lib/messages.ts` — typed Spanish and English message dictionaries with shared keys for all interface copy, notices, labels, and metadata.
-* `tests/` — unit and integration tests.
-* `firestore.rules` — Firestore security rules.
-* `CONTEXT.md` — canonical domain vocabulary.
-* `docs/adr/` — accepted architectural decisions.
-* `docs/flashcard-app-plan.md` — historical v1 implementation plan; not the current specification.
+## Card identity and packs
 
-## Card identity
+Card IDs (`FC001`, ...) and pack IDs (`CP001`, ...) are stable identifiers referenced by saved user progress. Append new cards and packs at the end; never reorder or remove existing entries. Identity changes are migrations, not edits. `scripts/build_flashcards.mjs` refuses to shrink the dataset or renumber, and requires complete English content per card.
 
-Card IDs (`FC001`, `FC002`, ...) are stable identifiers.
+Catalog order controls recommendation priority only; the first pack is the default.
 
-**Never reorder or remove existing cards.**
+## Proper names
 
-New cards must always be appended to the end of the dataset. Existing IDs are referenced by saved user progress.
+The `nombres_propios` CSV field holds semicolon-separated exact forms (Hanzi, pinyin, Spanish, English) that the interface renders in lilac. Keep study text plain; register every displayed form in `properNamesById` in `scripts/build_flashcards.mjs` instead of adding markup.
 
-If a change requires modifying card identities, treat it as a migration rather than a normal edit.
+## Concept cards
 
-## Card packs
+Cards with `tipo: concepto` test the rule itself, not a translation: Spanish question in `espanol`, Spanish answer in `explicacion`, one Spanish-to-Spanish study unit, no reverse direction. Hanzi, pinyin, and examples are supporting reference.
 
-Every Source Flashcard belongs to exactly one Card Pack. When appending cards, add their memberships to `card_pack_membership.csv` and keep deployed `CP` IDs stable.
-
-New Card Packs may be appended to `card_packs.json` when the material forms a coherent learning group. The first catalog entry remains the default pack, and catalog order controls recommendation priority rather than access prerequisites.
-
-## Dataset annotations
-
-The `nombres_propios` CSV field contains semicolon-separated exact forms of proper names that the interface renders in lilac. This includes people, surnames, countries, and places across Hanzi, pinyin, and Spanish.
-
-Keep the study text itself plain. When adding or changing a proper name, update `properNamesById` in `scripts/build_flashcards.mjs` with every displayed form instead of adding markup to the card text.
-
-## Content guidelines
-
-Review every card as a complete learning unit: prompt, answer, explanation, and examples must remain natural and mutually consistent in Mandarin and Spanish.
-
-Cards with `tipo: concepto` test the rule itself rather than its translation:
-
-* Write the prompt as a direct Spanish question in the `espanol` field.
-* Write the answer as a concise Spanish explanation in the `explicacion` field.
-* Keep Hanzi, pinyin, and examples as supporting reference material, not as a reverse translation exercise.
-* Concept cards produce one Spanish-to-Spanish study unit. Do not add a duplicate reverse direction.
-
-For example: `¿Cuántas marcas tonales puede haber por sílaba?` → `Solo puede haber una.`
+Review every card as a complete learning unit: prompt, answer, explanation, and examples must stay natural and mutually consistent.
 
 ## Development
 
-Node.js 22.13+ is required.
+Node.js 22.13+ is required. Commands live in `package.json`. The husky `pre-push` hook runs lint, typecheck, and tests; CI is the unskippable layer and runs the same checks on pull requests before deploying.
 
-Useful commands:
+`npm test` excludes `tests/firestore.rules.test.ts`, which needs Java 21 and the Firestore emulator; run it with `npm run test:rules`, or both suites with `npm run test:all`.
 
-```sh
-npm install
-npm run dev
-npm test
-npm run check
-npm run lint
-npm run build
-```
+## Truth is the code
 
-A husky `pre-push` hook (`.husky/pre-push`) runs `npm run lint`, `npm run check`, and `npm test` before every push. It activates automatically after `npm install` and can be bypassed only with `git push --no-verify`; the CI workflow is the unskippable enforcement layer and also runs on pull requests.
+The repository, not prose, is the authority on how things work. Documentation explains; executable checks adjudicate.
 
-Firestore rule tests additionally require Java 21:
-
-```sh
-npm run test:rules
-```
-
-Note: the default `npm test` excludes `tests/firestore.rules.test.ts` because the Firestore rules suite runs against the emulator and needs Java 21. `npm run test:rules` covers just that suite; `npm run test:all` runs both. Use `npm run test:watch` for a re-running test loop.
+* Every rule that matters must be mechanically enforceable. If a rule here could be a check instead, move it into a check and shrink this file.
+* When you introduce or tighten an invariant, add its guardian in the same change.
+* When documentation and code disagree, the code wins. Update the documentation in the same change.
+* Prefer checks that fail with expected-versus-actual messages over checks that require human judgment.
+* Fix the cheapest failing check first: lint, then typecheck, then unit tests, then build and deploy gates.
+* Keep changes small and single-purpose so a mistake is cheap to revert.
+* Treat tests as executable examples of intended use, and name them accordingly.
 
 ## Engineering priorities
 
-When making changes, follow these priorities in order:
+1. User experience first: fast, responsive, lightweight. Optimize perceived performance; avoid unnecessary re-renders, bundle size, and network requests.
+2. Readability: clear names, small focused functions, explicit logic. Comments explain why, not what.
+3. Simplicity: the simplest correct solution; no speculative abstractions or dependencies.
 
-### 1. User experience and performance
-
-The highest priority is the experience of the user.
-
-Prefer solutions that make the application:
-
-* fast
-* responsive
-* smooth
-* lightweight
-
-Optimize for perceived performance, not just benchmarks.
-
-Avoid unnecessary re-renders, excessive bundle size, unnecessary network requests, or expensive computations during interaction.
-
-### 2. Readability and maintainability
-
-Code should be easy for a human to understand.
-
-Prefer:
-
-* clear names
-* straightforward control flow
-* small, focused functions
-* explicit logic over clever tricks
-
-Comments are allowed, but code should ideally explain itself. Comments should explain *why*, not *what*.
-
-Future contributors (including AI agents) should be able to understand code quickly.
-
-### 3. Simplicity
-
-Prefer the simplest solution that correctly solves the problem.
-
-Avoid introducing abstractions, patterns, generic frameworks, or additional dependencies unless they provide a clear long-term benefit.
-
-Do not optimize for hypothetical future requirements.
-
-## Complexity policy
-
-If a requested feature requires significant additional architectural complexity, stop before implementing it and explain:
-
-* why the complexity is necessary,
-* what alternatives were considered,
-* what trade-offs exist.
-
-Ask for approval before proceeding with a substantially more complex implementation.
-
-Small, localized complexity that clearly improves correctness or performance is acceptable.
-
-## General guidance
-
-* Preserve existing architecture unless there is a compelling reason to change it.
-* Prefer consistency with the existing codebase over introducing new patterns.
-* Keep components and modules focused on a single responsibility.
-* Minimize dependencies.
-* Ensure new functionality includes appropriate tests.
-* Do not break guest mode when working on Firebase synchronization.
-* Remember that the app is deployed to GitHub Pages and runs under the configured `/yuwenke/` base path.
+If a feature requires significant architectural complexity, stop and explain why, what alternatives exist, and the trade-offs before building it. Prefer consistency with the existing codebase; keep changes small and single-purpose so mistakes are cheap to revert.
 
 ## Agent skills
 
-### Issue tracker
-
-Issues and PRDs are tracked with GitHub Issues. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-This repository uses a single-context domain documentation layout. See `docs/agents/domain.md`.
+* Issues and PRDs: GitHub Issues, see `docs/agents/issue-tracker.md`.
+* Domain docs: single-context layout, see `docs/agents/domain.md`.
