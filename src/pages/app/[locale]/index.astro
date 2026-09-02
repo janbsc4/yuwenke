@@ -1,11 +1,11 @@
 ---
-import FlashcardApp from "../../components/FlashcardApp";
-import { loadFlashcards } from "../../data/loadFlashcards";
-import { loadCardPackData } from "../../data/loadCardPacks";
-import { AVAILABLE_LOCALES, localeUrl } from "../../lib/locale";
-import { messages } from "../../lib/messages";
-import type { Locale } from "../../types";
-import "../../styles/global.css";
+import FlashcardApp from "../../../components/FlashcardApp";
+import { loadFlashcards } from "../../../data/loadFlashcards";
+import { loadCardPackData } from "../../../data/loadCardPacks";
+import { AVAILABLE_LOCALES, localeUrl } from "../../../lib/locale";
+import { messages } from "../../../lib/messages";
+import type { Locale } from "../../../types";
+import "../../../styles/global.css";
 
 export function getStaticPaths() {
   return AVAILABLE_LOCALES.map((locale) => ({ params: { locale } }));

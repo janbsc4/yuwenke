@@ -882,7 +882,7 @@ describe("FlashcardApp localization", () => {
     expect(document.querySelector(".card-prompt h2")).toHaveTextContent(
       promptBeforeSwitch === "hola" ? "hello" : promptBeforeSwitch!,
     );
-    expect(window.location.pathname).toBe("/en/");
+    expect(window.location.pathname).toBe("/app/en/");
     expect(document.documentElement.lang).toBe("en");
     expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("en");
     expect(screen.getByRole("button", { name: "EN" })).toHaveAttribute(
@@ -898,7 +898,7 @@ describe("FlashcardApp localization", () => {
     await user.click(await screen.findByRole("button", { name: "EN" }));
     expect(await screen.findByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
 
-    window.history.pushState(null, "", "/es/");
+    window.history.pushState(null, "", "/app/es/");
     fireEvent(window, new Event("popstate"));
 
     expect(

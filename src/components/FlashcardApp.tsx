@@ -32,6 +32,7 @@ import {
 import {
   AVAILABLE_LOCALES,
   DEFAULT_LOCALE,
+  homeUrl,
   LOCALE_STORAGE_KEY,
   localeUrl,
   localized,
@@ -706,7 +707,7 @@ export default function FlashcardApp({
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href={localeUrl(locale)} aria-label={m.brand.homeAria}>
+        <a className="brand" href={homeUrl()} aria-label={m.brand.homeAria}>
           <img
             className="brand-mark"
             src={`${import.meta.env.BASE_URL}yuwenke-mark.png`}

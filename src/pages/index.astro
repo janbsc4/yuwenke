@@ -1,69 +1,443 @@
 ---
-import {
-  AVAILABLE_LOCALES,
-  DEFAULT_LOCALE,
-  LOCALE_STORAGE_KEY,
-} from "../lib/locale";
+import { loadFlashcards } from "../data/loadFlashcards";
+import { loadCardPackData } from "../data/loadCardPacks";
+import { landingLangResolverScript, localeUrl } from "../lib/locale";
 import { messages } from "../lib/messages";
-import "../styles/global.css";
+import "../styles/landing.css";
 
 const base = import.meta.env.BASE_URL;
 const canonicalUrl = new URL(base, Astro.site);
-const meta = messages[DEFAULT_LOCALE].metadata;
-const assetUrl = (filename: string) => `${base}${filename}`;
+const socialImageUrl = new URL(`${base}og.png`, Astro.site);
+const fontUrl = `${base}fonts/young-serif-latin.woff2`;
+const appUrl = (locale: "es" | "en") => localeUrl(locale);
+
+const cards = loadFlashcards();
+const { packs, packIdByCardId } = loadCardPackData(cards);
+const cardsInPack = (packId: string) =>
+  cards.filter((card) => packIdByCardId[card.id] === packId).length;
+
+const cardById = new Map(cards.map((card) => [card.id, card]));
+const demoCard = cardById.get("FC002")!;
+const fanCards = ["FC001", "FC012"].map((id) => cardById.get(id)!);
+const shelfPacks = packs.slice(0, 3);
+const meta = messages.es.metadata;
 ---
 
 <!doctype html>
-<html lang={DEFAULT_LOCALE}>
+<html lang="es" data-lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={meta.description} />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="icon" href={assetUrl("favicon.ico")} sizes="16x16 32x32 48x48" />
-    <link rel="icon" href={assetUrl("favicon-32.png")} type="image/png" sizes="32x32" />
+    <meta name="theme-color" content="#f5f0e6" />
+    <link rel="icon" href={`${base}favicon.ico`} sizes="16x16 32x32 48x48" />
+    <link rel="icon" href={`${base}favicon-32.png`} type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href={`${base}apple-touch-icon.png`} sizes="180x180" />
+    <link rel="manifest" href={`${base}site.webmanifest`} />
     <link rel="canonical" href={canonicalUrl} />
-    <title>Yuwenke</title>
-    <script
-      is:inline
-      define:vars={{
-        storageKey: LOCALE_STORAGE_KEY,
-        available: AVAILABLE_LOCALES,
-        fallback: DEFAULT_LOCALE,
-        base,
-      }}
-    >
-      // Root locale resolver: saved choice first, then browser negotiation with
-      // English as the fallback. Mirrors resolveLocalePreference in locale.ts.
-      (function () {
-        var saved = null;
-        try {
-          saved = window.localStorage.getItem(storageKey);
-        } catch (error) {}
-        var target = available.indexOf(saved) >= 0 ? saved : null;
-        if (!target) {
-          var languages = navigator.languages || [navigator.language || ""];
-          for (var index = 0; index < languages.length; index += 1) {
-            var candidate = String(languages[index] || "")
-              .toLowerCase()
-              .split("-")[0];
-            if (available.indexOf(candidate) >= 0) {
-              target = candidate;
-              break;
-            }
-          }
-          if (!target) {
-            target = available.indexOf("en") >= 0 ? "en" : fallback;
-          }
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="alternate" hreflang="es" href={new URL(appUrl("es"), Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL(appUrl("en"), Astro.site)} />
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Yuwenke" />
+    <meta property="og:title" content="Yuwenke" />
+    <meta property="og:description" content={meta.socialDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:alt" content={meta.ogImageAlt} />
+    <title>Yuwenke · 语文课</title>
+    <script is:inline set:html={landingLangResolverScript()} />
+    <script is:inline>document.documentElement.classList.add("js");</script>
+    <style is:inline set:html={`@font-face{font-family:"Young Serif";font-style:normal;font-weight:400;font-display:swap;src:url('${fontUrl}') format("woff2");}`}></style>
+    <script>
+      const root = document.documentElement;
+      const toggles = document.querySelectorAll<HTMLButtonElement>("[data-set-lang]");
+      const syncPressed = () => {
+        for (const button of toggles) {
+          button.setAttribute("aria-pressed", String(button.dataset.setLang === root.dataset.lang));
         }
-        window.location.replace(base + target + "/");
-      })();
+      };
+      syncPressed();
+      for (const button of toggles) {
+        button.addEventListener("click", () => {
+          const lang = button.dataset.setLang === "en" ? "en" : "es";
+          root.dataset.lang = lang;
+          root.lang = lang;
+          syncPressed();
+          try {
+            window.localStorage.setItem("yuwenke:locale:v1", lang);
+          } catch {
+            /* guest mode keeps working without storage */
+          }
+        });
+      }
+    </script>
+    <script>
+      const flip = document.querySelector<HTMLButtonElement>(".lp-flip");
+      flip?.addEventListener("click", () => {
+        flip.setAttribute("aria-pressed", String(flip.getAttribute("aria-pressed") !== "true"));
+      });
+    </script>
+    <script>
+      const placed = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add(
+            entry.target.classList.contains("lp-footer") ? "is-stamped" : "is-set",
+          );
+          observer.unobserve(entry.target);
+        }
+      };
+      const observer = new IntersectionObserver(placed, { threshold: 0.25 });
+      for (const section of document.querySelectorAll(".lp-steps, .lp-footer")) {
+        observer.observe(section);
+      }
+    </script>
+    <script>
+      const rotor = document.querySelector<HTMLElement>(".lp-rotor");
+      const stage = document.querySelector<HTMLElement>(".lp-hero-stage");
+      const finePointer = matchMedia("(pointer: fine)");
+      let frame = 0;
+      if (rotor && stage) {
+        stage.addEventListener("pointermove", (event) => {
+          if (!finePointer.matches || rotor.getAttribute("aria-pressed") === "true") return;
+          if (frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            const bounds = stage.getBoundingClientRect();
+            const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+            const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+            rotor.style.setProperty("--tilt-x", `${(-y * 5).toFixed(2)}deg`);
+            rotor.style.setProperty("--tilt-y", `${(x * 6).toFixed(2)}deg`);
+          });
+        });
+        stage.addEventListener("pointerleave", () => {
+          rotor.style.setProperty("--tilt-x", "0deg");
+          rotor.style.setProperty("--tilt-y", "0deg");
+        });
+      }
     </script>
   </head>
   <body>
+    <div class="lp-shell">
+      <header class="lp-header">
+        <a class="lp-brand" href={appUrl("es")} aria-label="Yuwenke">
+          <img src={`${base}yuwenke-mark.png`} alt="" width="46" height="46" />
+          <span>
+            <strong>Yuwenke</strong>
+            <small class="lp-hanzi">语文课 · clase de chino</small>
+          </span>
+        </a>
+        <div class="lp-header-tools">
+          <div class="lang-toggle" role="group" aria-label="Idioma / Language">
+            <button type="button" data-set-lang="es" aria-pressed="true">ES</button>
+            <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+          </div>
+          <a class="lp-button lp-button-primary lp-header-cta lang-es" href={appUrl("es")}>
+            Abrir las cartas
+          </a>
+          <a class="lp-button lp-button-primary lp-header-cta lang-en" href={appUrl("en")}>
+            Open the cards
+          </a>
+        </div>
+      </header>
+
+      <main>
+        <section class="lp-hero">
+          <div class="lp-hero-copy">
+            <p class="lp-eyebrow lp-rise lp-rise-1">
+              <span class="lp-hanzi" lang="zh-Hans">语文课</span>
+              <span aria-hidden="true">·</span>
+              <span>yǔwén kè</span>
+            </p>
+            <h1 class="lp-rise lp-rise-2">
+              <span class="lang-es">El chino de mi clase, <em>carta a carta</em>.</span>
+              <span class="lang-en">My Chinese class, <em>one card</em> at a time.</span>
+            </h1>
+            <p class="lp-hero-sub lp-rise lp-rise-3">
+              <span class="lang-es">
+                Yuwenke convierte mis apuntes de mandarín en cartas con hanzi, pinyin y
+                explicaciones en español. Estúdialas en los dos sentidos y guarda tu progreso,
+                incluso sin conexión.
+              </span>
+              <span class="lang-en">
+                Yuwenke turns my Mandarin class notes into cards with hanzi, pinyin, and
+                explanations in English. Study them in both directions and keep your progress,
+                even offline.
+              </span>
+            </p>
+            <div class="lp-hero-actions lp-rise lp-rise-4">
+              <a class="lp-button lp-button-primary lang-es" href={appUrl("es")}>
+                Abrir las cartas <span class="lp-hanzi" lang="zh-Hans">学</span>
+              </a>
+              <a class="lp-button lp-button-primary lang-en" href={appUrl("en")}>
+                Open the cards <span class="lp-hanzi" lang="zh-Hans">学</span>
+              </a>
+              <a class="lp-button lp-button-ghost lang-es" href="#como-funciona">Ver cómo funciona</a>
+              <a class="lp-button lp-button-ghost lang-en" href="#como-funciona">See how it works</a>
+            </div>
+            <p class="lp-hero-counts lp-rise lp-rise-5">
+              <span><strong>{cards.length}</strong> <span class="lang-es">cartas</span><span class="lang-en">cards</span></span>
+              <span><strong>{packs.length}</strong> <span class="lang-es">packs por abrir</span><span class="lang-en">packs to open</span></span>
+              <span><strong>ES</strong> ⇄ <strong class="lp-hanzi" lang="zh-Hans">中文</strong></span>
+            </p>
+          </div>
+
+          <div class="lp-hero-stage">
+            <ul class="lp-fan">
+              {
+                fanCards.map((card) => (
+                  <li class="lp-fan-item" aria-hidden="true">
+                    <div class="lp-dealer">
+                      <div class="lp-face lp-face-front">
+                        <div class="lp-face-main">
+                          <span class="lp-hanzi" lang="zh-Hans">{card.hanzi}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              }
+              <li class="lp-fan-item lp-demo-card">
+                <div class="lp-dealer">
+                  <button type="button" class="lp-flip" aria-pressed="false">
+                    <span class="lp-rotor">
+                      <span class="lp-face lp-face-front">
+                        <span class="lp-face-head">
+                          <span class="lang-es"><span class="lp-hanzi" lang="zh-Hans">中</span> → ES</span>
+                          <span class="lang-en"><span class="lp-hanzi" lang="zh-Hans">中</span> → EN</span>
+                          <span class="lp-hanzi" lang="zh-Hans" aria-hidden="true">{demoCard.tipo === 'palabra' ? '词' : '句'}</span>
+                        </span>
+                        <span class="lp-face-main">
+                          <span class="lp-hanzi" lang="zh-Hans">{demoCard.hanzi}</span>
+                          <span class="lp-pinyin">{demoCard.pinyin}</span>
+                        </span>
+                        <span class="lp-face-hint">
+                          <span class="lp-flip-icon" aria-hidden="true">↻</span>
+                          <span class="lang-es">Toca la carta para girarla</span>
+                          <span class="lang-en">Tap the card to flip it</span>
+                        </span>
+                      </span>
+                      <span class="lp-face lp-face-back">
+                        <span class="lp-face-head">
+                          <span class="lang-es">Respuesta</span>
+                          <span class="lang-en">Answer</span>
+                          <span class="lang-es">ES → <span class="lp-hanzi" lang="zh-Hans">中</span></span>
+                          <span class="lang-en">EN → <span class="lp-hanzi" lang="zh-Hans">中</span></span>
+                        </span>
+                        <span class="lp-face-main">
+                          <span class="lp-gloss lang-es">{demoCard.espanol}</span>
+                          <span class="lp-gloss lang-en">{demoCard.ingles}</span>
+                          <span class="lp-face-example">
+                            <span class="lp-hanzi" lang="zh-Hans">{demoCard.ejemplo_hanzi}</span>
+                            <span class="lp-pinyin">{demoCard.ejemplo_pinyin}</span>
+                            <span class="lang-es">{demoCard.ejemplo_espanol}</span>
+                            <span class="lang-en">{demoCard.ejemplo_ingles}</span>
+                          </span>
+                        </span>
+                        <span class="lp-face-hint">
+                          <span class="lp-flip-icon" aria-hidden="true">↻</span>
+                          <span class="lang-es">Otra vez</span>
+                          <span class="lang-en">Flip again</span>
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <p class="lp-stack-caption">
+              <span class="lang-es">Carta real de la baraja ·</span>
+              <span class="lang-en">A real card from the deck ·</span>
+              <span class="lp-hanzi" lang="zh-Hans"> 你</span> FC002
+            </p>
+          </div>
+        </section>
+
+        <section class="lp-steps" id="como-funciona" aria-labelledby="steps-title">
+          <div class="lp-section-head">
+            <p class="lp-eyebrow lang-es">Cómo funciona</p>
+            <p class="lp-eyebrow lang-en">How it works</p>
+            <h2 id="steps-title">
+              <span class="lang-es">Tres pilas de cartas. Nada más.</span>
+              <span class="lang-en">Three piles of cards. That's the whole method.</span>
+            </h2>
+          </div>
+          <div class="lp-step-grid">
+            <svg class="lp-step-arrow" viewBox="0 0 54 34" aria-hidden="true" fill="none">
+              <path pathLength="1" d="M2 26 C 18 30, 34 16, 46 10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1" />
+              <path d="M39 6 L47 9 L43 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            </svg>
+            <svg class="lp-step-arrow" viewBox="0 0 54 34" aria-hidden="true" fill="none">
+              <path pathLength="1" d="M2 26 C 18 30, 34 16, 46 10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1" />
+              <path d="M39 6 L47 9 L43 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            </svg>
+            <div class="lp-step">
+              <span class="lp-step-marker" lang="zh-Hans" aria-hidden="true">一</span>
+              <small>yī</small>
+              <h3 class="lang-es">Descubre</h3>
+              <h3 class="lang-en">Discover</h3>
+              <p class="lang-es">
+                Abre un pack y sus cartas nuevas caen aquí. Decide para cada una: aprenderla,
+                saltarla o marcarla como sabida.
+              </p>
+              <p class="lang-en">
+                Open a pack and its new cards land here. For each one, decide: learn it, skip it,
+                or mark it as known.
+              </p>
+              <p class="lp-hanzi-flow lp-hanzi" lang="zh-Hans">看 · 学 · 会</p>
+            </div>
+            <div class="lp-step">
+              <span class="lp-step-marker" lang="zh-Hans" aria-hidden="true">二</span>
+              <small>èr</small>
+              <h3 class="lang-es">Estudia</h3>
+              <h3 class="lang-en">Study</h3>
+              <p class="lang-es">
+                Cada palabra se practica en los dos sentidos, con pinyin y ejemplos reales de
+                clase. Los conceptos se preguntan en español.
+              </p>
+              <p class="lang-en">
+                Every word is practiced in both directions, with pinyin and real examples from
+                class. Concepts are asked in English.
+              </p>
+              <p class="lp-hanzi-flow lp-hanzi">
+                <span lang="zh-Hans">中</span> ⇄ ES
+              </p>
+            </div>
+            <div class="lp-step">
+              <span class="lp-step-marker" lang="zh-Hans" aria-hidden="true">三</span>
+              <small>sān</small>
+              <h3 class="lang-es">Domina</h3>
+              <h3 class="lang-en">Master</h3>
+              <p class="lang-es">
+                Lo que ya te sale se queda en tu colección. Vuelve a repasarla o mándala de
+                vuelta cuando quieras reforzarla.
+              </p>
+              <p class="lang-en">
+                What you already know stays in your collection. Review it anytime, or send it
+                back whenever you want to reinforce it.
+              </p>
+              <p class="lp-hanzi-flow lp-hanzi">
+                <span class="lang-es">Tu muro</span>
+                <span class="lang-en">Your wall</span>
+                <span lang="zh-Hans">· 墙</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="lp-packs" aria-labelledby="packs-title">
+          <div class="lp-packs-inner">
+            <div class="lp-section-head">
+              <p class="lp-eyebrow lang-es">Packs</p>
+              <p class="lp-eyebrow lang-en">Packs</p>
+              <h2 id="packs-title">
+                <span class="lang-es">Cada tema llega como un sobre sin abrir.</span>
+                <span class="lang-en">Every topic arrives as a sealed pack.</span>
+              </h2>
+              <p>
+                <span class="lang-es">
+                  Abre un pack cuando quieras y sus cartas entran en Descubrir. Los packs no se
+                  cierran: tu colección solo crece.
+                </span>
+                <span class="lang-en">
+                  Open a pack whenever you like and its cards join Discover. Packs never close:
+                  your collection only grows.
+                </span>
+              </p>
+            </div>
+            <div class="lp-pack-stage">
+              {
+                shelfPacks.map((pack, index) => {
+                  const isMain = index === 0;
+                  return (
+                    <div
+                      class:list={[
+                        "lp-pack",
+                        {
+                          "lp-pack-back lp-pack-back-1": index === 1,
+                          "lp-pack-back lp-pack-back-2": index === 2,
+                        },
+                      ]}
+                      data-theme={pack.theme}
+                      aria-hidden={isMain ? undefined : "true"}
+                    >
+                      <div class="lp-pack-body">
+                        <span class="lp-pack-crimp lp-pack-crimp-top" />
+                        <span class="lp-pack-edition">Yuwenke · <span class="lp-hanzi" lang="zh-Hans">语文课</span></span>
+                        <span class="lp-pack-mark lp-hanzi" lang="zh-Hans">{pack.mark}</span>
+                        {isMain && <span class="lp-pack-title lang-es">{pack.title.es}</span>}
+                        {isMain && <span class="lp-pack-title lang-en">{pack.title.en}</span>}
+                        {isMain && (
+                          <span class="lp-pack-count lang-es">{cardsInPack(pack.id)} cartas</span>
+                        )}
+                        {isMain && (
+                          <span class="lp-pack-count lang-en">{cardsInPack(pack.id)} cards</span>
+                        )}
+                        <span class="lp-pack-seal lp-hanzi" lang="zh-Hans">{pack.mark}</span>
+                        <span class="lp-pack-crimp lp-pack-crimp-bottom" />
+                      </div>
+                      {isMain && <span class="lp-pack-tear" />}
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="lp-footer">
+      <div class="lp-shell">
+        <div class="lp-footer-inner">
+          <div>
+            <p class="lp-eyebrow lang-es">Tu turno</p>
+            <p class="lp-eyebrow lang-en">Your turn</p>
+            <h2>
+              <span class="lang-es">Tu primera carta ya está en la mesa: <span class="lp-hanzi" lang="zh-Hans">你</span>.</span>
+              <span class="lang-en">Your first card is already on the table: <span class="lp-hanzi" lang="zh-Hans">你</span>.</span>
+            </h2>
+            <p class="lp-footer-note">
+              <span class="lang-es">
+                Empieza donde empezó la clase: pronombres, saludos y las primeras frases. Sin
+                cuenta obligatoria, con progreso guardado en tu dispositivo.
+              </span>
+              <span class="lang-en">
+                Start where the class started: pronouns, greetings, and the first phrases. No
+                account needed, with your progress saved on your device.
+              </span>
+            </p>
+            <div class="lp-footer-actions">
+              <a class="lp-button lp-button-primary lang-es" href={appUrl("es")}>Abrir las cartas</a>
+              <a class="lp-button lp-button-primary lang-en" href={appUrl("en")}>Open the cards</a>
+            </div>
+          </div>
+          <div class="lp-seal" role="presentation">
+            <div>
+              <span class="lp-hanzi" lang="zh-Hans">学</span>
+              <small>xué · estudiar</small>
+            </div>
+          </div>
+        </div>
+        <div class="lp-footer-legal">
+          <p>
+            <span class="lang-es">Hecho a mano con apuntes reales de clase.</span>
+            <span class="lang-en">Made by hand from real class notes.</span>
+          </p>
+          <p>
+            <span class="lang-es">Sin cuenta obligatoria · Funciona sin conexión · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
+            <span class="lang-en">No account needed · Works offline · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
+          </p>
+        </div>
+      </div>
+    </footer>
+
     <noscript>
       <p class="noscript-message">
-        <a href={`${base}${DEFAULT_LOCALE}/`}>{meta.noscript}</a>
+        <a class="lang-es" href={appUrl("es")}>Abrir las cartas</a>
+        <a class="lang-en" href={appUrl("en")}>Open the cards</a>
       </p>
     </noscript>
   </body>

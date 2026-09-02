@@ -94,10 +94,11 @@ describe("resolveLocalePreference", () => {
 });
 
 describe("parseLocaleFromPath", () => {
-  it("reads the locale segment under the base path", () => {
-    expect(parseLocaleFromPath("/es/")).toBe("es");
-    expect(parseLocaleFromPath("/en/")).toBe("en");
+  it("reads the locale segment under the app path", () => {
+    expect(parseLocaleFromPath("/app/es/")).toBe("es");
+    expect(parseLocaleFromPath("/app/en/")).toBe("en");
     expect(parseLocaleFromPath("/")).toBeNull();
+    expect(parseLocaleFromPath("/es/")).toBeNull();
     expect(parseLocaleFromPath("/escape/")).toBeNull();
   });
 });

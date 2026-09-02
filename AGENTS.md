@@ -32,6 +32,12 @@ Review every card as a complete learning unit: prompt, answer, explanation, and 
 
 Node.js 22.13+ is required. Commands live in `package.json`. The husky `pre-push` hook runs lint, typecheck, and tests; CI is the unskippable layer and runs the same checks on pull requests before deploying.
 
+For visual QA, build and serve the real routes, then screenshot `http://localhost:4321/yuwenke/` and `/yuwenke/app/<locale>/` (the `--host` flag matters: an unexposed localhost render misses nothing, but the preview browser reaches the machine by IP):
+
+```
+npm run build && npm run preview -- --host 0.0.0.0 --port 4321
+```
+
 `npm test` excludes `tests/firestore.rules.test.ts`, which needs Java 21 and the Firestore emulator; run it with `npm run test:rules`, or both suites with `npm run test:all`.
 
 ## Truth is the code
