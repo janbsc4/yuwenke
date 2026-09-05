@@ -56,7 +56,7 @@ The repository, not prose, is the authority on how things work. Documentation ex
 
 1. User experience first: fast, responsive, lightweight. Optimize perceived performance; avoid unnecessary re-renders, bundle size, and network requests.
 2. Readability: clear names, small focused functions, explicit logic. Comments explain why, not what.
-3. Simplicity: the simplest correct solution; no speculative abstractions or dependencies.
+3. Simplicity: the simplest correct solution; no speculative abstractions or dependencies. Follow YAGNI principles.
 
 If a feature requires significant architectural complexity, stop and explain why, what alternatives exist, and the trade-offs before building it. Prefer consistency with the existing codebase; keep changes small and single-purpose so mistakes are cheap to revert.
 
