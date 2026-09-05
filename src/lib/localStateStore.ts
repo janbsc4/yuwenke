@@ -24,6 +24,10 @@ export interface LocalStateStore<T> {
   clearOutbox: (uid: string) => boolean;
 }
 
+export function isNonNegativeInt(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
 function availableStorage(): Storage | null {
   if (typeof window === "undefined") return null;
   try {

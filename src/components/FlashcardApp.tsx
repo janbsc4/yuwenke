@@ -30,8 +30,8 @@ import {
   visibleUnits,
 } from "../lib/study";
 import {
-  AVAILABLE_LOCALES,
   DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
   homeUrl,
   LOCALE_STORAGE_KEY,
   localeUrl,
@@ -50,7 +50,6 @@ interface FlashcardAppProps {
   packs: CardPack[];
   packIdByCardId: PackIdByCardId;
   initialLocale?: Locale;
-  enabledLocales?: readonly Locale[];
 }
 
 const PACK_OPENING_DURATION_MS = 1050;
@@ -122,7 +121,6 @@ export default function FlashcardApp({
   packs,
   packIdByCardId,
   initialLocale = DEFAULT_LOCALE,
-  enabledLocales = AVAILABLE_LOCALES,
 }: FlashcardAppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const m = messages[locale];
@@ -284,7 +282,7 @@ export default function FlashcardApp({
       if (
         fromPath &&
         fromPath !== locale &&
-        enabledLocales.includes(fromPath)
+        SUPPORTED_LOCALES.includes(fromPath)
       ) {
         setLocale(fromPath);
         writePreference(LOCALE_STORAGE_KEY, fromPath);
@@ -292,7 +290,7 @@ export default function FlashcardApp({
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [enabledLocales, locale]);
+  }, [locale]);
 
   useEffect(() => {
     if (!ready || viewInitialized) return;
@@ -784,13 +782,13 @@ export default function FlashcardApp({
               </button>
             )}
           </div>
-          {enabledLocales.length > 1 ? (
+          {SUPPORTED_LOCALES.length > 1 ? (
             <div
               className="locale-switcher"
               role="group"
               aria-label={m.localeSwitcher.aria}
             >
-              {enabledLocales.map((option) => (
+              {SUPPORTED_LOCALES.map((option) => (
                 <button
                   key={option}
                   type="button"
