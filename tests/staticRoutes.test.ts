@@ -1,5 +1,12 @@
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach } from "vitest";
+
 import { landingLangResolverScript } from "../src/lib/locale";
 import {
+  assertAuditsNotDeployed,
   resolveLandingLangFromHtml,
   validateLocalizedRouteHtml,
   validateLandingRouteHtml,
@@ -116,5 +123,55 @@ describe("landing root validation", () => {
   ] as const)("resolves the landing language (%s, %j) to %s", (saved, languages, expected) => {
     const html = `<html><head><script>${landingLangResolverScript()}</script></head></html>`;
     expect(resolveLandingLangFromHtml(html, saved, [...languages])).toBe(expected);
+  });
+});
+
+describe("audits deployment guard", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
+
+  async function tempProject() {
+    const root = await mkdtemp(join(tmpdir(), "yuwenke-audits-"));
+    tempDirs.push(root);
+    const dist = join(root, "dist");
+    const publicDirectory = join(root, "public");
+    await mkdir(dist, { recursive: true });
+    await mkdir(publicDirectory, { recursive: true });
+    return { dist, publicDirectory };
+  }
+
+  it("accepts a build output without audit files", async () => {
+    const { dist, publicDirectory } = await tempProject();
+    await writeFile(join(dist, "index.html"), "<html></html>");
+    await expect(assertAuditsNotDeployed(dist, publicDirectory)).resolves.toBeUndefined();
+  });
+
+  it("rejects a build output that copied the audits folder", async () => {
+    const { dist, publicDirectory } = await tempProject();
+    await mkdir(join(dist, "audits"), { recursive: true });
+    await writeFile(join(dist, "audits", "report.md"), "# report");
+    await expect(assertAuditsNotDeployed(dist, publicDirectory)).rejects.toThrow(
+      /audits/,
+    );
+  });
+
+  it("rejects a nested audits path anywhere in the build output", async () => {
+    const { dist, publicDirectory } = await tempProject();
+    await mkdir(join(dist, "assets", "audits"), { recursive: true });
+    await writeFile(join(dist, "assets", "audits", "report.md"), "# report");
+    await expect(assertAuditsNotDeployed(dist, publicDirectory)).rejects.toThrow(
+      /audits/,
+    );
+  });
+
+  it("rejects moving audits into the deployable public folder", async () => {
+    const { dist, publicDirectory } = await tempProject();
+    await mkdir(join(publicDirectory, "audits"), { recursive: true });
+    await expect(assertAuditsNotDeployed(dist, publicDirectory)).rejects.toThrow(
+      /public\/audits/,
+    );
   });
 });

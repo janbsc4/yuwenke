@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { runInNewContext } from "node:vm";
@@ -124,6 +125,24 @@ export function validateLandingRouteHtml(html) {
   }
 }
 
+export async function assertAuditsNotDeployed(
+  distDirectory = resolve("dist"),
+  publicDirectory = resolve("public"),
+) {
+  if (existsSync(resolve(publicDirectory, "audits"))) {
+    throw new Error(
+      "public/audits no debe existir: las auditorías se guardan en audits/ y no se despliegan.",
+    );
+  }
+  const entries = await readdir(distDirectory, { recursive: true });
+  const leaked = entries.filter((entry) => entry.split(/[\\/]/).includes("audits"));
+  if (leaked.length > 0) {
+    throw new Error(
+      `dist contiene rutas de auditoría que no deben desplegarse: ${leaked.join(", ")}`,
+    );
+  }
+}
+
 export async function validateStaticRoutes(distDirectory = resolve("dist")) {
   await Promise.all(
     Object.keys(expectedMetadata).map(async (locale) => {
@@ -150,6 +169,8 @@ export async function validateStaticRoutes(distDirectory = resolve("dist")) {
       throw new Error(`La raíz resolvió el idioma ${actual}; se esperaba ${expected}.`);
     }
   }
+
+  await assertAuditsNotDeployed(distDirectory);
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
