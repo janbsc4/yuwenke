@@ -18,23 +18,35 @@ function isStudyDirection(value: unknown): value is StudyDirection {
   return typeof value === "string" && (DIRECTIONS as readonly string[]).includes(value);
 }
 
-function isProgressEntry(value: unknown): value is ProgressEntry {
-  if (typeof value !== "object" || value === null) return false;
-  const entry = value as Record<string, unknown>;
-  if (typeof entry.cardId !== "string" || !CARD_ID_PATTERN.test(entry.cardId)) return false;
-  if (!isStudyDirection(entry.direction)) return false;
-  if (entry.status !== "learning" && entry.status !== "known") return false;
-  if (
-    entry.schemaVersion !== 1 &&
-    entry.schemaVersion !== 2
-  ) return false;
-  const resetAtValid = entry.resetAt === undefined || isNonNegativeInt(entry.resetAt);
-  return (
-    isNonNegativeInt(entry.clientUpdatedAt) &&
-    (entry.serverUpdatedAt === null || isNonNegativeInt(entry.serverUpdatedAt)) &&
-    resetAtValid &&
-    (entry.schemaVersion === 1 || entry.resetAt !== undefined)
-  );
+function parseProgressEntry(value: unknown): ProgressEntry | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const {
+    cardId,
+    direction,
+    status,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    resetAt,
+    schemaVersion,
+  } = value as Record<string, unknown>;
+  if (typeof cardId !== "string" || !CARD_ID_PATTERN.test(cardId)) return undefined;
+  if (!isStudyDirection(direction)) return undefined;
+  if (status !== "learning" && status !== "known") return undefined;
+  if (schemaVersion !== 1 && schemaVersion !== 2) return undefined;
+  if (!isNonNegativeInt(clientUpdatedAt)) return undefined;
+  if (serverUpdatedAt !== null && !isNonNegativeInt(serverUpdatedAt)) return undefined;
+  if (resetAt !== undefined && !isNonNegativeInt(resetAt)) return undefined;
+  if (schemaVersion === 2 && resetAt === undefined) return undefined;
+
+  return {
+    cardId,
+    direction,
+    status,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    ...(resetAt === undefined ? {} : { resetAt }),
+    schemaVersion,
+  };
 }
 
 interface StoredEnvelope {
@@ -50,10 +62,9 @@ function parseProgress(value: unknown): ProgressMap | undefined {
 
   const entries: ProgressMap = {};
   for (const [entryKey, candidate] of Object.entries(envelope.entries ?? {})) {
-    const expectedKey = isProgressEntry(candidate)
-      ? `${candidate.cardId}::${candidate.direction}`
-      : null;
-    if (expectedKey && entryKey === expectedKey) entries[entryKey] = candidate;
+    const entry = parseProgressEntry(candidate);
+    const expectedKey = entry ? `${entry.cardId}::${entry.direction}` : null;
+    if (entry && entryKey === expectedKey) entries[entryKey] = entry;
   }
   return entries;
 }

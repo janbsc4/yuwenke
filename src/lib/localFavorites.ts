@@ -7,22 +7,32 @@ const OUTBOX_PREFIX = "yuwenke:favorite-outbox:v1:";
 
 const CARD_ID_PATTERN = /^FC\d{3}$/;
 
-function isFavoriteEntry(value: unknown): value is FavoriteEntry {
-  if (typeof value !== "object" || value === null) return false;
-  const entry = value as Record<string, unknown>;
-  if (typeof entry.cardId !== "string" || !CARD_ID_PATTERN.test(entry.cardId)) return false;
-  if (typeof entry.favorite !== "boolean") return false;
-  if (
-    entry.schemaVersion !== 1 &&
-    entry.schemaVersion !== 2
-  ) return false;
-  const resetAtValid = entry.resetAt === undefined || isNonNegativeInt(entry.resetAt);
-  return (
-    isNonNegativeInt(entry.clientUpdatedAt) &&
-    (entry.serverUpdatedAt === null || isNonNegativeInt(entry.serverUpdatedAt)) &&
-    resetAtValid &&
-    (entry.schemaVersion === 1 || entry.resetAt !== undefined)
-  );
+function parseFavoriteEntry(value: unknown): FavoriteEntry | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const {
+    cardId,
+    favorite,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    resetAt,
+    schemaVersion,
+  } = value as Record<string, unknown>;
+  if (typeof cardId !== "string" || !CARD_ID_PATTERN.test(cardId)) return undefined;
+  if (typeof favorite !== "boolean") return undefined;
+  if (schemaVersion !== 1 && schemaVersion !== 2) return undefined;
+  if (!isNonNegativeInt(clientUpdatedAt)) return undefined;
+  if (serverUpdatedAt !== null && !isNonNegativeInt(serverUpdatedAt)) return undefined;
+  if (resetAt !== undefined && !isNonNegativeInt(resetAt)) return undefined;
+  if (schemaVersion === 2 && resetAt === undefined) return undefined;
+
+  return {
+    cardId,
+    favorite,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    ...(resetAt === undefined ? {} : { resetAt }),
+    schemaVersion,
+  };
 }
 
 interface StoredEnvelope {
@@ -38,9 +48,8 @@ function parseFavorites(value: unknown): FavoriteMap | undefined {
 
   const entries: FavoriteMap = {};
   for (const [entryKey, candidate] of Object.entries(envelope.entries ?? {})) {
-    if (isFavoriteEntry(candidate) && entryKey === candidate.cardId) {
-      entries[entryKey] = candidate;
-    }
+    const entry = parseFavoriteEntry(candidate);
+    if (entry && entryKey === entry.cardId) entries[entryKey] = entry;
   }
   return entries;
 }

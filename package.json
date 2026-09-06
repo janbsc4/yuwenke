@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build && node scripts/validate_static_routes.mjs",
+    "build": "astro check && astro build && node scripts/validate_static_routes.mjs && node scripts/validate_bundle_budget.mjs",
     "build:knowledge": "node scripts/build_chinese_knowledge.mjs",
     "preview": "astro preview",
     "check": "astro check",
