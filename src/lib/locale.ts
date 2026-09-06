@@ -3,26 +3,11 @@ import type { Flashcard, Locale, LocalizedText } from "../types";
 export const DEFAULT_LOCALE: Locale = "es";
 export const SUPPORTED_LOCALES: readonly Locale[] = ["es", "en"];
 
-// English is public: every card has complete, owner-reviewed English content
-// (Part 3 of grilled-plan-001) and the release validation is in place.
-export const ENGLISH_RELEASED = true;
-export const AVAILABLE_LOCALES: readonly Locale[] = ENGLISH_RELEASED
-  ? SUPPORTED_LOCALES
-  : [DEFAULT_LOCALE];
-
 export const LOCALE_STORAGE_KEY = "yuwenke:locale:v1";
 
 export function localized(value: LocalizedText | undefined, locale: Locale): string {
   if (!value) return "";
   return value[locale] ?? value.es;
-}
-
-export function localizedOrFallback(
-  value: LocalizedText | undefined,
-  locale: Locale,
-): string {
-  if (!value) return "";
-  return value[locale]?.trim() ? value[locale] : value.es;
 }
 
 /**
@@ -64,7 +49,7 @@ export function localizedCardContent(
 export function resolveLocalePreference(
   saved: string | null,
   browserLanguages: readonly string[],
-  available: readonly Locale[] = AVAILABLE_LOCALES,
+  available: readonly Locale[] = SUPPORTED_LOCALES,
 ): Locale {
   if (saved && (available as readonly string[]).includes(saved)) {
     return saved as Locale;
@@ -106,7 +91,7 @@ export function parseLocaleFromPath(pathname: string): Locale | null {
 export function landingLangResolverScript(): string {
   const available = JSON.stringify([...SUPPORTED_LOCALES]);
   const storageKey = JSON.stringify(LOCALE_STORAGE_KEY);
-  const fallback = AVAILABLE_LOCALES.includes("en") ? "en" : DEFAULT_LOCALE;
+  const fallback = SUPPORTED_LOCALES.includes("en") ? "en" : DEFAULT_LOCALE;
   return `(function () {
   var saved = null;
   try { saved = window.localStorage.getItem(${storageKey}); } catch (error) {}

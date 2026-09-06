@@ -1,20 +1,39 @@
-import { z } from "zod";
-
-import type { FavoriteMap } from "../types";
-import { createLocalStateStore } from "./localStateStore";
+import type { FavoriteEntry, FavoriteMap } from "../types";
+import { createLocalStateStore, isNonNegativeInt } from "./localStateStore";
 
 const GUEST_KEY = "yuwenke:guest-favorites:v1";
 const USER_PREFIX = "yuwenke:user-favorites:v1:";
 const OUTBOX_PREFIX = "yuwenke:favorite-outbox:v1:";
 
-const entrySchema = z.object({
-  cardId: z.string().regex(/^FC\d{3}$/),
-  favorite: z.boolean(),
-  clientUpdatedAt: z.number().int().nonnegative(),
-  serverUpdatedAt: z.number().int().nonnegative().nullable(),
-  resetAt: z.number().int().nonnegative().optional(),
-  schemaVersion: z.union([z.literal(1), z.literal(2)]),
-}).refine((entry) => entry.schemaVersion === 1 || entry.resetAt !== undefined);
+const CARD_ID_PATTERN = /^FC\d{3}$/;
+
+function parseFavoriteEntry(value: unknown): FavoriteEntry | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const {
+    cardId,
+    favorite,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    resetAt,
+    schemaVersion,
+  } = value as Record<string, unknown>;
+  if (typeof cardId !== "string" || !CARD_ID_PATTERN.test(cardId)) return undefined;
+  if (typeof favorite !== "boolean") return undefined;
+  if (schemaVersion !== 1 && schemaVersion !== 2) return undefined;
+  if (!isNonNegativeInt(clientUpdatedAt)) return undefined;
+  if (serverUpdatedAt !== null && !isNonNegativeInt(serverUpdatedAt)) return undefined;
+  if (resetAt !== undefined && !isNonNegativeInt(resetAt)) return undefined;
+  if (schemaVersion === 2 && resetAt === undefined) return undefined;
+
+  return {
+    cardId,
+    favorite,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    ...(resetAt === undefined ? {} : { resetAt }),
+    schemaVersion,
+  };
+}
 
 interface StoredEnvelope {
   schemaVersion: 1;
@@ -29,10 +48,8 @@ function parseFavorites(value: unknown): FavoriteMap | undefined {
 
   const entries: FavoriteMap = {};
   for (const [entryKey, candidate] of Object.entries(envelope.entries ?? {})) {
-    const parsed = entrySchema.safeParse(candidate);
-    if (parsed.success && entryKey === parsed.data.cardId) {
-      entries[entryKey] = parsed.data;
-    }
+    const entry = parseFavoriteEntry(candidate);
+    if (entry && entryKey === entry.cardId) entries[entryKey] = entry;
   }
   return entries;
 }

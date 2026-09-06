@@ -55,7 +55,7 @@ interface FirebaseServices {
 
 let cachedServices: FirebaseServices | null = null;
 
-export function getFirebaseServices(): FirebaseServices | null {
+function getFirebaseServices(): FirebaseServices | null {
   if (!isFirebaseConfigured || typeof window === "undefined") return null;
   if (cachedServices) return cachedServices;
 

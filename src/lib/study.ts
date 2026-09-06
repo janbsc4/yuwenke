@@ -26,7 +26,7 @@ export function progressDocumentId(cardId: string, direction: StudyDirection): s
   return `${cardId}_${direction}`;
 }
 
-export function canonicalDirectionFor(
+function canonicalDirectionFor(
   card: Flashcard,
   direction: StudyDirection,
 ): NeutralDirection | null {
@@ -102,14 +102,7 @@ export function progressForStudyUnits(
   return { ...progress, ...canonicalProgressForCards(cards, progress) };
 }
 
-export function tagsFor(card: Flashcard): string[] {
-  return card.etiquetas
-    .split(";")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
-export function normalizeSearch(value: string, locale: Locale): string {
+function normalizeSearch(value: string, locale: Locale): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

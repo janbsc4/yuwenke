@@ -1,32 +1,42 @@
-import { z } from "zod";
-
 import type { CardPackState } from "../types";
-import { createLocalStateStore } from "./localStateStore";
+import { createLocalStateStore, isNonNegativeInt } from "./localStateStore";
 
 const GUEST_KEY = "yuwenke:guest-card-packs:v1";
 const USER_PREFIX = "yuwenke:user-card-packs:v1:";
 const OUTBOX_PREFIX = "yuwenke:card-pack-outbox:v1:";
 
-const stateSchema = z
-  .object({
-    openPackIds: z.array(z.string().regex(/^CP\d{3}$/)).min(1),
-    clientUpdatedAt: z.number().int().nonnegative(),
-    serverUpdatedAt: z.number().int().nonnegative().nullable(),
-    resetAt: z.number().int().nonnegative(),
-    schemaVersion: z.literal(1),
-  })
-  .refine(
-    (state) => new Set(state.openPackIds).size === state.openPackIds.length,
-    "Los packs abiertos no pueden estar duplicados.",
-  );
+const PACK_ID_PATTERN = /^CP\d{3}$/;
+
+function parseCardPackState(value: unknown): CardPackState | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const {
+    openPackIds,
+    clientUpdatedAt,
+    serverUpdatedAt,
+    resetAt,
+    schemaVersion,
+  } = value as Record<string, unknown>;
+  if (!Array.isArray(openPackIds) || openPackIds.length === 0) return undefined;
+  if (!openPackIds.every((id): id is string =>
+    typeof id === "string" && PACK_ID_PATTERN.test(id))) return undefined;
+  if (new Set(openPackIds).size !== openPackIds.length) return undefined;
+  if (!isNonNegativeInt(clientUpdatedAt)) return undefined;
+  if (serverUpdatedAt !== null && !isNonNegativeInt(serverUpdatedAt)) return undefined;
+  if (!isNonNegativeInt(resetAt) || schemaVersion !== 1) return undefined;
+
+  return {
+    openPackIds: [...openPackIds],
+    clientUpdatedAt,
+    serverUpdatedAt,
+    resetAt,
+    schemaVersion,
+  };
+}
 
 export const localCardPacks = createLocalStateStore<CardPackState | null>({
   guestKey: GUEST_KEY,
   userPrefix: USER_PREFIX,
   outboxPrefix: OUTBOX_PREFIX,
   emptyValue: () => null,
-  parse: (value) => {
-    const parsed = stateSchema.safeParse(value);
-    return parsed.success ? parsed.data : undefined;
-  },
+  parse: parseCardPackState,
 });

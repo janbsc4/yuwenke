@@ -3,7 +3,14 @@ import type {
   Locale,
   StudyView,
 } from "../types";
-import { plural } from "./labels";
+
+function plural(
+  value: number,
+  singular: string,
+  pluralForm = `${singular}s`,
+): string {
+  return `${value} ${value === 1 ? singular : pluralForm}`;
+}
 
 /**
  * Notice keys let the sync hook stay locale-agnostic: it reports which notice

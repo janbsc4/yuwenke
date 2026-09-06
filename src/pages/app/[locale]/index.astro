@@ -2,13 +2,13 @@
 import FlashcardApp from "../../../components/FlashcardApp";
 import { loadFlashcards } from "../../../data/loadFlashcards";
 import { loadCardPackData } from "../../../data/loadCardPacks";
-import { AVAILABLE_LOCALES, localeUrl } from "../../../lib/locale";
+import { SUPPORTED_LOCALES, localeUrl } from "../../../lib/locale";
 import { messages } from "../../../lib/messages";
 import type { Locale } from "../../../types";
 import "../../../styles/global.css";
 
 export function getStaticPaths() {
-  return AVAILABLE_LOCALES.map((locale) => ({ params: { locale } }));
+  return SUPPORTED_LOCALES.map((locale) => ({ params: { locale } }));
 }
 
 const locale = Astro.params.locale as Locale;
@@ -38,7 +38,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
     />
     <link rel="manifest" href={assetUrl("site.webmanifest")} />
     <link rel="canonical" href={canonicalUrl} />
-    {AVAILABLE_LOCALES.map((available) => (
+    {SUPPORTED_LOCALES.map((available) => (
       <link
         rel="alternate"
         hreflang={available}

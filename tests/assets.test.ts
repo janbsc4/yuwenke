@@ -37,6 +37,14 @@ describe("Yuwenke identity assets", () => {
     expect(icoSizes("favicon.ico")).toEqual([16, 32, 48]);
   });
 
+  it.each([
+    ["apple-touch-icon.png", 20 * 1024],
+    ["icon-192.png", 24 * 1024],
+    ["icon-512.png", 120 * 1024],
+  ] as const)("keeps %s at or below %i bytes", (name, maximumBytes) => {
+    expect(publicFile(name).byteLength).toBeLessThanOrEqual(maximumBytes);
+  });
+
   it("uses an alpha-capable PNG favicon", () => {
     expect(pngColorType("favicon-32.png")).toBe(6);
     expect(pngColorType("yuwenke-mark.png")).toBe(6);

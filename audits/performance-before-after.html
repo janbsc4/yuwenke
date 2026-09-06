@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuwenke performance — ponytail audit: before vs after</title>
+<style>
+  :root {
+    --ink: #1a1a1a; --muted: #6b6b6b; --line: #e4e0d8; --bg: #faf8f4;
+    --card: #ffffff; --accent: #8b1e2d; --good: #1a6b3c; --good-bg: #e8f4ec;
+    --warn: #8a6d1a; --warn-bg: #f7f0dc; --neutral: #555;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "Times New Roman", serif; margin: 0; background: var(--bg); color: var(--ink); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+  header { border-bottom: 3px double var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: 0.2px; }
+  .eyebrow { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+  .meta { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: var(--muted); line-height: 1.7; }
+  h2 { font-size: 20px; margin: 40px 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); font-family: "Helvetica Neue", Arial, sans-serif; font-size: 13.5px; }
+  th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); background: #f4f1ea; }
+  tr:last-child td { border-bottom: none; }
+  .delta { font-weight: 700; }
+  .better { color: var(--good); background: var(--good-bg); border-radius: 3px; padding: 1px 6px; }
+  .same { color: var(--neutral); }
+  .verdict { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 14px 18px; min-width: 190px; }
+  .stat .num { font-size: 26px; font-weight: 700; }
+  .stat .lbl { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-top: 3px; }
+  .note { font-size: 13px; color: var(--muted); line-height: 1.6; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .bad { border-left-color: var(--warn); }
+  code { font-family: "SF Mono", Menlo, monospace; font-size: 12px; background: #f0ece3; padding: 1px 5px; border-radius: 3px; }
+  footer { margin-top: 56px; border-top: 3px double var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Yuwenke · one-time performance report · 2026-09-05</div>
+  <h1>Ponytail audit: before vs after</h1>
+  <div class="meta">
+    before <code>main @ 95001f4</code> &nbsp;·&nbsp; after <code>lab/ponytail @ ea4cdab</code> — cut: zod out of the runtime bundle, zod+papaparse → devDependencies, dead exports removed, flags collapsed, single-function file folded<br>
+    method: production build, <code>astro preview</code> (zero network variance), Chrome for Testing 153.0.8010.12 headless, Lighthouse 12.8.2 simulated throttling, Playwright CDP counters — medians with min–max over runs
+  </div>
+</header>
+
+<div class="verdict">
+  <div class="stat"><div class="num">−56%</div><div class="lbl">eager app chunk (gz)</div></div>
+  <div class="stat"><div class="num">−17.3 KB</div><div class="lbl">app page transfer</div></div>
+  <div class="stat"><div class="num">−150–224 ms</div><div class="lbl">LCP, all locales</div></div>
+  <div class="stat bad"><div class="num">0</div><div class="lbl">behavior regressions</div></div>
+</div>
+
+<h2>Bundle inventory</h2>
+<p class="sub">Raw bytes / gzip bytes. Firebase chunk is lazy and untouched; only the eager graph changed.</p>
+<table>
+  <tr><th>Asset</th><th>Before raw</th><th>After raw</th><th>Δ raw</th><th>Before gz</th><th>After gz</th><th>Δ gz</th></tr>
+  <tr><td>FlashcardApp.js (eager)</td><td>117,108</td><td>50,894</td><td class="delta better">−56.6%</td><td>30,677</td><td>13,345</td><td class="delta better">−56.5%</td></tr>
+  <tr><td>client.js — react-dom (eager)</td><td>184,149</td><td>184,149</td><td class="same">—</td><td>57,373</td><td>57,373</td><td class="same">—</td></tr>
+  <tr><td>firebaseConfig.js (eager)</td><td>20,867</td><td>20,873</td><td class="same">—</td><td>7,321</td><td>7,322</td><td class="same">—</td></tr>
+  <tr><td>react.js (eager)</td><td>7,598</td><td>7,598</td><td class="same">—</td><td>2,953</td><td>2,953</td><td class="same">—</td></tr>
+  <tr><td>Eager JS total</td><td>329,722</td><td>263,514</td><td class="delta better">−20.1%</td><td>98,324</td><td>80,993</td><td class="delta better">−17.6%</td></tr>
+  <tr><td>firebaseClient.js (lazy, sync only)</td><td>573,108</td><td>573,082</td><td class="same">—</td><td>166,262</td><td>166,251</td><td class="same">—</td></tr>
+  <tr><td>HTML app page (dataset in island props)</td><td>234,271</td><td>234,271</td><td class="same">—</td><td>35,946</td><td>35,948</td><td class="same">—</td></tr>
+  <tr><td>CSS (both files)</td><td>49,609</td><td>49,609</td><td class="same">—</td><td>12,232</td><td>12,232</td><td class="same">—</td></tr>
+</table>
+<p class="note">Attribution of the cut (before): zod was 63.5 KB raw of the 117 KB FlashcardApp chunk, used only to validate localStorage the app itself wrote. Now hand-rolled type guards do that in ~90 lines across three small files, and zod + papaparse are devDependencies used only at build time.</p>
+
+<h2>Cold load (Lighthouse, performance category)</h2>
+<p class="sub">Median (min–max). Landing page is a control — nothing changed there, and it did not.</p>
+<table>
+  <tr><th>Route / preset</th><th colspan="3">Score</th><th colspan="3">LCP (ms)</th><th colspan="3">Transfer (KB)</th></tr>
+  <tr><th></th><th>before</th><th>after</th><th>Δ</th><th>before</th><th>after</th><th>Δ</th><th>before</th><th>after</th><th>Δ</th></tr>
+  <tr><td>/app/es/ desktop (5 runs)</td><td>97 (87–97)</td><td>97 (97–97)</td><td class="same">=</td><td>2,628</td><td>2,479</td><td class="delta better">−149</td><td>285.5</td><td>268.2</td><td class="delta better">−6.1%</td></tr>
+  <tr><td>/app/en/ desktop (3 runs)</td><td>97 (97–97)</td><td>97 (97–97)</td><td class="same">=</td><td>2,629</td><td>2,478</td><td class="delta better">−151</td><td>285.5</td><td>268.2</td><td class="delta better">−6.1%</td></tr>
+  <tr><td>/app/es/ mobile (3 runs)</td><td>96 (96–97)</td><td>97 (97–97)</td><td class="delta better">+1</td><td>2,702</td><td>2,478</td><td class="delta better">−224</td><td>285.5</td><td>268.2</td><td class="delta better">−6.1%</td></tr>
+  <tr><td>/ landing desktop (5 runs, control)</td><td>99 (99–99)</td><td>99 (99–99)</td><td class="same">=</td><td>2,028</td><td>2,027</td><td class="same">−1</td><td>178.7</td><td>178.7</td><td class="same">=</td></tr>
+</table>
+<p class="note">FCP 1.28 s, TBT 0 ms, CLS 0–0.02, and 10 requests are identical before and after on every route. The before-es-desktop outlier run (score 87) did not recur. Measured LCP element is still the loading skeleton; real content paints at hydration. Production (GitHub Pages) adds CDN RTT on top.</p>
+
+<h2>Interaction cost — 20 cards × flip → decide → next (3 runs)</h2>
+<p class="sub">Playwright CDP <code>Performance.getMetrics</code> deltas + longtask observer. Medians.</p>
+<table>
+  <tr><th>Metric</th><th>Before</th><th>After</th><th>Δ</th></tr>
+  <tr><td>Layouts</td><td>180 (141–203)</td><td>166 (152–221)</td><td class="delta better">−8%</td></tr>
+  <tr><td>Style recalcs</td><td>326 (304–363)</td><td>317 (309–372)</td><td class="delta better">−3%</td></tr>
+  <tr><td>Main-thread task time, total</td><td>0.4 s (0.3–0.9)</td><td>0.4 s (0.3–0.5)</td><td class="delta better">tighter spread</td></tr>
+  <tr><td>Long tasks &gt; 50 ms</td><td>0 / 1 (55 ms) / 0</td><td>0 / 0 / 0</td><td class="delta better">none</td></tr>
+  <tr><td>JS heap growth per 20 cards</td><td>2,704 KB (1.6–2.9 MB)</td><td>1,322 KB (1.3–1.5 MB)</td><td class="delta better">−51%</td></tr>
+  <tr><td>DOM nodes at rest</td><td>~1,370</td><td>~1,380</td><td class="same">=</td></tr>
+</table>
+
+<h2>React render counts &amp; guest network</h2>
+<p class="sub">React Profiler in jsdom; request log during a 5-card guest session.</p>
+<table>
+  <tr><th>Metric</th><th>Before</th><th>After</th></tr>
+  <tr><td>Commits at mount</td><td>4</td><td>4</td></tr>
+  <tr><td>Commits per flip + decide</td><td>2</td><td>2</td></tr>
+  <tr><td>Slowest commit</td><td>2.18 ms</td><td>2.26 ms</td></tr>
+  <tr><td>Firestore / Google requests during guest session</td><td>none</td><td>none</td></tr>
+  <tr><td>All 134 unit &amp; component tests</td><td>pass</td><td>pass</td></tr>
+</table>
+<p class="note">The 166 KB gz <code>firebaseClient</code> chunk remains lazy in both builds: guests never download it, only the 7 KB <code>firebaseConfig</code> chunk loads.</p>
+
+<footer>
+  <p class="note">Artifacts: Lighthouse JSON runs, CDP probe scripts, and this page under <code>audits/</code> (deploy-guarded: the build validator fails if anything under <code>audits/</code> ever reaches <code>dist/</code> or <code>public/</code>). Raw single-report: <code>audits/2026-09-05-performance-report.md</code>. All measurements local; treat as lab numbers, not field data.</p>
+</footer>
+
+</div>
+</body>
+</html>

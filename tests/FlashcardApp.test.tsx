@@ -761,7 +761,6 @@ describe("FlashcardApp localization", () => {
         }]}
         packIdByCardId={Object.fromEntries(cards.map((item) => [item.id, "CP001"]))}
         initialLocale={initialLocale}
-        enabledLocales={["es", "en"]}
       />,
     );
   }
