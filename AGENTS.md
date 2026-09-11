@@ -64,3 +64,4 @@ If a feature requires significant architectural complexity, stop and explain why
 
 * Issues and PRDs: GitHub Issues, see `docs/agents/issue-tracker.md`.
 * Domain docs: single-context layout, see `docs/agents/domain.md`.
+* End commit messages with the model name that implemented the feature, like "GLM-5.3-Flash"
