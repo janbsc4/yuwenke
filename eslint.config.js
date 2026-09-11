@@ -4,7 +4,13 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  globalIgnores(["dist/**", ".astro/**", "node_modules/**", "public/**"]),
+  globalIgnores([
+    "dist/**",
+    ".astro/**",
+    "node_modules/**",
+    "public/**",
+    ".ua/**",
+  ]),
   eslint.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
