@@ -106,5 +106,6 @@ export function landingLangResolverScript(): string {
   }
   if (!target) { target = ${JSON.stringify(fallback)}; }
   document.documentElement.setAttribute("data-lang", target);
+  document.documentElement.setAttribute("lang", target);
 })();`;
 }

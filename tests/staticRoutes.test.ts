@@ -1,6 +1,7 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 
 import { afterEach } from "vitest";
 
@@ -123,6 +124,15 @@ describe("landing root validation", () => {
   ] as const)("resolves the landing language (%s, %j) to %s", (saved, languages, expected) => {
     const html = `<html><head><script>${landingLangResolverScript()}</script></head></html>`;
     expect(resolveLandingLangFromHtml(html, saved, [...languages])).toBe(expected);
+    const attributes: Record<string, string> = {};
+    runInNewContext(landingLangResolverScript(), {
+      navigator: { languages },
+      window: { localStorage: { getItem: () => saved } },
+      document: { documentElement: {
+        setAttribute: (name: string, value: string) => { attributes[name] = value; },
+      } },
+    });
+    expect(attributes).toEqual({ "data-lang": expected, lang: expected });
   });
 });
 

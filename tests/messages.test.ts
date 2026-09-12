@@ -1,3 +1,4 @@
+import { loadFlashcards } from "../src/data/loadFlashcards";
 import {
   localizedCardContent,
   parseLocaleFromPath,
@@ -38,6 +39,12 @@ const card: Flashcard = {
 describe("locale messages", () => {
   it("keeps identical dictionary keys in Spanish and English", () => {
     expect(keyPaths(messages.en).sort()).toEqual(keyPaths(messages.es).sort());
+  });
+
+  it.each(bothLocales)("provides a %s label for every topic in the dataset", (locale) => {
+    const topics = [...new Set(loadFlashcards().map((card) => card.tema))];
+    const missing = topics.filter((topic) => !messages[locale].topics[topic]?.trim());
+    expect(missing, `Missing ${locale} topic translations`).toEqual([]);
   });
 
   it("resolves topic labels per locale with a capitalized fallback", () => {

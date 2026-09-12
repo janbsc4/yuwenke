@@ -770,6 +770,7 @@ describe("FlashcardApp localization", () => {
     renderLocalizedApp([bilingualCard], "en");
 
     expect(await screen.findByText("Learn Lots of Chinese")).toBeInTheDocument();
+    expect(screen.queryByText("Aprende Mucho Chino")).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Show answer/ })).toBeInTheDocument();
     expect(document.querySelector(".direction-badge")?.textContent).toContain("English");

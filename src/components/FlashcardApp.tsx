@@ -134,7 +134,9 @@ export default function FlashcardApp({
   );
   const units = useMemo(() => createStudyUnits(cards), [cards]);
   const topics = useMemo(
-    () => [...new Set(cards.map((card) => card.tema))].sort((a, b) => a.localeCompare(b, locale)),
+    () => [...new Set(cards.map((card) => card.tema))].sort((a, b) =>
+      topicDisplayLabel(locale, a).localeCompare(topicDisplayLabel(locale, b), locale),
+    ),
     [cards, locale],
   );
   const {

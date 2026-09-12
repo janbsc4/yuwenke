@@ -54,6 +54,7 @@ const meta = messages.es.metadata;
       const root = document.documentElement;
       const toggles = document.querySelectorAll<HTMLButtonElement>("[data-set-lang]");
       const syncPressed = () => {
+        root.lang = root.dataset.lang === "en" ? "en" : "es";
         for (const button of toggles) {
           button.setAttribute("aria-pressed", String(button.dataset.setLang === root.dataset.lang));
         }
@@ -76,7 +77,10 @@ const meta = messages.es.metadata;
     <script>
       const flip = document.querySelector<HTMLButtonElement>(".lp-flip");
       flip?.addEventListener("click", () => {
-        flip.setAttribute("aria-pressed", String(flip.getAttribute("aria-pressed") !== "true"));
+        const revealed = flip.getAttribute("aria-pressed") !== "true";
+        flip.setAttribute("aria-pressed", String(revealed));
+        flip.querySelector(".lp-face-front")?.setAttribute("aria-hidden", String(revealed));
+        flip.querySelector(".lp-face-back")?.setAttribute("aria-hidden", String(!revealed));
       });
     </script>
     <script>
@@ -98,10 +102,11 @@ const meta = messages.es.metadata;
       const rotor = document.querySelector<HTMLElement>(".lp-rotor");
       const stage = document.querySelector<HTMLElement>(".lp-hero-stage");
       const finePointer = matchMedia("(pointer: fine)");
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
       let frame = 0;
       if (rotor && stage) {
         stage.addEventListener("pointermove", (event) => {
-          if (!finePointer.matches || rotor.getAttribute("aria-pressed") === "true") return;
+          if (!finePointer.matches || reducedMotion.matches || rotor.closest(".lp-flip")?.getAttribute("aria-pressed") === "true") return;
           if (frame) return;
           frame = requestAnimationFrame(() => {
             frame = 0;
@@ -122,11 +127,11 @@ const meta = messages.es.metadata;
   <body>
     <div class="lp-shell">
       <header class="lp-header">
-        <a class="lp-brand" href={appUrl("es")} aria-label="Yuwenke">
+        <a class="lp-brand" href={base} aria-label="Yuwenke">
           <img src={`${base}yuwenke-mark.png`} alt="" width="46" height="46" />
           <span>
             <strong>Yuwenke</strong>
-            <small class="lp-hanzi">语文课 · clase de chino</small>
+            <small><span class="lp-hanzi" lang="zh-Hans">语文课</span> · <span class="lang-es">clase de chino</span><span class="lang-en">Chinese class</span></small>
           </span>
         </a>
         <div class="lp-header-tools">
@@ -153,18 +158,16 @@ const meta = messages.es.metadata;
             </p>
             <h1 class="lp-rise lp-rise-2">
               <span class="lang-es">De cero a chino, <em>carta a carta</em>.</span>
-              <span class="lang-en">Zero to Chinese, <em>one card</em> at a time.</span>
+              <span class="lang-en">Learn Chinese, <em>card by card.</em></span>
             </h1>
             <p class="lp-hero-sub lp-rise lp-rise-3">
               <span class="lang-es">
-                Yuwenke convierte el mandarín en cartas con hanzi, pinyin y explicaciones en
-                español. Estúdialas en los dos sentidos, abre packs por tema y guarda tu
-                progreso, incluso sin conexión.
+                Mandarín de clase, en cartas con hanzi, pinyin y explicaciones en español.
+                Descubre un tema, practica a tu ritmo y ve crecer lo que sabes.
               </span>
               <span class="lang-en">
-                Yuwenke turns Mandarin into cards with hanzi, pinyin, and explanations in
-                English. Study them in both directions, open packs by topic, and keep your
-                progress, even offline.
+                Mandarin from real class notes, with hanzi, pinyin, and explanations in English.
+                Pick a topic, practice at your pace, and watch what you know grow.
               </span>
             </p>
             <div class="lp-hero-actions lp-rise lp-rise-4">
@@ -177,10 +180,14 @@ const meta = messages.es.metadata;
               <a class="lp-button lp-button-ghost lang-es" href="#como-funciona">Ver cómo funciona</a>
               <a class="lp-button lp-button-ghost lang-en" href="#como-funciona">See how it works</a>
             </div>
+            <p class="lp-hero-reassurance lp-rise lp-rise-5">
+              <span class="lang-es">Sin cuenta · Tu progreso se guarda en este dispositivo</span>
+              <span class="lang-en">No account needed · Progress saved on this device</span>
+            </p>
             <p class="lp-hero-counts lp-rise lp-rise-5">
               <span><strong>{cards.length}</strong> <span class="lang-es">cartas</span><span class="lang-en">cards</span></span>
               <span><strong>{packs.length}</strong> <span class="lang-es">packs por abrir</span><span class="lang-en">packs to open</span></span>
-              <span><strong>ES</strong> ⇄ <strong class="lp-hanzi" lang="zh-Hans">中文</strong></span>
+              <span><strong class="lang-es">ES</strong><strong class="lang-en">EN</strong> ⇄ <strong class="lp-hanzi" lang="zh-Hans">中文</strong></span>
             </p>
           </div>
 
@@ -203,7 +210,7 @@ const meta = messages.es.metadata;
                 <div class="lp-dealer">
                   <button type="button" class="lp-flip" aria-pressed="false">
                     <span class="lp-rotor">
-                      <span class="lp-face lp-face-front">
+                      <span class="lp-face lp-face-front" aria-hidden="false">
                         <span class="lp-face-head">
                           <span class="lang-es"><span class="lp-hanzi" lang="zh-Hans">中</span> → ES</span>
                           <span class="lang-en"><span class="lp-hanzi" lang="zh-Hans">中</span> → EN</span>
@@ -219,12 +226,12 @@ const meta = messages.es.metadata;
                           <span class="lang-en">Tap the card to flip it</span>
                         </span>
                       </span>
-                      <span class="lp-face lp-face-back">
+                      <span class="lp-face lp-face-back" aria-hidden="true">
                         <span class="lp-face-head">
                           <span class="lang-es">Respuesta</span>
                           <span class="lang-en">Answer</span>
-                          <span class="lang-es">ES → <span class="lp-hanzi" lang="zh-Hans">中</span></span>
-                          <span class="lang-en">EN → <span class="lp-hanzi" lang="zh-Hans">中</span></span>
+                          <span class="lang-es"><span class="lp-hanzi" lang="zh-Hans">中</span> → ES</span>
+                          <span class="lang-en"><span class="lp-hanzi" lang="zh-Hans">中</span> → EN</span>
                         </span>
                         <span class="lp-face-main">
                           <span class="lp-gloss lang-es">{demoCard.espanol}</span>
@@ -260,8 +267,8 @@ const meta = messages.es.metadata;
             <p class="lp-eyebrow lang-es">Cómo funciona</p>
             <p class="lp-eyebrow lang-en">How it works</p>
             <h2 id="steps-title">
-              <span class="lang-es">Tres pilas de cartas. Nada más.</span>
-              <span class="lang-en">Three piles of cards. That's the whole method.</span>
+              <span class="lang-es">Tres pilas. Un hábito sencillo.</span>
+              <span class="lang-en">Three piles. One simple habit.</span>
             </h2>
           </div>
           <div class="lp-step-grid">
@@ -302,7 +309,7 @@ const meta = messages.es.metadata;
                 class. Concepts are asked in English.
               </p>
               <p class="lp-hanzi-flow lp-hanzi">
-                <span lang="zh-Hans">中</span> ⇄ ES
+                <span lang="zh-Hans">中</span> ⇄ <span class="lang-es">ES</span><span class="lang-en">EN</span>
               </p>
             </div>
             <div class="lp-step">
@@ -417,15 +424,11 @@ const meta = messages.es.metadata;
           <div class="lp-seal" role="presentation">
             <div>
               <span class="lp-hanzi" lang="zh-Hans">学</span>
-              <small>xué · estudiar</small>
+              <small>xué · <span class="lang-es">estudiar</span><span class="lang-en">study</span></small>
             </div>
           </div>
         </div>
         <div class="lp-footer-legal">
-          <p>
-            <span class="lang-es">Hecho a mano con apuntes reales de clase.</span>
-            <span class="lang-en">Made by hand from real class notes.</span>
-          </p>
           <p>
             <span class="lang-es">Sin cuenta obligatoria · Funciona sin conexión · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
             <span class="lang-en">No account needed · Works offline · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
