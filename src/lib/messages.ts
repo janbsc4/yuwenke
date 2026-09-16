@@ -139,6 +139,7 @@ export interface Messages {
     example: string;
     favoriteAdd: string;
     favoriteRemove: string;
+    speak: string;
   };
   empty: {
     filteredTitle: string;
@@ -355,6 +356,7 @@ const es: Messages = {
     example: "Ejemplo",
     favoriteAdd: "Añadir carta a favoritas",
     favoriteRemove: "Quitar carta de favoritas",
+    speak: "Escuchar pronunciación",
   },
   empty: {
     filteredTitle: "No hay cartas que coincidan con estos filtros.",
@@ -650,6 +652,7 @@ const en: Messages = {
     example: "Example",
     favoriteAdd: "Add card to favorites",
     favoriteRemove: "Remove card from favorites",
+    speak: "Listen to pronunciation",
   },
   empty: {
     filteredTitle: "No cards match these filters.",

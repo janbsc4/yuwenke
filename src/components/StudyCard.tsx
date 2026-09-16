@@ -1,9 +1,10 @@
-import { Fragment, forwardRef, type RefObject } from "react";
+import { Fragment, forwardRef, useEffect, type RefObject } from "react";
 
 import type { Locale, StudyUnit } from "../types";
 import { localizedCardContent } from "../lib/locale";
 import type { Messages } from "../lib/messages";
 import { highlightProperNames } from "../lib/properNames";
+import { speakChinese } from "../lib/speech";
 
 interface StudyCardProps {
   unit: StudyUnit;
@@ -57,6 +58,12 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
       ? content.meaning
       : card.hanzi;
 
+  useEffect(() => {
+    if (revealed && !conceptCard) speakChinese(card.hanzi);
+    // unit.key guards against re-revealing a different card with identical hanzi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed, unit.key]);
+
   return (
     <article className={`study-card ${revealed ? "is-revealed" : ""}`}>
       <button
@@ -102,6 +109,17 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
               properNames={card.nombres_propios}
             />
           </p>
+
+          {!conceptCard ? (
+            <button
+              type="button"
+              className="speak-button"
+              aria-label={m.card.speak}
+              onClick={() => speakChinese(card.hanzi)}
+            >
+              <span aria-hidden="true">🔊</span>
+            </button>
+          ) : null}
 
           {!conceptCard ? (
             <dl className="answer-details">
