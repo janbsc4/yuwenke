@@ -141,6 +141,17 @@ export interface Messages {
     favoriteRemove: string;
     speak: string;
   };
+  voice: {
+    trigger: string;
+    title: string;
+    closeAria: string;
+    label: string;
+    defaultOption: string;
+    empty: string;
+    instructionsToggle: string;
+    instructionsTitle: string;
+    instructions: { platform: string; body: string }[];
+  };
   empty: {
     filteredTitle: string;
     studyTitle: string;
@@ -357,6 +368,38 @@ const es: Messages = {
     favoriteAdd: "Añadir carta a favoritas",
     favoriteRemove: "Quitar carta de favoritas",
     speak: "Escuchar pronunciación",
+  },
+  voice: {
+    trigger: "Elegir voz de pronunciación",
+    title: "Voz de pronunciación",
+    closeAria: "Cerrar ajustes de voz",
+    label: "Voz china",
+    defaultOption: "Voz del sistema",
+    empty: "Este dispositivo todavía no tiene voces chinas instaladas.",
+    instructionsToggle: "¿Cómo consigo más voces?",
+    instructionsTitle: "Conseguir voces chinas",
+    instructions: [
+      {
+        platform: "macOS",
+        body:
+          "Ajustes del Sistema → Accesibilidad → Contenido hablado → Voz del sistema → Gestionar voces… → Chino (China continental). Ahí puedes descargar las voces mejoradas o premium, más naturales.",
+      },
+      {
+        platform: "iPhone / iPad",
+        body:
+          "Ajustes → Accesibilidad → Contenido hablado → Voces → Chino (China continental) y descarga una voz mejorada.",
+      },
+      {
+        platform: "Windows",
+        body:
+          "Configuración → Hora e idioma → Voz → Añadir voces → chino (simplificado, China).",
+      },
+      {
+        platform: "Android",
+        body:
+          "Configuración → Sistema → Salida de texto a voz → motor de Google → instalar datos de voz para chino (simplificado).",
+      },
+    ],
   },
   empty: {
     filteredTitle: "No hay cartas que coincidan con estos filtros.",
@@ -653,6 +696,38 @@ const en: Messages = {
     favoriteAdd: "Add card to favorites",
     favoriteRemove: "Remove card from favorites",
     speak: "Listen to pronunciation",
+  },
+  voice: {
+    trigger: "Choose pronunciation voice",
+    title: "Pronunciation voice",
+    closeAria: "Close voice settings",
+    label: "Chinese voice",
+    defaultOption: "System voice",
+    empty: "This device has no Chinese voices installed yet.",
+    instructionsToggle: "How do I get more voices?",
+    instructionsTitle: "Getting Chinese voices",
+    instructions: [
+      {
+        platform: "macOS",
+        body:
+          "System Settings → Accessibility → Spoken Content → System Voice → Manage Voices… → Chinese (China Mainland). You can download Enhanced or Premium voices there, which sound more natural.",
+      },
+      {
+        platform: "iPhone / iPad",
+        body:
+          "Settings → Accessibility → Spoken Content → Voices → Chinese (China Mainland) and download an Enhanced voice.",
+      },
+      {
+        platform: "Windows",
+        body:
+          "Settings → Time & Language → Speech → Add voices → Chinese (Simplified, China).",
+      },
+      {
+        platform: "Android",
+        body:
+          "Settings → System → Text-to-speech output → Google engine → install voice data for Chinese (Simplified).",
+      },
+    ],
   },
   empty: {
     filteredTitle: "No cards match these filters.",

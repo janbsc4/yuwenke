@@ -182,6 +182,27 @@ a {
   box-shadow: 0 2px 5px rgba(166, 61, 50, 0.2);
 }
 
+.voice-trigger {
+  flex: 0 0 auto;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-warm);
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.voice-trigger:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+}
+
 .sync-label {
   color: var(--muted);
   font-size: 0.78rem;
@@ -1152,6 +1173,7 @@ kbd {
 
 .login-dialog,
 .help-dialog,
+.voice-dialog,
 .packs-dialog,
 .confirm-dialog,
 .sheet {
@@ -1764,6 +1786,56 @@ kbd {
   border-radius: 50%;
   background: var(--surface-warm);
   font-size: 1.35rem;
+}
+
+.voice-dialog {
+  display: grid;
+  gap: 16px;
+}
+
+.voice-select-label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.voice-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.voice-instructions {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface-warm);
+}
+
+.voice-instructions h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cinnabar);
+}
+
+.voice-instruction strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.82rem;
+}
+
+.voice-instruction p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .sheet {

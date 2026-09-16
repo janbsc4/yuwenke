@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import FlashcardApp from "../src/components/FlashcardApp";
 import { messages } from "../src/lib/messages";
 import type { Flashcard, StudyUnit } from "../src/types";
 
@@ -12,13 +13,23 @@ class FakeUtterance {
   constructor(public text: string) {}
 }
 
-function fakeVoice(lang: string): SpeechSynthesisVoice {
+function fakeVoice(lang: string, uri: string = lang): SpeechSynthesisVoice {
   return {
     default: false,
     lang,
     localService: true,
     name: lang,
-    voiceURI: lang,
+    voiceURI: uri,
+  };
+}
+
+function namedVoice(name: string, lang: string, uri: string): SpeechSynthesisVoice {
+  return {
+    default: false,
+    lang,
+    localService: true,
+    name,
+    voiceURI: uri,
   };
 }
 
@@ -27,14 +38,21 @@ type SpeechStub = {
   cancel: ReturnType<typeof vi.fn>;
   speak: ReturnType<typeof vi.fn>;
   addEventListener: ReturnType<typeof vi.fn>;
+  emitVoicesChanged: () => void;
 };
 
 function stubSpeechApi(voices: SpeechSynthesisVoice[]): SpeechStub {
+  const handlers: ((event?: unknown) => void)[] = [];
   const stub: SpeechStub = {
     getVoices: vi.fn(() => voices),
     cancel: vi.fn(),
     speak: vi.fn(),
-    addEventListener: vi.fn(),
+    addEventListener: vi.fn((type: string, handler: (event?: unknown) => void) => {
+      if (type === "voiceschanged") handlers.push(handler);
+    }),
+    emitVoicesChanged: () => {
+      for (const handler of handlers) handler();
+    },
   };
   Object.defineProperty(globalThis, "speechSynthesis", {
     configurable: true,
@@ -119,6 +137,104 @@ describe("speakChinese", () => {
 
     expect(() => speakChinese("你好")).not.toThrow();
   });
+
+  it("uses the saved preferred voice when it still exists", async () => {
+    const stub = stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
+    const speech = await import("../src/lib/speech");
+
+    speech.setPreferredVoice("zh-TW");
+    speech.speakChinese("你好");
+
+    const utterance = stub.speak.mock.calls[0][0] as FakeUtterance;
+    expect(utterance.voice?.lang).toBe("zh-TW");
+  });
+
+  it("falls back to auto-selection when the saved voice is gone", async () => {
+    const stub = stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
+    const speech = await import("../src/lib/speech");
+
+    speech.setPreferredVoice("zh-HK");
+    speech.speakChinese("你好");
+
+    const utterance = stub.speak.mock.calls[0][0] as FakeUtterance;
+    expect(utterance.voice?.lang).toBe("zh-CN");
+  });
+
+  it("persists and clears the voice preference", async () => {
+    stubSpeechApi([]);
+    const speech = await import("../src/lib/speech");
+
+    speech.setPreferredVoice("zh-TW");
+    expect(speech.preferredVoiceUri()).toBe("zh-TW");
+    speech.setPreferredVoice(null);
+    expect(speech.preferredVoiceUri()).toBe("");
+  });
+
+  it("lists only Chinese voices with their identifiers", async () => {
+    stubSpeechApi([fakeVoice("en-US"), fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
+    const speech = await import("../src/lib/speech");
+
+    expect(speech.chineseVoiceOptions()).toEqual([
+      { uri: "zh-CN", name: "zh-CN", lang: "zh-CN" },
+      { uri: "zh-TW", name: "zh-TW", lang: "zh-TW" },
+    ]);
+  });
+
+  it("deduplicates same-name voices, keeping the enhanced variant", async () => {
+    stubSpeechApi([
+      namedVoice("Meijia", "zh-TW", "com.apple.ttsbundle.Meijia-compact"),
+      namedVoice("Meijia", "zh-TW", "com.apple.voice.enhanced.zh-TW.Meijia"),
+    ]);
+    const speech = await import("../src/lib/speech");
+
+    expect(speech.chineseVoiceOptions()).toEqual([
+      {
+        uri: "com.apple.voice.enhanced.zh-TW.Meijia",
+        name: "Meijia",
+        lang: "zh-TW",
+      },
+    ]);
+  });
+
+  it("auto-picks the enhanced variant among same-name voices", async () => {
+    const stub = stubSpeechApi([
+      namedVoice("Tingting", "zh-CN", "com.apple.ttsbundle.Tingting-compact"),
+      namedVoice("Tingting", "zh-CN", "com.apple.voice.enhanced.zh-CN.Tingting"),
+    ]);
+    const speech = await import("../src/lib/speech");
+
+    speech.speakChinese("你好");
+
+    const utterance = stub.speak.mock.calls[0][0] as FakeUtterance;
+    expect(utterance.voice?.voiceURI).toBe("com.apple.voice.enhanced.zh-CN.Tingting");
+  });
+
+  it("notifies subscribers when the voice list changes", async () => {
+    const stub = stubSpeechApi([]);
+    const speech = await import("../src/lib/speech");
+
+    const seen: number[] = [];
+    const unsubscribe = speech.subscribeToVoices(() => seen.push(speech.chineseVoiceOptions().length));
+    expect(seen).toEqual([]);
+
+    stub.getVoices.mockReturnValue([fakeVoice("zh-CN")]);
+    stub.emitVoicesChanged();
+
+    expect(seen).toEqual([1]);
+    unsubscribe();
+  });
+
+  it("stops notifying after unsubscribe", async () => {
+    const stub = stubSpeechApi([]);
+    const speech = await import("../src/lib/speech");
+
+    const seen: number[] = [];
+    const unsubscribe = speech.subscribeToVoices(() => seen.push(speech.chineseVoiceOptions().length));
+    unsubscribe();
+
+    stub.emitVoicesChanged();
+    expect(seen).toEqual([]);
+  });
 });
 
 describe("StudyCard pronunciation", () => {
@@ -197,5 +313,95 @@ describe("StudyCard pronunciation", () => {
 
     expect(screen.queryByRole("button", { name: "Escuchar pronunciación" })).not.toBeInTheDocument();
     expect(speech.speak).not.toHaveBeenCalled();
+  });
+});
+
+describe("voice settings dialog", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(removeSpeechApi);
+
+  async function renderApp() {
+    await import("../src/components/FlashcardApp");
+    const dialogCard: Flashcard = { ...card, ingles: "", explicacion_ingles: "", ejemplo_ingles: "", etiquetas_ingles: "" };
+    render(
+      <FlashcardApp
+        cards={[dialogCard]}
+        packs={[{
+          id: "CP001",
+          title: { es: "Cartas", en: "Cards" },
+          description: { es: "Para practicar.", en: "For practice." },
+          mark: "文",
+          theme: "cinnabar",
+        }]}
+        packIdByCardId={{ [dialogCard.id]: "CP001" }}
+      />,
+    );
+  }
+
+  function voiceSelect() {
+    return within(screen.getByRole("dialog")).getByRole("combobox");
+  }
+
+  it("lists the default option and every Chinese voice, saving the choice", async () => {
+    const stub = stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+
+    const select = voiceSelect();
+    const optionLabels = [...within(select).getAllByRole("option")].map((option) => option.textContent);
+    expect(optionLabels).toEqual([
+      "Voz del sistema",
+      "zh-CN (zh-CN)",
+      "zh-TW (zh-TW)",
+    ]);
+
+    await userEvent.selectOptions(select, "zh-TW");
+
+    expect(window.localStorage.getItem("yuwenke:tts-voice:v1")).toBe("zh-TW");
+    expect(stub.speak).toHaveBeenCalled();
+  });
+
+  it("starts with the saved voice selected", async () => {
+    stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
+    window.localStorage.setItem("yuwenke:tts-voice:v1", "zh-TW");
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+
+    expect(voiceSelect()).toHaveValue("zh-TW");
+  });
+
+  it("shows getting-started instructions per platform", async () => {
+    stubSpeechApi([]);
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Este dispositivo todavía no tiene voces chinas instaladas.")).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "¿Cómo consigo más voces?" }));
+
+    for (const platform of ["macOS", "iPhone / iPad", "Windows", "Android"]) {
+      expect(within(dialog).getByText(platform)).toBeInTheDocument();
+    }
+  });
+
+  it("closes on Escape and returns focus to the trigger", async () => {
+    stubSpeechApi([fakeVoice("zh-CN")]);
+    await renderApp();
+
+    const trigger = screen.getByRole("button", { name: "Elegir voz de pronunciación" });
+    await userEvent.click(trigger);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });

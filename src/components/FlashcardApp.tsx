@@ -40,6 +40,14 @@ import {
 } from "../lib/locale";
 import { applyLocaleMetadata } from "../lib/documentMetadata";
 import { messages, topicDisplayLabel, type Messages } from "../lib/messages";
+import {
+  chineseVoiceOptions,
+  preferredVoiceUri,
+  setPreferredVoice,
+  speakChinese,
+  subscribeToVoices,
+  type ChineseVoiceOption,
+} from "../lib/speech";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
@@ -57,6 +65,7 @@ const PACK_TRIGGER_OPENING_DURATION_MS = 160;
 
 const EMPTY_FILTERS: Filters = { query: "", topic: "all", type: "all" };
 const EMPTY_TALLY: SessionTally = { primary: 0, secondary: 0, skipped: 0 };
+const VOICE_SAMPLE_TEXT = "你好，很高兴认识你。";
 
 function reducedMotionRequested(): boolean {
   return (
@@ -169,6 +178,12 @@ export default function FlashcardApp({
   const [loginOpen, setLoginOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceOptions, setVoiceOptions] = useState<ChineseVoiceOption[]>(
+    () => chineseVoiceOptions(),
+  );
+  const [preferredVoice, setPreferredVoiceState] = useState(() => preferredVoiceUri());
+  const [voiceInstructionsOpen, setVoiceInstructionsOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
   const [packTriggerOpening, setPackTriggerOpening] = useState(false);
   const [packToConfirm, setPackToConfirm] = useState<CardPack | null>(null);
@@ -189,9 +204,11 @@ export default function FlashcardApp({
   const answerRef = useRef<HTMLElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const loginButtonRef = useRef<HTMLButtonElement>(null);
+  const voiceButtonRef = useRef<HTMLButtonElement>(null);
   const filterDialogRef = useRef<HTMLElement>(null);
   const loginDialogRef = useRef<HTMLElement>(null);
   const helpDialogRef = useRef<HTMLElement>(null);
+  const voiceDialogRef = useRef<HTMLElement>(null);
   const packsDialogRef = useRef<HTMLElement>(null);
   const packConfirmDialogRef = useRef<HTMLElement>(null);
   const resetDialogRef = useRef<HTMLElement>(null);
@@ -277,6 +294,8 @@ export default function FlashcardApp({
   useEffect(() => {
     applyLocaleMetadata(locale);
   }, [locale]);
+
+  useEffect(() => subscribeToVoices(() => setVoiceOptions(chineseVoiceOptions())), []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -412,9 +431,11 @@ export default function FlashcardApp({
             ? helpDialogRef.current
       : loginOpen
         ? loginDialogRef.current
-        : filterSheetOpen
-          ? filterDialogRef.current
-          : null;
+        : voiceOpen
+          ? voiceDialogRef.current
+          : filterSheetOpen
+            ? filterDialogRef.current
+            : null;
     if (!dialog) return;
     const focusable = Array.from(
       dialog.querySelectorAll<HTMLElement>(
@@ -437,7 +458,7 @@ export default function FlashcardApp({
     };
     dialog.addEventListener("keydown", trapFocus);
     return () => dialog.removeEventListener("keydown", trapFocus);
-  }, [filterSheetOpen, helpOpen, loginOpen, packToConfirm, packsOpen, resetConfirmOpen]);
+  }, [filterSheetOpen, helpOpen, loginOpen, packToConfirm, packsOpen, resetConfirmOpen, voiceOpen]);
 
   const closeFilterSheet = useCallback(() => {
     setFilterSheetOpen(false);
@@ -447,6 +468,12 @@ export default function FlashcardApp({
   const closeLogin = useCallback(() => {
     setLoginOpen(false);
     window.setTimeout(() => loginButtonRef.current?.focus(), 0);
+  }, []);
+
+  const closeVoice = useCallback(() => {
+    setVoiceOpen(false);
+    setVoiceInstructionsOpen(false);
+    window.setTimeout(() => voiceButtonRef.current?.focus(), 0);
   }, []);
 
   const openHelp = useCallback((trigger: HTMLButtonElement) => {
@@ -566,6 +593,7 @@ export default function FlashcardApp({
       if (event.key === "Escape") {
         if (packToConfirm && !packOpening) setPackToConfirm(null);
         else if (resetConfirmOpen) setResetConfirmOpen(false);
+        else if (voiceOpen) closeVoice();
         else if (packsOpen) setPacksOpen(false);
         else if (helpOpen) closeHelp();
         else if (filterSheetOpen) closeFilterSheet();
@@ -577,6 +605,7 @@ export default function FlashcardApp({
         filterSheetOpen ||
         helpOpen ||
         loginOpen ||
+        voiceOpen ||
         accountOpen ||
         packsOpen ||
         packToConfirm ||
@@ -609,6 +638,7 @@ export default function FlashcardApp({
     closeFilterSheet,
     closeHelp,
     closeLogin,
+    closeVoice,
     completed,
     current,
     filterSheetOpen,
@@ -620,6 +650,7 @@ export default function FlashcardApp({
     revealed,
     resetConfirmOpen,
     skip,
+    voiceOpen,
   ]);
 
   const changeQuery = (event: ChangeEvent<HTMLInputElement>) => {
@@ -784,6 +815,17 @@ export default function FlashcardApp({
               </button>
             )}
           </div>
+          <button
+            type="button"
+            className="voice-trigger"
+            aria-label={m.voice.trigger}
+            aria-haspopup="dialog"
+            aria-expanded={voiceOpen}
+            ref={voiceButtonRef}
+            onClick={() => setVoiceOpen(true)}
+          >
+            <span aria-hidden="true">🗣</span>
+          </button>
           {SUPPORTED_LOCALES.length > 1 ? (
             <div
               className="locale-switcher"
@@ -1210,6 +1252,66 @@ export default function FlashcardApp({
               <p className="config-note">{m.login.configNote}</p>
             )}
             <button type="button" className="text-button" onClick={closeLogin}>{m.login.notNow}</button>
+          </section>
+        </div>
+      ) : null}
+
+      {voiceOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeVoice}>
+          <section
+            className="voice-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="voice-title"
+            ref={voiceDialogRef}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-heading">
+              <h2 id="voice-title">{m.voice.title}</h2>
+              <button type="button" aria-label={m.voice.closeAria} onClick={closeVoice}>×</button>
+            </div>
+            {voiceOptions.length > 0 ? (
+              <label className="voice-select-label">
+                {m.voice.label}
+                <select
+                  value={preferredVoice}
+                  onChange={(event) => {
+                    const uri = event.target.value;
+                    setPreferredVoice(uri || null);
+                    setPreferredVoiceState(uri);
+                    speakChinese(VOICE_SAMPLE_TEXT);
+                  }}
+                >
+                  <option value="">{m.voice.defaultOption}</option>
+                  {voiceOptions.map((option) => (
+                    <option key={option.uri} value={option.uri}>
+                      {option.name} ({option.lang})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <p className="voice-empty">{m.voice.empty}</p>
+            )}
+            <button
+              type="button"
+              className="text-button"
+              aria-expanded={voiceInstructionsOpen}
+              onClick={() => setVoiceInstructionsOpen((value) => !value)}
+            >
+              {m.voice.instructionsToggle}
+            </button>
+            {voiceInstructionsOpen ? (
+              <div className="voice-instructions">
+                <h3>{m.voice.instructionsTitle}</h3>
+                {m.voice.instructions.map(({ platform, body }) => (
+                  <div key={platform} className="voice-instruction">
+                    <strong>{platform}</strong>
+                    <p>{body}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </section>
         </div>
       ) : null}
