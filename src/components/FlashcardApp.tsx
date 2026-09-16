@@ -417,11 +417,24 @@ export default function FlashcardApp({
     if (revealed) answerRef.current?.focus();
   }, [revealed]);
 
+  const modalOpen = Boolean(
+    filterSheetOpen || helpOpen || loginOpen || packToConfirm || packsOpen || resetConfirmOpen || voiceOpen,
+  );
+
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(clearNotice, 6000);
     return () => window.clearTimeout(timeout);
   }, [clearNotice, notice]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [modalOpen]);
 
   useEffect(() => {
     const dialog = packToConfirm
