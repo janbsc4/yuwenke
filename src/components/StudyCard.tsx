@@ -11,6 +11,7 @@ interface StudyCardProps {
   packTitle: string;
   revealed: boolean;
   favorite: boolean;
+  muted: boolean;
   onToggleFavorite: () => void;
   promptRef: RefObject<HTMLHeadingElement | null>;
   m: Messages;
@@ -39,7 +40,7 @@ export function HighlightedText({ text, properNames }: HighlightedTextProps) {
 }
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
-  { unit, packTitle, revealed, favorite, onToggleFavorite, promptRef, m, locale },
+  { unit, packTitle, revealed, favorite, muted, onToggleFavorite, promptRef, m, locale },
   answerRef,
 ) {
   const { card, direction } = unit;
@@ -59,8 +60,9 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
       : card.hanzi;
 
   useEffect(() => {
-    if (revealed && !conceptCard) speakChinese(card.hanzi);
-    // unit.key guards against re-revealing a different card with identical hanzi.
+    if (revealed && !conceptCard && !muted) speakChinese(card.hanzi);
+    // unit.key guards against re-revealing a different card with identical hanzi;
+    // muted is intentionally excluded so unmuting mid-card does not replay.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealed, unit.key]);
 
@@ -110,7 +112,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
             />
           </p>
 
-          {!conceptCard ? (
+          {!muted && !conceptCard ? (
             <button
               type="button"
               className="speak-button"

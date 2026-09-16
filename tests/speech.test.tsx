@@ -138,6 +138,20 @@ describe("speakChinese", () => {
     expect(() => speakChinese("你好")).not.toThrow();
   });
 
+  it("stays silent while muted and speaks again when unmuted", async () => {
+    const stub = stubSpeechApi([fakeVoice("zh-CN")]);
+    const speech = await import("../src/lib/speech");
+
+    speech.setSpeechMuted(true);
+    expect(speech.isSpeechMuted()).toBe(true);
+    speech.speakChinese("你好");
+    expect(stub.speak).not.toHaveBeenCalled();
+
+    speech.setSpeechMuted(false);
+    speech.speakChinese("你好");
+    expect(stub.speak).toHaveBeenCalledTimes(1);
+  });
+
   it("uses the saved preferred voice when it still exists", async () => {
     const stub = stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
     const speech = await import("../src/lib/speech");
@@ -244,7 +258,7 @@ describe("StudyCard pronunciation", () => {
 
   afterEach(removeSpeechApi);
 
-  async function renderStudyCard(direction: StudyUnit["direction"], revealed: boolean) {
+  async function renderStudyCard(direction: StudyUnit["direction"], revealed: boolean, muted = false) {
     const { StudyCard } = await import("../src/components/StudyCard");
     const tipo = direction === "concept" ? "concepto" : "palabra";
     const unit: StudyUnit = {
@@ -259,6 +273,7 @@ describe("StudyCard pronunciation", () => {
         packTitle="Primeros pasos"
         revealed={revealed}
         favorite={false}
+        muted={muted}
         onToggleFavorite={() => {}}
         promptRef={{ current: null }}
         m={messages.es}
@@ -310,6 +325,14 @@ describe("StudyCard pronunciation", () => {
   it("hides the button and never speaks on concept cards", async () => {
     const speech = stubSpeechApi([fakeVoice("zh-CN")]);
     await renderStudyCard("concept", true);
+
+    expect(screen.queryByRole("button", { name: "Escuchar pronunciación" })).not.toBeInTheDocument();
+    expect(speech.speak).not.toHaveBeenCalled();
+  });
+
+  it("hides the button and stays silent when muted", async () => {
+    const speech = stubSpeechApi([fakeVoice("zh-CN")]);
+    await renderStudyCard("meaning-hanzi", true, true);
 
     expect(screen.queryByRole("button", { name: "Escuchar pronunciación" })).not.toBeInTheDocument();
     expect(speech.speak).not.toHaveBeenCalled();
@@ -373,6 +396,27 @@ describe("voice settings dialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
 
     expect(voiceSelect()).toHaveValue("zh-TW");
+  });
+
+  it("persists the mute checkbox and starts muted on the next load", async () => {
+    stubSpeechApi([fakeVoice("zh-CN")]);
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Silenciar pronunciación" }));
+
+    expect(window.localStorage.getItem("yuwenke:tts-muted:v1")).toBe("1");
+  });
+
+  it("starts with the checkbox checked when muting was saved", async () => {
+    stubSpeechApi([fakeVoice("zh-CN")]);
+    window.localStorage.setItem("yuwenke:tts-muted:v1", "1");
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+
+    expect(screen.getByRole("checkbox", { name: "Silenciar pronunciación" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Elegir voz de pronunciación" })).toHaveTextContent("🔇");
   });
 
   it("shows getting-started instructions per platform", async () => {

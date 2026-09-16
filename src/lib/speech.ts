@@ -1,5 +1,6 @@
 const CHINESE_LANG = /^zh([_-]|$)|^cmn/i;
 const VOICE_STORAGE_KEY = "yuwenke:tts-voice:v1";
+const MUTED_STORAGE_KEY = "yuwenke:tts-muted:v1";
 
 /**
  * macOS lists every voice twice (compact and Enhanced/Premium variants share
@@ -83,6 +84,23 @@ export function setPreferredVoice(uri: string | null): void {
   }
 }
 
+export function isSpeechMuted(): boolean {
+  try {
+    return window.localStorage.getItem(MUTED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setSpeechMuted(muted: boolean): void {
+  try {
+    if (muted) window.localStorage.setItem(MUTED_STORAGE_KEY, "1");
+    else window.localStorage.removeItem(MUTED_STORAGE_KEY);
+  } catch {
+    /* storage unavailable: the preference only lasts for this page load */
+  }
+}
+
 function resolveVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   const preferred = preferredVoiceUri();
   if (preferred) {
@@ -101,6 +119,7 @@ function resolveVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | nu
 
 export function speakChinese(text: string): void {
   if (typeof speechSynthesis === "undefined" || text.length === 0) return;
+  if (isSpeechMuted()) return;
   const voices = allVoices();
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);

@@ -147,6 +147,7 @@ export interface Messages {
     closeAria: string;
     label: string;
     defaultOption: string;
+    muteToggle: string;
     empty: string;
     instructionsToggle: string;
     instructionsTitle: string;
@@ -375,6 +376,7 @@ const es: Messages = {
     closeAria: "Cerrar ajustes de voz",
     label: "Voz china",
     defaultOption: "Voz del sistema",
+    muteToggle: "Silenciar pronunciación",
     empty: "Este dispositivo todavía no tiene voces chinas instaladas.",
     instructionsToggle: "¿Cómo consigo más voces?",
     instructionsTitle: "Conseguir voces chinas",
@@ -703,6 +705,7 @@ const en: Messages = {
     closeAria: "Close voice settings",
     label: "Chinese voice",
     defaultOption: "System voice",
+    muteToggle: "Mute pronunciation",
     empty: "This device has no Chinese voices installed yet.",
     instructionsToggle: "How do I get more voices?",
     instructionsTitle: "Getting Chinese voices",

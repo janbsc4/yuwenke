@@ -42,8 +42,10 @@ import { applyLocaleMetadata } from "../lib/documentMetadata";
 import { messages, topicDisplayLabel, type Messages } from "../lib/messages";
 import {
   chineseVoiceOptions,
+  isSpeechMuted,
   preferredVoiceUri,
   setPreferredVoice,
+  setSpeechMuted,
   speakChinese,
   subscribeToVoices,
   type ChineseVoiceOption,
@@ -183,6 +185,7 @@ export default function FlashcardApp({
     () => chineseVoiceOptions(),
   );
   const [preferredVoice, setPreferredVoiceState] = useState(() => preferredVoiceUri());
+  const [speechMuted, setSpeechMutedState] = useState(() => isSpeechMuted());
   const [voiceInstructionsOpen, setVoiceInstructionsOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
   const [packTriggerOpening, setPackTriggerOpening] = useState(false);
@@ -474,6 +477,11 @@ export default function FlashcardApp({
     setVoiceOpen(false);
     setVoiceInstructionsOpen(false);
     window.setTimeout(() => voiceButtonRef.current?.focus(), 0);
+  }, []);
+
+  const changeSpeechMuted = useCallback((muted: boolean) => {
+    setSpeechMuted(muted);
+    setSpeechMutedState(muted);
   }, []);
 
   const openHelp = useCallback((trigger: HTMLButtonElement) => {
@@ -824,7 +832,7 @@ export default function FlashcardApp({
             ref={voiceButtonRef}
             onClick={() => setVoiceOpen(true)}
           >
-            <span aria-hidden="true">🗣</span>
+            <span aria-hidden="true">{speechMuted ? "🔇" : "🗣"}</span>
           </button>
           {SUPPORTED_LOCALES.length > 1 ? (
             <div
@@ -1018,6 +1026,7 @@ export default function FlashcardApp({
                 packTitle={packTitleById[packIdByCardId[current.cardId]]}
                 revealed={revealed}
                 favorite={currentFavorite}
+                muted={speechMuted}
                 onToggleFavorite={() =>
                   setFavorite(current.cardId, !currentFavorite)
                 }
@@ -1270,6 +1279,14 @@ export default function FlashcardApp({
               <h2 id="voice-title">{m.voice.title}</h2>
               <button type="button" aria-label={m.voice.closeAria} onClick={closeVoice}>×</button>
             </div>
+            <label className="voice-mute">
+              <input
+                type="checkbox"
+                checked={speechMuted}
+                onChange={(event) => changeSpeechMuted(event.target.checked)}
+              />
+              <span>{m.voice.muteToggle}</span>
+            </label>
             {voiceOptions.length > 0 ? (
               <label className="voice-select-label">
                 {m.voice.label}
