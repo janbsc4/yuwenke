@@ -389,7 +389,7 @@ const es: Messages = {
       {
         platform: "iPhone / iPad",
         body:
-          "Ajustes → Accesibilidad → Contenido hablado → Voces → Chino (China continental) y descarga una voz mejorada.",
+          "Ajustes → Accesibilidad → Lectura y voz → Voces → Chino. Elige la variante de China continental, abre una voz y toca el botón de descarga. En versiones anteriores, busca Contenido hablado en lugar de Lectura y voz. Cuando termine la descarga, vuelve a abrir Yuwenke y elige la voz en Voz de pronunciación → Voz china. Yuwenke solo muestra las voces que el navegador pone a su disposición; algunas voces descargadas pueden no aparecer.",
       },
       {
         platform: "Windows",
@@ -718,7 +718,7 @@ const en: Messages = {
       {
         platform: "iPhone / iPad",
         body:
-          "Settings → Accessibility → Spoken Content → Voices → Chinese (China Mainland) and download an Enhanced voice.",
+          "Settings → Accessibility → Read & Speak → Voices → Chinese. Choose the China mainland variety, open a voice, and tap the download button. On older versions, look for Spoken Content instead of Read & Speak. Once the download finishes, reopen Yuwenke and select the voice under Pronunciation voice → Chinese voice. Yuwenke only lists voices made available by your browser; some downloaded voices may not appear.",
       },
       {
         platform: "Windows",
