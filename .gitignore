@@ -46,3 +46,10 @@ venv/
 
 # Husky generated shims
 .husky/_
+
+# Generated Worker files and local-only secrets
+worker/generated/
+worker/dist/
+.wrangler/
+.dev.vars
+.dev.vars.*

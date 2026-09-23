@@ -30,12 +30,12 @@ class MemoryStorage implements Storage {
   }
 }
 
-Object.defineProperty(window, "localStorage", {
+if (typeof window !== "undefined") Object.defineProperty(window, "localStorage", {
   configurable: true,
   value: new MemoryStorage(),
 });
 
 afterEach(() => {
   cleanup();
-  window.localStorage?.clear();
+  if (typeof window !== "undefined") window.localStorage?.clear();
 });

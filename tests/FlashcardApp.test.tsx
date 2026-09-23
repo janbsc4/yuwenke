@@ -908,3 +908,15 @@ describe("FlashcardApp localization", () => {
     expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("es");
   });
 });
+
+it("opens conversation without letting study shortcuts change the hidden flashcard", async () => {
+  renderApp([card]);
+  const before = screen.getByRole("heading", { level: 2 }).textContent;
+  await userEvent.click(screen.getByRole("button", { name: "Conversa" }));
+  expect(await screen.findByRole("main", { name: "Practica con Léi" })).toBeVisible();
+  fireEvent.keyDown(window, { key: "3" });
+  fireEvent.keyDown(window, { code: "Space" });
+  await userEvent.click(screen.getByRole("button", { name: /Descubrir/ }));
+  expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(before);
+  expect(screen.getByRole("button", { name: /Mostrar respuesta/ })).toBeVisible();
+});

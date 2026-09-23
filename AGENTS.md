@@ -8,7 +8,7 @@ Yuwenke turns personal Chinese class notes into flashcards. Static Astro site wi
 
 `chino_flashcards.csv` is the dataset; `card_packs.json` and `card_pack_membership.csv` assign every card to exactly one pack. Astro validates all three at build time (`src/data/`), so malformed data fails the deploy instead of shipping.
 
-Firestore stores only learner state (progress, favorites, Open Packs, Reset Boundary), never card content. The app works offline and as a guest without backend configuration; do not break guest mode when touching Firebase sync.
+Firestore stores learner state (progress, favorites, Open Packs, Reset Boundary), never card content or chat transcripts. Léi runs on Cloudflare Workers, with private usage counters in a SQLite-backed Durable Object. The app works offline and as a guest without backend configuration; do not break guest mode when touching Firebase sync.
 
 `chinese-knowledge.md` is generated from the CSV by `scripts/build_chinese_knowledge.mjs`. Never edit generated files; edit the source and rerun the generator. Tests diff committed generated files against generator output, so hand edits fail CI.
 

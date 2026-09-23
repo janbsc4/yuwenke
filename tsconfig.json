@@ -10,5 +10,5 @@
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  "exclude": ["dist", "worker/dist", "worker/generated"]
 }

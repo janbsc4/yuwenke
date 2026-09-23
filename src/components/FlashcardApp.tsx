@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -61,6 +63,8 @@ interface FlashcardAppProps {
   packIdByCardId: PackIdByCardId;
   initialLocale?: Locale;
 }
+
+const Conversation = lazy(() => import("./Conversation"));
 
 const PACK_OPENING_DURATION_MS = 1050;
 const PACK_TRIGGER_OPENING_DURATION_MS = 160;
@@ -173,6 +177,7 @@ export default function FlashcardApp({
   } = useProgressSync({ cards, orderedPackIds, packIdByCardId });
   const openPackIdSet = useMemo(() => new Set(openPackIds), [openPackIds]);
 
+  const [chatOpen, setChatOpen] = useState(false);
   const [activeView, setActiveView] = useState<StudyView>("discover");
   const [initializedOwner, setInitializedOwner] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -623,6 +628,7 @@ export default function FlashcardApp({
         return;
       }
       if (
+        chatOpen ||
         filterSheetOpen ||
         helpOpen ||
         loginOpen ||
@@ -654,6 +660,7 @@ export default function FlashcardApp({
   }, [
     accountOpen,
     activeView,
+    chatOpen,
     choosePrimary,
     chooseSecondary,
     closeFilterSheet,
@@ -686,6 +693,7 @@ export default function FlashcardApp({
   const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   const changeView = (view: StudyView) => {
+    setChatOpen(false);
     setActiveView(view);
     setAccountOpen(false);
   };
@@ -874,14 +882,17 @@ export default function FlashcardApp({
           <button
             type="button"
             key={view}
-            className={view === activeView ? "is-active" : ""}
-            aria-current={view === activeView ? "page" : undefined}
+            className={!chatOpen && view === activeView ? "is-active" : ""}
+            aria-current={!chatOpen && view === activeView ? "page" : undefined}
             onClick={() => changeView(view)}
           >
             <span>{m.views[view]}</span>
             <span className="count-pill">{counts[view]}</span>
           </button>
         ))}
+        <button type="button" className={chatOpen ? "is-active" : ""} aria-current={chatOpen ? "page" : undefined} onClick={() => setChatOpen(true)}>
+          <span>{locale === "es" ? "Conversa" : "Converse"}</span>
+        </button>
       </nav>
 
       {!user ? (
@@ -908,6 +919,25 @@ export default function FlashcardApp({
         </div>
       ) : null}
 
+      {chatOpen && <Suspense fallback={<p role="status">{locale === "es" ? "Cargando…" : "Loading…"}</p>}>
+        <Conversation
+          key={`${user?.uid ?? "guest"}:${locale}`}
+          cards={cards}
+          progress={studyProgress}
+          locale={locale}
+          owner={user?.uid ?? null}
+          configured={firebaseConfigured && import.meta.env.PUBLIC_CHAT_ENABLED === "true" && Boolean(import.meta.env.PUBLIC_CHAT_API_URL)}
+          onSignIn={() => setLoginOpen(true)}
+          onReviewCard={(id) => {
+            const card = cards.find((item) => item.id === id);
+            if (!card) return;
+            const cardUnits = units.filter((unit) => unit.cardId === id);
+            changeView(cardUnits.some((unit) => studyProgress[unit.key]?.status === "learning") ? "study" : "mastered");
+            setFilters({ ...EMPTY_FILTERS, query: card.hanzi });
+          }}
+        />
+      </Suspense>}
+      <div hidden={chatOpen}>
       <div className="search-row">
         <div className="search-field">
           <span className="search-icon" aria-hidden="true">⌕</span>
@@ -1111,6 +1141,7 @@ export default function FlashcardApp({
           )}
         </section>
       </main>
+      </div>
 
       <CardPackDialogs
         packs={packs}
@@ -1346,7 +1377,7 @@ export default function FlashcardApp({
         </div>
       ) : null}
 
-      <div className="sr-only" aria-live="polite">
+      <div className="sr-only" aria-live="polite" hidden={chatOpen}>
         {queueReady && current && !completed
           ? m.session.progressLabel(queueIndex + 1, queue.length)
           : ""}

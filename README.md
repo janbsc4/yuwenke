@@ -24,8 +24,11 @@ It includes:
 - ten editable card packs for progressive discovery;
 - guest progress, favorites, and open packs in local storage;
 - optional Google sign-in and Firestore synchronization for study state.
+- an optional Converse mode with Léi, using each learner's vocabulary and a privately hosted inference key.
 
-The flashcard content and pack membership are compiled from repository files during the build. Firestore stores only each user's progress, card-level favorites, open packs, and reset boundary, so a content database is not required.
+The flashcard content and pack membership are compiled from repository files during the build. Firestore stores each user's progress, card-level favorites, open packs, and reset boundary. Léi runs on Cloudflare Workers with private usage counters in a SQLite-backed Durable Object. Card content and chat transcripts stay outside Firestore.
+
+To enable conversation, follow [the backend and API key setup](docs/conversation.md). The backend is optional and deploys separately from GitHub Pages.
 
 ## Project files
 
