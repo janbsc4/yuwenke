@@ -1267,3 +1267,51 @@ html.js .lp-footer.is-stamped .lp-seal {
     overflow-x: clip;
   }
 }
+
+/* A worked example connects the learner's cards to a conversation. */
+.lp-lei {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 64px);
+  padding: clamp(40px, 6vw, 72px) 0;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 28px;
+}
+.lp-lei-copy .lp-eyebrow { color: var(--jade); }
+.lp-lei-actions { margin-top: 26px; }
+.lp-button-jade { background: var(--jade); border-color: var(--jade); color: var(--surface); }
+.lp-lei-copy .lp-lei-note { max-width: 32rem; margin-top: 14px; font-size: 0.8rem; color: var(--muted); }
+.lp-lei-example {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.lp-lei-example figcaption { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.lp-lei-seal { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 10px; background: var(--jade); color: var(--surface); font-size: 1.6rem; }
+.lp-lei-example figcaption strong { display: block; font-size: 1rem; }
+.lp-lei-example figcaption small { display: block; font-size: 0.7rem; color: var(--muted); }
+.lp-lei-example-label { margin-left: auto; max-width: 8rem; color: var(--muted); font-size: 0.7rem; text-align: right; }
+.lp-lei-words { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 0; color: var(--muted); font-size: 0.75rem; }
+.lp-lei-words > .lp-hanzi { color: var(--jade); font-size: 1.15rem; word-spacing: 0.18em; }
+.lp-lei-speaker { color: var(--jade); font-size: 0.72rem; font-weight: 800; }
+.lp-lei-line { margin: 8px 0 20px; }
+.lp-lei-example p { margin: 4px 0; }
+.lp-lei-line > .lp-hanzi, .lp-lei-answer > .lp-hanzi { font-size: clamp(1.45rem, 2.5vw, 1.85rem); line-height: 1.65; }
+.lp-lei-line details { margin-top: 8px; font-size: 0.82rem; color: var(--muted); }
+.lp-lei-line summary { width: fit-content; cursor: pointer; color: var(--jade); text-underline-offset: 3px; }
+.lp-lei-line summary:hover { text-decoration: underline; }
+.lp-lei-line summary:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 4px; }
+.lp-lei-line details[open] summary { margin-bottom: 8px; }
+.lp-lei-answer { width: fit-content; max-width: 100%; margin: 0 0 20px auto; padding: 10px 18px; background: var(--jade-soft); border-radius: 12px 12px 3px 12px; }
+.lp-lei-feedback { padding: 12px 16px; background: var(--amber-soft); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; font-size: 0.85rem; }
+.lp-lei-feedback > .lp-hanzi { margin-top: 8px; font-size: 1.4rem; }
+.lp-lei-feedback .lp-lei-gloss { color: var(--muted); font-size: 0.8rem; }
+@media (max-width: 900px) {
+  .lp-lei { grid-template-columns: 1fr; }
+  .lp-lei-example { width: 100%; max-width: 36rem; justify-self: center; }
+}

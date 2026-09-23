@@ -11,12 +11,12 @@ import astroConfig from "../astro.config.mjs";
 const expectedMetadata = {
   es: {
     description:
-      "Cartas de vocabulario, frases y conceptos de mandarín con explicaciones en español.",
+      "Aprende mandarín con cartas y practica tus palabras con Léi, tu compañero de conversación con IA. Con pinyin y explicaciones en español.",
     ogLocale: "es_ES",
   },
   en: {
     description:
-      "Mandarin vocabulary, phrase, and concept flashcards with explanations in English.",
+      "Learn Mandarin with flashcards and practice your words with Léi, your AI conversation partner. With pinyin and explanations in English.",
     ogLocale: "en_US",
   },
 };

@@ -3,6 +3,7 @@ import { loadFlashcards } from "../data/loadFlashcards";
 import { loadCardPackData } from "../data/loadCardPacks";
 import { landingLangResolverScript, localeUrl } from "../lib/locale";
 import { messages } from "../lib/messages";
+import { DEFAULT_CHAT_MODEL, chatModelLabel } from "../../shared/chat";
 import "../styles/landing.css";
 
 const base = import.meta.env.BASE_URL;
@@ -10,6 +11,7 @@ const canonicalUrl = new URL(base, Astro.site);
 const socialImageUrl = new URL(`${base}og.png`, Astro.site);
 const fontUrl = `${base}fonts/young-serif-latin.woff2`;
 const appUrl = (locale: "es" | "en") => localeUrl(locale);
+const conversationUrl = (locale: "es" | "en") => `${appUrl(locale)}#conversation`;
 
 const cards = loadFlashcards();
 const { packs, packIdByCardId } = loadCardPackData(cards);
@@ -163,11 +165,11 @@ const meta = messages.es.metadata;
             <p class="lp-hero-sub lp-rise lp-rise-3">
               <span class="lang-es">
                 Mandarín de clase, en cartas con hanzi, pinyin y explicaciones en español.
-                Descubre un tema, practica a tu ritmo y ve crecer lo que sabes.
+                Aprende a tu ritmo y usa tus palabras en una conversación con Léi.
               </span>
               <span class="lang-en">
                 Mandarin from real class notes, with hanzi, pinyin, and explanations in English.
-                Pick a topic, practice at your pace, and watch what you know grow.
+                Learn at your pace, then use your words in a conversation with Léi.
               </span>
             </p>
             <div class="lp-hero-actions lp-rise lp-rise-4">
@@ -177,12 +179,12 @@ const meta = messages.es.metadata;
               <a class="lp-button lp-button-primary lang-en" href={appUrl("en")}>
                 Open the cards <span class="lp-hanzi" lang="zh-Hans">学</span>
               </a>
-              <a class="lp-button lp-button-ghost lang-es" href="#como-funciona">Ver cómo funciona</a>
-              <a class="lp-button lp-button-ghost lang-en" href="#como-funciona">See how it works</a>
+              <a class="lp-button lp-button-ghost lang-es" href="#lei">Conoce a Léi</a>
+              <a class="lp-button lp-button-ghost lang-en" href="#lei">Meet Léi</a>
             </div>
             <p class="lp-hero-reassurance lp-rise lp-rise-5">
-              <span class="lang-es">Sin cuenta · Tu progreso se guarda en este dispositivo</span>
-              <span class="lang-en">No account needed · Progress saved on this device</span>
+              <span class="lang-es">Cartas sin cuenta · Progreso guardado en este dispositivo</span>
+              <span class="lang-en">Flashcards without an account · Progress saved on this device</span>
             </p>
             <p class="lp-hero-counts lp-rise lp-rise-5">
               <span><strong>{cards.length}</strong> <span class="lang-es">cartas</span><span class="lang-en">cards</span></span>
@@ -260,6 +262,63 @@ const meta = messages.es.metadata;
               <span class="lp-hanzi" lang="zh-Hans"> 你</span> FC002
             </p>
           </div>
+        </section>
+
+        <section class="lp-lei" id="lei" aria-labelledby="lei-title">
+          <div class="lp-section-head lp-lei-copy">
+            <p class="lp-eyebrow"><span class="lang-es">Practica con Léi</span><span class="lang-en">Practice with Léi</span></p>
+            <h2 id="lei-title">
+              <span class="lang-es">Tus palabras ya pueden conversar.</span>
+              <span class="lang-en">Put your words into conversation.</span>
+            </h2>
+            <p>
+              <span class="lang-es">Léi es tu compañero de conversación con IA. Usa las palabras que estás aprendiendo y las que ya sabes para ayudarte a formar tus propias frases en chino.</span>
+              <span class="lang-en">Léi is your AI conversation partner. It uses the words you're learning and the ones you already know to help you make your own sentences in Chinese.</span>
+            </p>
+            <p>
+              <span class="lang-es">Elige un tema, responde a una pregunta y sigue la conversación. Despliega el pinyin, la traducción o una pista cuando lo necesites, con correcciones breves en español.</span>
+              <span class="lang-en">Choose a topic, answer a question, and keep the conversation going. Reveal pinyin, a translation, or a hint when you need one, with brief corrections in English.</span>
+            </p>
+            <div class="lp-lei-actions">
+              <a class="lp-button lp-button-jade lang-es" href={conversationUrl("es")}>Conversar con Léi <span aria-hidden="true">↗</span></a>
+              <a class="lp-button lp-button-jade lang-en" href={conversationUrl("en")}>Chat with Léi <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="lp-lei-note">
+              <span class="lang-es">Con tu cuenta de Google y conexión a internet. El chat no cambia el progreso de tus cartas.</span>
+              <span class="lang-en">Sign in with Google and connect to the internet. Chat does not change your card progress.</span>
+            </p>
+          </div>
+          <figure class="lp-lei-example">
+            <figcaption>
+              <span class="lp-lei-seal lp-hanzi" lang="zh-Hans" aria-hidden="true">雷</span>
+              <span><strong>Léi</strong><small>{chatModelLabel(DEFAULT_CHAT_MODEL)}</small></span>
+              <span class="lp-lei-example-label"><span class="lang-es">Conversación de ejemplo</span><span class="lang-en">Example conversation</span></span>
+            </figcaption>
+            <div class="lp-lei-words">
+              <span class="lang-es">Palabras para practicar</span><span class="lang-en">Words to practice</span>
+              <span class="lp-hanzi" lang="zh-Hans">喝 <span aria-hidden="true">·</span> 茶 <span aria-hidden="true">·</span> 喜欢</span>
+            </div>
+            <div class="lp-lei-line">
+              <span class="lp-lei-speaker">Léi</span>
+              <p class="lp-hanzi" lang="zh-Hans">你喜欢喝茶吗？</p>
+              <details>
+                <summary><span class="lang-es">Ver pinyin y traducción</span><span class="lang-en">Show pinyin and translation</span></summary>
+                <p>Nǐ xǐhuān hē chá ma?</p>
+                <p class="lang-es">¿Te gusta beber té?</p><p class="lang-en">Do you like drinking tea?</p>
+              </details>
+            </div>
+            <div class="lp-lei-answer">
+              <span class="lp-lei-speaker"><span class="lang-es">Tú</span><span class="lang-en">You</span></span>
+              <p class="lp-hanzi" lang="zh-Hans">我喝喜欢茶。</p>
+            </div>
+            <div class="lp-lei-feedback">
+              <span class="lp-lei-speaker">Léi</span>
+              <p class="lang-es">Primero 喜欢, luego 喝. Prueba así:</p>
+              <p class="lang-en">Put 喜欢 before 喝. Try this:</p>
+              <p class="lp-hanzi" lang="zh-Hans">我喜欢喝茶。</p>
+              <p class="lp-lei-gloss"><span class="lang-es">Me gusta beber té.</span><span class="lang-en">I like drinking tea.</span></p>
+            </div>
+          </figure>
         </section>
 
         <section class="lp-steps" id="como-funciona" aria-labelledby="steps-title">
@@ -430,8 +489,8 @@ const meta = messages.es.metadata;
         </div>
         <div class="lp-footer-legal">
           <p>
-            <span class="lang-es">Sin cuenta obligatoria · Funciona sin conexión · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
-            <span class="lang-en">No account needed · Works offline · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
+            <span class="lang-es">Cartas sin cuenta y sin conexión · Conversación con cuenta y conexión · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
+            <span class="lang-en">Flashcards work offline without an account · Chat needs sign-in and internet · <span class="lp-hanzi" lang="zh-Hans">语文课</span> Yuwenke</span>
           </p>
         </div>
       </div>

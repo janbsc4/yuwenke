@@ -306,6 +306,14 @@ export default function FlashcardApp({
   useEffect(() => subscribeToVoices(() => setVoiceOptions(chineseVoiceOptions())), []);
 
   useEffect(() => {
+    const syncConversationLink = () => setChatOpen(window.location.hash === "#conversation");
+    // Read the landing link after hydration; the static page has no URL fragment.
+    syncConversationLink();
+    window.addEventListener("hashchange", syncConversationLink);
+    return () => window.removeEventListener("hashchange", syncConversationLink);
+  }, []);
+
+  useEffect(() => {
     const handlePopState = () => {
       const fromPath = parseLocaleFromPath(window.location.pathname);
       if (
@@ -522,9 +530,9 @@ export default function FlashcardApp({
       if (next === locale) return;
       setLocale(next);
       writePreference(LOCALE_STORAGE_KEY, next);
-      window.history.pushState(null, "", localeUrl(next));
+      window.history.pushState(null, "", `${localeUrl(next)}${chatOpen ? "#conversation" : ""}`);
     },
-    [locale],
+    [locale, chatOpen],
   );
 
   const advance = useCallback(() => {
@@ -694,6 +702,9 @@ export default function FlashcardApp({
 
   const changeView = (view: StudyView) => {
     setChatOpen(false);
+    if (window.location.hash === "#conversation") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     setActiveView(view);
     setAccountOpen(false);
   };

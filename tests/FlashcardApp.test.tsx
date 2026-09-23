@@ -98,6 +98,21 @@ function savedProgress(
 }
 
 describe("FlashcardApp", () => {
+  it("opens Léi from the landing link and clears the fragment when returning to cards", async () => {
+    window.history.replaceState(null, "", "/yuwenke/app/es/#conversation");
+    try {
+      const user = userEvent.setup();
+      renderApp([card]);
+      expect(await screen.findByRole("heading", { name: "Practica con Léi" })).toBeVisible();
+      expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /^Descubrir/ }));
+      expect(window.location.hash).toBe("");
+      expect(await screen.findByRole("searchbox")).toBeVisible();
+    } finally {
+      window.history.replaceState(null, "", "/yuwenke/");
+    }
+  });
+
   it("uses one search clear control and returns focus after clearing", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card]);

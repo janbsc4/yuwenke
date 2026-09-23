@@ -232,9 +232,9 @@ export interface Messages {
 const es: Messages = {
   metadata: {
     description:
-      "Cartas de vocabulario, frases y conceptos de mandarín con explicaciones en español.",
+      "Aprende mandarín con cartas y practica tus palabras con Léi, tu compañero de conversación con IA. Con pinyin y explicaciones en español.",
     socialDescription:
-      "Mandarín y español en dos sentidos, a partir de mis notas de clase.",
+      "De las cartas a la conversación: practica mandarín con tus palabras y la ayuda de Léi.",
     ogLocale: "es_ES",
     ogImageAlt: "Yuwenke, cartas de mandarín y español",
     noscript: "Necesitas activar JavaScript para usar las cartas.",
@@ -561,9 +561,9 @@ const es: Messages = {
 const en: Messages = {
   metadata: {
     description:
-      "Mandarin vocabulary, phrase, and concept flashcards with explanations in English.",
+      "Learn Mandarin with flashcards and practice your words with Léi, your AI conversation partner. With pinyin and explanations in English.",
     socialDescription:
-      "Mandarin and English in both directions, from my class notes.",
+      "From flashcards to conversation: practice Mandarin with your words and help from Léi.",
     ogLocale: "en_US",
     ogImageAlt: "Yuwenke, Mandarin and English flashcards",
     noscript: "You need to enable JavaScript to use the flashcards.",
