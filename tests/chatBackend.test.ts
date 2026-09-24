@@ -65,6 +65,27 @@ it("authenticates before reserving allowance or calling inference", async () => 
   expect(reserve).not.toHaveBeenCalled();
   expect(generateTutorReply).not.toHaveBeenCalled();
 });
+it("accepts a guest only from the app origin with a valid browser identity and edge IP", async () => {
+  const guestId = crypto.randomUUID();
+  const response = await worker.fetch(request(data, {
+    Authorization: "",
+    "X-Lei-Guest-Id": guestId,
+    "CF-Connecting-IP": "203.0.113.9",
+  }), env);
+  expect(response.status).toBe(200);
+  expect(verifyFirebaseToken).not.toHaveBeenCalled();
+  const reservation = reserve.mock.calls[0] as [string, RequestInit];
+  expect(reservation[1].body).toBe(guestId);
+  expect((reservation[1].headers as Record<string, string>)["X-Lei-Guest-Ip-Key"]).toMatch(/^[a-f0-9]{64}$/);
+  const deniedHeaders: Record<string, string>[] = [
+    { Authorization: "", "X-Lei-Guest-Id": "not-a-uuid", "CF-Connecting-IP": "203.0.113.9" },
+    { Authorization: "", "X-Lei-Guest-Id": guestId },
+  ];
+  for (const headers of deniedHeaders) {
+    const denied = await worker.fetch(request(data, headers), env);
+    expect([401, 503]).toContain(denied.status);
+  }
+});
 it("reserves for the verified UID before inference and returns the selected model", async () => {
   const response = await worker.fetch(request(), env);
   expect(response.status).toBe(200);
@@ -159,5 +180,5 @@ it("returns a distinct safe timeout response", async () => {
   vi.mocked(generateTutorReply).mockRejectedValue(new ChatError("deadline-exceeded", "private details"));
   const response = await worker.fetch(request(), env);
   expect(response.status).toBe(504);
-  expect(await response.json()).toEqual({ error: { code: "deadline-exceeded" } });
+  expect(await response.json()).toEqual({ error: { code: "deadline-exceeded" }, remaining: 29 });
 });

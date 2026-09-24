@@ -1,4 +1,4 @@
-import { sendConversation } from "../src/lib/chatClient";
+import { guestMessagesRemaining, sendConversation } from "../src/lib/chatClient";
 const auth = vi.hoisted(() => ({
   currentUser: null as null | {
     isAnonymous: boolean;
@@ -28,6 +28,7 @@ const result = {
   },
 };
 beforeEach(() => {
+  window.localStorage.removeItem("yuwenke:lei-guest:v1");
   vi.stubEnv("PUBLIC_CHAT_API_URL", "https://lei.example/conversation");
   auth.currentUser = {
     isAnonymous: false,
@@ -53,14 +54,52 @@ it("sends a Firebase ID token to the configured Worker and validates the reply",
     }),
   );
 });
-it("does not contact inference for guests or anonymous users", async () => {
-  for (const user of [null, { isAnonymous: true, getIdToken: vi.fn() }]) {
-    auth.currentUser = user;
-    await expect(sendConversation(payload)).rejects.toMatchObject({
-      code: "chat/unauthenticated",
-    });
+it("sends three guest messages using a stable browser identity", async () => {
+  auth.currentUser = null;
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json({ ...result, remaining: 2 }))
+    .mockResolvedValueOnce(Response.json({ ...result, remaining: 1 }))
+    .mockResolvedValueOnce(Response.json({ ...result, remaining: 0 }));
+  for (const remaining of [2, 1, 0]) {
+    const message = remaining === 1 ? { ...payload, locale: "es" as const } : payload;
+    expect((await sendConversation(message)).remaining).toBe(remaining);
+    expect(guestMessagesRemaining()).toBe(remaining);
   }
-  expect(fetch).not.toHaveBeenCalled();
+  const calls = vi.mocked(fetch).mock.calls;
+  const headers = calls.map((call) => call[1]?.headers as Record<string, string>);
+  expect(new Set(headers.map((header) => header["X-Lei-Guest-Id"])).size).toBe(1);
+  expect(headers[0]).not.toHaveProperty("Authorization");
+  await expect(sendConversation(payload)).rejects.toMatchObject({
+    code: "chat/guest-exhausted",
+  });
+  expect(fetch).toHaveBeenCalledTimes(3);
+});
+it("keeps a guest trial available when only the shared allowance is exhausted", async () => {
+  auth.currentUser = null;
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(
+    { error: { code: "resource-exhausted" } }, { status: 429 },
+  ));
+  await expect(sendConversation(payload)).rejects.toMatchObject({
+    code: "chat/resource-exhausted",
+  });
+  expect(guestMessagesRemaining()).toBe(3);
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(
+    { error: { code: "guest-exhausted" } }, { status: 429 },
+  ));
+  await expect(sendConversation(payload)).rejects.toMatchObject({
+    code: "chat/guest-exhausted",
+  });
+  expect(guestMessagesRemaining()).toBe(0);
+});
+it("updates guest attempts after a provider failure", async () => {
+  auth.currentUser = null;
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(
+    { error: { code: "unavailable" }, remaining: 2 }, { status: 503 },
+  ));
+  await expect(sendConversation(payload)).rejects.toMatchObject({
+    code: "chat/unavailable", remaining: 2,
+  });
+  expect(guestMessagesRemaining()).toBe(2);
 });
 it.each([
   [401, "unauthenticated"],

@@ -14,7 +14,7 @@ beforeAll(async () => {
 });
 beforeEach(() => {
   provider.mockReset();
-  provider.mockResolvedValue(
+  provider.mockImplementation(async () =>
     Response.json({
       choices: [
         {
@@ -44,6 +44,8 @@ beforeEach(() => {
       },
       bindings: {
         CHAT_USER_DAILY_LIMIT: "6",
+        CHAT_GUEST_TOTAL_LIMIT: "3",
+        CHAT_GUEST_IP_DAILY_LIMIT: "4",
         CHAT_GLOBAL_DAILY_LIMIT: "8",
         CHAT_GLOBAL_MONTHLY_LIMIT: "3000",
         FIREBASE_PROJECT_ID: "local-test",
@@ -92,6 +94,34 @@ it("atomically enforces user and global daily allowances for concurrent requests
 it("does not expose quota storage through public Worker routes", async () => {
   const response = await mf.dispatchFetch("https://lei.example/quota");
   expect(response.status).toBe(404);
+});
+
+it("enforces three guest messages and limits resets from the same network", async () => {
+  const guestId = crypto.randomUUID();
+  const send = (id: string) => mf.dispatchFetch("https://lei.example/conversation", {
+    method: "POST",
+    headers: {
+      Origin: "https://janbsc4.github.io",
+      "X-Lei-Guest-Id": id,
+      "CF-Connecting-IP": "203.0.113.9",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sessionId: crypto.randomUUID(), locale: "en", topic: "",
+      progress: [], messages: [{ role: "user", content: "Hello" }],
+    }),
+  });
+  for (const remaining of [2, 1, 0]) {
+    const response = await send(guestId);
+    expect(response.status).toBe(200);
+    expect((await response.json() as { remaining: number }).remaining).toBe(remaining);
+  }
+  const exhausted = await send(guestId);
+  expect(exhausted.status).toBe(429);
+  expect(await exhausted.json()).toEqual({ error: { code: "guest-exhausted" } });
+  expect((await send(crypto.randomUUID())).status).toBe(200);
+  expect((await send(crypto.randomUUID())).status).toBe(429);
+  expect(provider).toHaveBeenCalledTimes(4);
 });
 
 it("runs signed authentication, durable quota, and inference together in the Worker runtime", async () => {

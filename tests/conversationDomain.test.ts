@@ -134,6 +134,9 @@ describe("conversation learning context", () => {
     expect(messages[0].content).toContain(
       "Correct genuine mistakes gently in Spanish",
     );
+    expect(messages[0].content).toContain(
+      "Write the naturalness explanation and feedback in Spanish",
+    );
     expect(messages[0].content).toContain("untrusted lesson content");
     expect(messages[0].content).toContain("a single JSON string, never an object or array");
     expect(messages[0].content).toContain(JSON.stringify("我喝茶。\nWǒ hē chá.\nBebo té."));

@@ -7,7 +7,10 @@ import { loadFlashcards } from "../src/data/loadFlashcards";
 import type { ChatResponse } from "../shared/chat";
 import { speakChinese } from "../src/lib/speech";
 
-vi.mock("../src/lib/chatClient", () => ({ sendConversation: vi.fn() }));
+vi.mock("../src/lib/chatClient", () => ({
+  sendConversation: vi.fn(),
+  guestMessagesRemaining: () => 3,
+}));
 vi.mock("../src/lib/speech", () => ({
   speakChinese: vi.fn(),
   speechSupported: () => true,
@@ -41,13 +44,27 @@ beforeEach(() => {
   vi.mocked(sendConversation).mockResolvedValue(response);
 });
 
-it("lets a guest reach sign-in without making an inference request", async () => {
+it("gives a guest three messages before asking for sign-in", async () => {
+  vi.mocked(sendConversation)
+    .mockResolvedValueOnce({ ...response, remaining: 2 })
+    .mockResolvedValueOnce({ ...response, remaining: 1 })
+    .mockResolvedValueOnce({ ...response, remaining: 0 });
   render(<Conversation {...props} owner={null} />);
+  expect(screen.getByText("3 free messages left")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Start a conversation" }));
+  expect(await screen.findByText("2 free messages left")).toBeVisible();
+  for (const [message, remaining] of [["你好", 1], ["我喝茶", 0]] as const) {
+    await userEvent.type(screen.getByRole("textbox", { name: "Your reply" }), message);
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText(`${remaining} free messages left`)).toBeVisible();
+  }
+  expect(screen.getByRole("textbox", { name: "Your reply" })).toBeDisabled();
+  expect(sendConversation).toHaveBeenCalledTimes(3);
   await userEvent.click(
     screen.getByRole("button", { name: "Sign in to practice" }),
   );
   expect(props.onSignIn).toHaveBeenCalledOnce();
-  expect(sendConversation).not.toHaveBeenCalled();
+  expect(readConversation("guest", "en").turns).toHaveLength(3);
 });
 
 it("starts a conversation, reveals assistance without more inference, and saves the reply", async () => {
@@ -60,8 +77,12 @@ it("starts a conversation, reveals assistance without more inference, and saves 
   expect(speakChinese).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: "Listen" }));
   expect(speakChinese).toHaveBeenCalledWith("你好吗？");
-  await userEvent.click(screen.getByText("Pinyin", { selector: "summary" }));
-  expect(screen.getByText("Nǐ hǎo ma?")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: /Pinyin/ }));
+  const annotated = await screen.findByText("nǐ", { selector: "rt" });
+  expect(annotated).toBeVisible();
+  expect(annotated.closest("ruby")).toHaveTextContent("你nǐ");
+  expect(screen.getByText("hǎo", { selector: "rt" }).closest("ruby")).toHaveTextContent("好hǎo");
+  expect(screen.getByText("ma", { selector: "rt" }).closest("ruby")).toHaveTextContent("吗ma");
   expect(sendConversation).toHaveBeenCalledOnce();
   expect(readConversation("alice", "en").turns).toHaveLength(1);
   expect(readConversation("alice", "en").model).toBe("mimo-v2.6-flash");
@@ -112,6 +133,31 @@ it.each([
   if (betterChinese) expect(screen.getByText(betterChinese)).toBeVisible();
   else expect(screen.queryByText("A more natural sentence")).not.toBeInTheDocument();
   expect(sendConversation).not.toHaveBeenCalled();
+});
+
+it.each([
+  ["en", "Your answer sounds natural in this conversation."],
+  ["es", "Tu respuesta suena natural en esta conversación."],
+] as const)("shows %s feedback in the selected language when the model replies in Chinese", async (locale, fallback) => {
+  saveConversation("alice", locale, {
+    version: 1, sessionId: crypto.randomUUID(), topic: "",
+    turns: [{
+      user: "我喝牛奶",
+      reply: {
+        ...response.reply,
+        naturalness: {
+          level: "natural",
+          explanation: "你的回答简短、正确、自然，完全符合对话。",
+          betterChinese: "",
+        },
+      },
+    }],
+    targetCardIds: [],
+  });
+  render(<Conversation {...props} locale={locale} />);
+  await userEvent.click(screen.getByText(locale === "en" ? "Naturalness: Natural" : "Naturalidad: Natural"));
+  expect(screen.getByText(fallback)).toBeVisible();
+  expect(screen.queryByText("你的回答简短、正确、自然，完全符合对话。")).not.toBeInTheDocument();
 });
 
 it.each([undefined, null])("keeps history without an assessment ungraded (%s)", (naturalness) => {

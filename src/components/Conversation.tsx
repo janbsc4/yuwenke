@@ -11,7 +11,7 @@ import {
   chatModelLabel,
 } from "../../shared/chat";
 import type { Flashcard, Locale, ProgressMap } from "../types";
-import { sendConversation } from "../lib/chatClient";
+import { guestMessagesRemaining, sendConversation } from "../lib/chatClient";
 import { chatMessages } from "../lib/chatMessages";
 import { topicDisplayLabel } from "../lib/messages";
 import { speakChinese, speechSupported } from "../lib/speech";
@@ -22,6 +22,35 @@ import {
   saveConversation,
 } from "../lib/conversation";
 import "../styles/conversation.css";
+
+type PinyinReader = typeof import("pinyin-pro").pinyin;
+
+function chineseWithPinyin(chinese: string, pinyin: PinyinReader) {
+  const characters = Array.from(chinese);
+  const readings = pinyin(chinese, { type: "array" });
+  return characters.map((character, index) =>
+    /\p{Script=Han}/u.test(character) ? (
+      <ruby key={index} className="chat-ruby">
+        {character}<rt lang="zh-Latn" aria-hidden="true">{readings[index]}</rt>
+      </ruby>
+    ) : (
+      <span key={index}>{character}</span>
+    ),
+  );
+}
+
+function naturalnessExplanation(
+  explanation: string,
+  level: "natural" | "mostly_natural" | "needs_work",
+  fallback: Record<"natural" | "mostly_natural" | "needs_work", string>,
+) {
+  const latinWords = explanation.match(/\p{Script=Latin}+/gu)?.length ?? 0;
+  const hanziCount = explanation.match(/\p{Script=Han}/gu)?.length ?? 0;
+  const latinCount = explanation.match(/\p{Script=Latin}/gu)?.length ?? 0;
+  return hanziCount > 0 && (latinWords < 2 || hanziCount > latinCount)
+    ? fallback[level]
+    : explanation;
+}
 
 interface Props {
   cards: Flashcard[];
@@ -45,16 +74,21 @@ export default function Conversation({
   onReviewCard,
 }: Props) {
   const m = chatMessages[locale];
+  const ownerKey = owner ?? "guest";
   const listenUnavailable = !speechSupported() ? m.speechUnavailable : muted ? m.speechMuted : undefined;
   const [session, setSession] = useState(() =>
-    readConversation(owner ?? "guest", locale),
+    readConversation(ownerKey, locale),
   );
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [storageFailed, setStorageFailed] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    owner ? null : guestMessagesRemaining(),
+  );
   const [confirmClear, setConfirmClear] = useState(false);
+  const [revealedPinyin, setRevealedPinyin] = useState<Set<number>>(new Set());
+  const [pinyinReader, setPinyinReader] = useState<PinyinReader | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
@@ -86,7 +120,7 @@ export default function Conversation({
 
   async function send(message: string) {
     const content = message.trim();
-    if (!owner || !content || sending.current) return;
+    if (!content || sending.current || (!owner && remaining === 0)) return;
     if (!navigator.onLine) {
       setError(m.offline);
       return;
@@ -112,7 +146,7 @@ export default function Conversation({
         targetCardIds: result.targetCardIds,
       };
       setSession(next);
-      setStorageFailed(!saveConversation(owner, locale, next));
+      setStorageFailed(!saveConversation(ownerKey, locale, next));
       setRemaining(result.remaining);
       setDraft("");
     } catch (cause) {
@@ -124,16 +158,22 @@ export default function Conversation({
         cause.name === "TimeoutError";
       const code =
         cause && typeof cause === "object" && "code" in cause ? cause.code : "";
+      if (cause && typeof cause === "object" && "remaining" in cause &&
+        typeof cause.remaining === "number" && Number.isSafeInteger(cause.remaining))
+        setRemaining(cause.remaining);
+      if (code === "chat/guest-exhausted") setRemaining(0);
       setError(
         !navigator.onLine
           ? m.offline
-          : timedOut || code === "chat/deadline-exceeded"
-            ? m.timeout
-            : code === "chat/resource-exhausted"
-              ? m.quota
-              : code === "chat/unauthenticated"
-                ? m.auth
-                : m.error,
+          : code === "chat/guest-exhausted"
+            ? m.guestExhausted
+            : timedOut || code === "chat/deadline-exceeded"
+              ? m.timeout
+              : code === "chat/resource-exhausted"
+                ? m.quota
+                : code === "chat/unauthenticated"
+                  ? m.auth
+                  : m.error,
       );
     } finally {
       sending.current = false;
@@ -159,10 +199,25 @@ export default function Conversation({
       targetCardIds: [],
     };
     setSession(empty);
-    if (owner) setStorageFailed(!saveConversation(owner, locale, empty));
+    setStorageFailed(!saveConversation(ownerKey, locale, empty));
     setDraft("");
     setError("");
     setConfirmClear(false);
+    setRevealedPinyin(new Set());
+  }
+
+  async function togglePinyin(index: number) {
+    if (!revealedPinyin.has(index) && !pinyinReader) {
+      const module = await import("pinyin-pro");
+      if (!mounted.current) return;
+      setPinyinReader(() => module.pinyin);
+    }
+    setRevealedPinyin((current) => {
+      const next = new Set(current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   }
 
   function cardButtons(ids: string[]) {
@@ -225,23 +280,12 @@ export default function Conversation({
       )}
       {!configured ? (
         <p className="chat-intro">{m.unavailable}</p>
-      ) : !owner ? (
-        <div className="chat-intro">
-          <p>{m.intro}</p>
-          <p>{m.signInNote}</p>
-          <button
-            className="button button-ink"
-            type="button"
-            onClick={onSignIn}
-          >
-            {m.signIn}
-          </button>
-        </div>
       ) : (
         <>
           {session.turns.length === 0 && (
             <div className="chat-intro">
               <p>{m.intro}</p>
+              {!owner && <p>{m.guestIntro}</p>}
               {!snapshot.length && <p>{m.emptyProgress}</p>}
               <label className="chat-topic">
                 {m.topic}
@@ -263,7 +307,7 @@ export default function Conversation({
               <button
                 className="button button-ink"
                 type="button"
-                disabled={busy}
+                disabled={busy || (!owner && remaining === 0)}
                 onClick={() => void send(m.startMessage)}
               >
                 {m.start}
@@ -296,7 +340,7 @@ export default function Conversation({
                       </span>
                       <span>{m.naturalness}: {m.naturalnessLevels[turn.reply.naturalness.level]}</span>
                     </summary>
-                    <p>{turn.reply.naturalness.explanation}</p>
+                    <p>{naturalnessExplanation(turn.reply.naturalness.explanation, turn.reply.naturalness.level, m.naturalnessFallback)}</p>
                     {turn.reply.naturalness.betterChinese && (
                       <div className="chat-better-sentence">
                         <strong>{m.betterSentence}</strong>
@@ -319,7 +363,9 @@ export default function Conversation({
                     </button>
                   </div>
                   <p className="chat-chinese" lang="zh-CN">
-                    {turn.reply.chinese}
+                    {revealedPinyin.has(index) && pinyinReader
+                      ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
+                      : turn.reply.chinese}
                   </p>
                   {turn.reply.feedback && !turn.reply.naturalness && (
                     <div className="chat-correction">
@@ -328,10 +374,14 @@ export default function Conversation({
                     </div>
                   )}
                   <div className="chat-aids">
-                    <details>
-                      <summary>{m.pinyin}</summary>
-                      <p lang="zh-Latn">{turn.reply.pinyin}</p>
-                    </details>
+                    <button
+                      type="button"
+                      className="chat-pinyin-toggle"
+                      aria-expanded={revealedPinyin.has(index)}
+                      onClick={() => void togglePinyin(index)}
+                    >
+                      {revealedPinyin.has(index) ? "▼" : "▶"} {m.pinyin}
+                    </button>
                     <details>
                       <summary>{m.meaning}</summary>
                       <p>{turn.reply.meaning}</p>
@@ -367,14 +417,14 @@ export default function Conversation({
                 value={draft}
                 maxLength={CHAT_MAX_MESSAGE}
                 rows={2}
-                disabled={busy}
+                disabled={busy || (!owner && remaining === 0)}
                 placeholder={m.placeholder}
                 onChange={(event) => setDraft(event.target.value)}
               />
               <button
                 className="button button-ink"
                 type="submit"
-                disabled={busy || !draft.trim()}
+                disabled={busy || !draft.trim() || (!owner && remaining === 0)}
               >
                 {m.send}
               </button>
@@ -382,8 +432,16 @@ export default function Conversation({
           )}
           {remaining !== null && (
             <p className="chat-allowance">
-              {remaining} {m.remaining}
+              {remaining} {owner ? m.remaining : m.guestRemaining}
             </p>
+          )}
+          {!owner && remaining === 0 && (
+            <div className="chat-intro">
+              <p>{m.guestExhausted}</p>
+              <button className="button button-ink" type="button" onClick={onSignIn}>
+                {m.signIn}
+              </button>
+            </div>
           )}
           {practiced.length > 0 && (
             <details className="chat-recap">

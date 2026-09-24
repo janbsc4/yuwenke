@@ -11,7 +11,7 @@ import {
 export class ChatError extends Error {
   constructor(
     public readonly code:
-      "invalid-argument" | "resource-exhausted" | "unavailable" | "deadline-exceeded",
+      "invalid-argument" | "resource-exhausted" | "guest-exhausted" | "unavailable" | "deadline-exceeded",
     message: string,
   ) {
     super(message);
@@ -117,6 +117,7 @@ If their answer is correct, feedback may be empty. Keep corrections brief, with 
 Assess only the learner's latest attempt to express something in Mandarin, including understandable pinyin or mixed-language attempts. Judge idiomatic phrasing, grammar, and fit with the conversation; a short correct reply can be fully natural. Do not penalize simplicity or invent errors.
 For a request to start, a help request, or a message with no Mandarin attempt, naturalness must be null.
 Otherwise naturalness is an object with level ("natural", "mostly_natural", or "needs_work"), explanation (1–2 brief sentences in ${language}), and betterChinese (a natural Chinese rewrite preserving the learner's intended meaning, or an empty string when no improvement is needed).
+Write the naturalness explanation and feedback in ${language}, even when the learner writes in Chinese. Never answer those fields entirely in Chinese. Chinese is only for the reply, betterChinese, and the Chinese line of the hint. A short quoted Chinese example inside a ${language} explanation is fine.
 Use "natural" for idiomatic answers with no meaningful issue, "mostly_natural" for clear answers with a minor phrasing issue, and "needs_work" for grammar or word choice that needs correction. Explain the specific issue and always supply betterChinese for the latter two levels. If meaning is ambiguous, acknowledge it and offer a likely interpretation rather than pretending certainty. For natural answers, briefly explain what works.
 Return only a JSON object with these keys:
 chinese: your Chinese reply, pinyin: tone-mark pinyin for that exact reply,

@@ -218,6 +218,16 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.chat-ruby {
+  ruby-position: under;
+  ruby-align: center;
+  white-space: nowrap;
+}
+.chat-ruby rt {
+  font-family: var(--font-ui);
+  font-size: 0.6em;
+  color: var(--jade);
+}
 .chat-correction {
   padding: 10px 14px;
   border-left: 3px solid var(--amber);
@@ -234,12 +244,19 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-.chat-aids details {
+.chat-aids details,
+.chat-pinyin-toggle {
   font-size: 0.85rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 10px;
   max-width: 100%;
+}
+.chat-pinyin-toggle {
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
 .chat-aids details[open] {
   flex-basis: 100%;

@@ -9,8 +9,11 @@ export const chatMessages = {
     anyTopic: "Let Léi choose",
     start: "Start a conversation",
     signIn: "Sign in to practice",
-    signInNote:
-      "Sign in to use your learning progress and daily conversation allowance.",
+    guestIntro:
+      "Try three messages for free. Sign in to keep practicing afterward.",
+    guestRemaining: "free messages left",
+    guestExhausted:
+      "Your three free messages are used. Sign in to continue practicing.",
     unavailable:
       "Conversation is not available yet. You can keep practicing with your flashcards.",
     privacy:
@@ -31,6 +34,11 @@ export const chatMessages = {
       natural: "Natural",
       mostly_natural: "Mostly natural",
       needs_work: "Needs work",
+    },
+    naturalnessFallback: {
+      natural: "Your answer sounds natural in this conversation.",
+      mostly_natural: "Your meaning is clear, but the suggested sentence sounds more natural.",
+      needs_work: "Your answer needs a wording or grammar change. Try the suggested sentence.",
     },
     betterSentence: "A more natural sentence",
     newChat: "New conversation",
@@ -65,8 +73,11 @@ export const chatMessages = {
     anyTopic: "Que elija Léi",
     start: "Empezar una conversación",
     signIn: "Inicia sesión para practicar",
-    signInNote:
-      "Inicia sesión para usar tu progreso y tu cupo diario de conversación.",
+    guestIntro:
+      "Prueba tres mensajes gratis. Inicia sesión para seguir practicando después.",
+    guestRemaining: "mensajes gratis disponibles",
+    guestExhausted:
+      "Ya has usado tus tres mensajes gratis. Inicia sesión para seguir practicando.",
     unavailable:
       "La conversación aún no está disponible. Puedes seguir practicando con tus tarjetas.",
     privacy:
@@ -87,6 +98,11 @@ export const chatMessages = {
       natural: "Natural",
       mostly_natural: "Casi natural",
       needs_work: "Por mejorar",
+    },
+    naturalnessFallback: {
+      natural: "Tu respuesta suena natural en esta conversación.",
+      mostly_natural: "Se entiende tu respuesta, pero la frase sugerida suena más natural.",
+      needs_work: "Tu respuesta necesita un cambio de vocabulario o gramática. Prueba la frase sugerida.",
     },
     betterSentence: "Una frase más natural",
     newChat: "Nueva conversación",
