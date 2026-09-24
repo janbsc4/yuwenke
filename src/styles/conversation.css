@@ -226,6 +226,7 @@
 .chat-ruby rt {
   font-family: var(--font-ui);
   font-size: 0.6em;
+  padding-top: 0.18em;
   color: var(--jade);
 }
 .chat-correction {
