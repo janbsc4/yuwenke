@@ -259,11 +259,33 @@
   font-family: inherit;
   cursor: pointer;
 }
+.chat-pinyin-toggle[aria-expanded="true"] {
+  background: var(--jade-soft);
+  border-color: var(--jade);
+  color: var(--jade);
+}
 .chat-aids details[open] {
   flex-basis: 100%;
 }
 .conversation summary {
   cursor: pointer;
+  list-style: none;
+}
+.conversation summary::-webkit-details-marker {
+  display: none;
+}
+.chat-disclosure-icon {
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.25em;
+  font-weight: 700;
+  text-align: center;
+}
+.chat-disclosure-icon::before {
+  content: "+";
+}
+.conversation details[open] > summary .chat-disclosure-icon::before {
+  content: "−";
 }
 .chat-aids p {
   white-space: pre-wrap;

@@ -77,7 +77,8 @@ it("starts a conversation, reveals assistance without more inference, and saves 
   expect(speakChinese).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: "Listen" }));
   expect(speakChinese).toHaveBeenCalledWith("你好吗？");
-  await userEvent.click(screen.getByRole("button", { name: /Pinyin/ }));
+  await userEvent.click(screen.getByRole("button", { name: "Show pinyin" }));
+  expect(await screen.findByRole("button", { name: "Hide pinyin" })).toHaveAttribute("aria-expanded", "true");
   const annotated = await screen.findByText("nǐ", { selector: "rt" });
   expect(annotated).toBeVisible();
   expect(annotated.closest("ruby")).toHaveTextContent("你nǐ");

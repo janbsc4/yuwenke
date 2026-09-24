@@ -335,6 +335,7 @@ export default function Conversation({
                 {turn.reply.naturalness && (
                   <details className="chat-naturalness" data-level={turn.reply.naturalness.level}>
                     <summary>
+                      <span className="chat-disclosure-icon" aria-hidden="true" />
                       <span className="chat-naturalness-meter" aria-hidden="true">
                         <span /><span /><span />
                       </span>
@@ -380,14 +381,14 @@ export default function Conversation({
                       aria-expanded={revealedPinyin.has(index)}
                       onClick={() => void togglePinyin(index)}
                     >
-                      {revealedPinyin.has(index) ? "▼" : "▶"} {m.pinyin}
+                      {revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
                     </button>
                     <details>
-                      <summary>{m.meaning}</summary>
+                      <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.meaning}</summary>
                       <p>{turn.reply.meaning}</p>
                     </details>
                     <details>
-                      <summary>{m.hint}</summary>
+                      <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.hint}</summary>
                       <p>{turn.reply.hint}</p>
                     </details>
                   </div>
@@ -446,6 +447,7 @@ export default function Conversation({
           {practiced.length > 0 && (
             <details className="chat-recap">
               <summary>
+                <span className="chat-disclosure-icon" aria-hidden="true" />
                 {m.recap} · {practiced.length}
               </summary>
               <p>{m.recapNote}</p>
