@@ -2,7 +2,7 @@
 
 The Converse tab uses each signed-in learner's current local progress, including changes waiting to sync. Learning words and words recognized but not yet produced become practice targets. Known words provide support, and concept cards provide grammar guidance. Unseen cards are not assumed known.
 
-Léi replies in short Chinese sentences, with expandable pinyin, a translation, a possible answer, and brief corrections in English or Spanish. The recap links practiced words back to their cards without changing their learning status. The header displays GLM-5.3-Flash and updates from the model selected by the backend.
+Léi replies in short Chinese sentences, with expandable pinyin, a translation, a possible answer, and brief corrections in English or Spanish. The recap links practiced words back to their cards without changing their learning status. The header displays MiMo-V2.6-Flash and updates from the model selected by the backend.
 
 Each new Mandarin attempt can receive a clickable naturalness indicator below the learner's message: Natural, Mostly natural, or Needs work. Expanding it shows Léi's explanation and a suggested sentence when improvement is needed. This assessment is generated with the normal reply, not an extra inference request. Start/help requests and older history without an assessment remain ungraded. These are AI suggestions, not proficiency scores. Reply audio uses the app's existing Chinese voice and mute settings.
 
@@ -63,7 +63,7 @@ Put the public Firebase configuration, `PUBLIC_CHAT_ENABLED=true`, and `PUBLIC_C
 
 Default limits are 30 attempts per user per UTC day, six per calendar minute, 300 globally per UTC day, and 3,000 globally per UTC month. Failed provider requests still consume an attempt because they may have incurred inference usage. There are no automatic inference retries. Multiple accounts share the global allowance.
 
-Requests have a 128 KiB body limit, bounded message history, and a server-selected vocabulary context. Provider output is limited to 1,800 tokens and a 45-second timeout. Invalid provider output and unavailable service leave the learner's draft intact. Guest and offline flashcard study remain available.
+Requests have a 128 KiB body limit, bounded message history, and a server-selected vocabulary context. Provider output is limited to 4,096 tokens and a 60-second timeout, with a 70-second browser timeout. GLM-5.3 models use low reasoning effort so their required thinking leaves room for the structured reply. Timeouts show a specific retry message. Invalid provider output and unavailable service leave the learner's draft intact. Guest and offline flashcard study remain available.
 
 Set `CHAT_ENABLED` to `"false"` in the Worker configuration and redeploy to stop inference, including requests from old browser bundles. `PUBLIC_CHAT_ENABLED=false` hides access in newly built clients but does not disable the backend.
 
@@ -71,6 +71,6 @@ These limits constrain requests, not money. OpenCode's subscription allowances s
 
 ## Implementation and verification
 
-`shared/chat.ts` defines the request and response contract. `worker/src/tutor.ts` selects vocabulary and calls GLM-5.3-Flash. `worker/src/auth.ts` verifies Firebase identities. `worker/src/index.ts` handles requests and reserves usage counters using `quota.ts`. `src/lib/chatClient.ts` sends the signed-in user's ID token to the Worker.
+`shared/chat.ts` defines the request and response contract. `worker/src/tutor.ts` selects vocabulary and calls MiMo-V2.6-Flash. `worker/src/auth.ts` verifies Firebase identities. `worker/src/index.ts` handles requests and reserves usage counters using `quota.ts`. `src/lib/chatClient.ts` sends the signed-in user's ID token to the Worker.
 
 Tests cover signed JWT validation, unauthorized requests, provider errors, vocabulary selection, account-separated history, model labels, and draft preservation. Miniflare runs the compiled Worker and SQLite Durable Object to test concurrent reservations against real local storage. Existing Firestore rules and progress-sync tests continue to protect learner data.

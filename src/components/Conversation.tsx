@@ -117,16 +117,23 @@ export default function Conversation({
       setDraft("");
     } catch (cause) {
       if (!mounted.current) return;
+      const timedOut =
+        cause !== null &&
+        typeof cause === "object" &&
+        "name" in cause &&
+        cause.name === "TimeoutError";
       const code =
         cause && typeof cause === "object" && "code" in cause ? cause.code : "";
       setError(
         !navigator.onLine
           ? m.offline
-          : code === "chat/resource-exhausted"
-            ? m.quota
-            : code === "chat/unauthenticated"
-              ? m.auth
-              : m.error,
+          : timedOut || code === "chat/deadline-exceeded"
+            ? m.timeout
+            : code === "chat/resource-exhausted"
+              ? m.quota
+              : code === "chat/unauthenticated"
+                ? m.auth
+                : m.error,
       );
     } finally {
       sending.current = false;

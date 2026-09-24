@@ -18,7 +18,7 @@ export async function sendConversation(request: ChatRequest) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(request),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(70000),
   });
   if (!response.ok)
     throw Object.assign(new Error("Conversation is unavailable."), {
@@ -27,7 +27,9 @@ export async function sendConversation(request: ChatRequest) {
           ? "chat/unauthenticated"
           : response.status === 429
             ? "chat/resource-exhausted"
-            : "chat/unavailable",
+            : response.status === 504
+              ? "chat/deadline-exceeded"
+              : "chat/unavailable",
     });
   return chatResponseSchema.parse(await response.json());
 }

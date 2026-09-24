@@ -1,6 +1,6 @@
 import worker, { type Env } from "../worker/src/index";
 import { verifyFirebaseToken } from "../worker/src/auth";
-import { generateTutorReply } from "../worker/src/tutor";
+import { ChatError, generateTutorReply } from "../worker/src/tutor";
 
 vi.mock("../worker/src/auth", () => ({ verifyFirebaseToken: vi.fn() }));
 vi.mock("../worker/src/tutor", async (original) => ({
@@ -13,7 +13,7 @@ const env = {
   ALLOWED_ORIGIN: "https://janbsc4.github.io",
   OPENCODE_GO_API_KEY: "private-test-key",
   CHAT_ENABLED: "true",
-  CHAT_MODEL: "glm-5.3-flash",
+  CHAT_MODEL: "mimo-v2.6-flash",
   CHAT_USER_DAILY_LIMIT: "30",
   CHAT_GLOBAL_DAILY_LIMIT: "300",
   CHAT_GLOBAL_MONTHLY_LIMIT: "3000",
@@ -27,7 +27,7 @@ const data = {
   messages: [{ role: "user", content: "Hello" }],
 };
 const reply = {
-  model: "glm-5.3-flash",
+  model: "mimo-v2.6-flash",
   targetCardIds: [],
   reply: {
     chinese: "你好",
@@ -83,7 +83,7 @@ it("reserves for the verified UID before inference and returns the selected mode
   expect(generateTutorReply).toHaveBeenCalledWith(
     data,
     expect.anything(),
-    expect.objectContaining({ model: "glm-5.3-flash" }),
+    expect.objectContaining({ model: "mimo-v2.6-flash" }),
   );
   expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
     env.ALLOWED_ORIGIN,
@@ -154,4 +154,10 @@ it("does not leak provider errors or refund a potentially billed request", async
   expect(response.status).toBe(503);
   expect(await response.text()).not.toContain(env.OPENCODE_GO_API_KEY);
   expect(reserve).toHaveBeenCalledTimes(1);
+});
+it("returns a distinct safe timeout response", async () => {
+  vi.mocked(generateTutorReply).mockRejectedValue(new ChatError("deadline-exceeded", "private details"));
+  const response = await worker.fetch(request(), env);
+  expect(response.status).toBe(504);
+  expect(await response.json()).toEqual({ error: { code: "deadline-exceeded" } });
 });

@@ -3,10 +3,10 @@ import { z } from "zod";
 export const CHAT_MAX_MESSAGE = 1500;
 export const CHAT_MAX_HISTORY = 24;
 export const CHAT_MAX_HISTORY_CHARS = 12000;
-export const DEFAULT_CHAT_MODEL = "glm-5.3-flash";
+export const DEFAULT_CHAT_MODEL = "mimo-v2.6-flash";
 
 export function chatModelLabel(model: string): string {
-  return model === DEFAULT_CHAT_MODEL ? "GLM-5.3-Flash" : model;
+  return model === DEFAULT_CHAT_MODEL ? "MiMo-V2.6-Flash" : model;
 }
 
 const cardId = z.string().regex(/^FC\d{3}$/);

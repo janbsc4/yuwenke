@@ -135,11 +135,21 @@ describe("conversation learning context", () => {
       "Correct genuine mistakes gently in Spanish",
     );
     expect(messages[0].content).toContain("untrusted lesson content");
+    expect(messages[0].content).toContain("a single JSON string, never an object or array");
+    expect(messages[0].content).toContain(JSON.stringify("我喝茶。\nWǒ hē chá.\nBebo té."));
     expect(messages.slice(1)).toEqual(request.messages);
   });
 });
 
 describe("inference responses", () => {
+  it("identifies provider timeouts without exposing private request details", async () => {
+    await expect(generateTutorReply(request, cards, {
+      apiKey: "test-secret", model: "glm-5.3-flash",
+      fetch: vi.fn().mockRejectedValue(new DOMException("private request details", "TimeoutError")),
+    })).rejects.toMatchObject({
+      code: "deadline-exceeded", message: "The inference provider took too long to reply.",
+    });
+  });
   it("validates and returns naturalness with the same inference response", async () => {
     const naturalness = {
       level: "needs_work",
@@ -200,7 +210,7 @@ describe("inference responses", () => {
     });
     expect(
       JSON.parse(fetchMock.mock.calls[0][1]?.body as string),
-    ).toMatchObject({ thinking: { type: "disabled" }, max_tokens: 1800 });
+    ).toMatchObject({ thinking: { type: "disabled" }, max_tokens: 4096 });
   });
 
   it("reports GLM-5.3-Flash as selected without trying to disable its required thinking", async () => {
@@ -222,9 +232,34 @@ describe("inference responses", () => {
       fetch: fetchMock,
     });
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
-    expect(body.model).toBe("glm-5.3-flash");
+    expect(body).toMatchObject({ model: "glm-5.3-flash", reasoning_effort: "low", max_tokens: 4096 });
     expect(body).not.toHaveProperty("thinking");
     expect(result.model).toBe("glm-5.3-flash");
+  });
+
+  it("uses MiMo-V2.6-Flash without GLM-specific inference settings", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: { content: JSON.stringify(reply) },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+      ),
+    );
+    const result = await generateTutorReply(request, cards, {
+      apiKey: "test-secret",
+      model: "mimo-v2.6-flash",
+      fetch: fetchMock,
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+    expect(body).toMatchObject({ model: "mimo-v2.6-flash", max_tokens: 4096 });
+    expect(body).not.toHaveProperty("thinking");
+    expect(body).not.toHaveProperty("reasoning_effort");
+    expect(result.model).toBe("mimo-v2.6-flash");
   });
 
   it.each([

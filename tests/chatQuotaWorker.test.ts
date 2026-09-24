@@ -49,7 +49,7 @@ beforeEach(() => {
         FIREBASE_PROJECT_ID: "local-test",
         ALLOWED_ORIGIN: "https://janbsc4.github.io",
         CHAT_ENABLED: "true",
-        CHAT_MODEL: "glm-5.3-flash",
+        CHAT_MODEL: "mimo-v2.6-flash",
         OPENCODE_GO_API_KEY: "test-key",
       },
       outboundService: async (request) => {
@@ -124,10 +124,10 @@ it("runs signed authentication, durable quota, and inference together in the Wor
   });
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({
-    model: "glm-5.3-flash",
+    model: "mimo-v2.6-flash",
     remaining: 5,
   });
   expect(provider).toHaveBeenCalledWith(
-    expect.objectContaining({ model: "glm-5.3-flash" }),
+    expect.objectContaining({ model: "mimo-v2.6-flash" }),
   );
 });

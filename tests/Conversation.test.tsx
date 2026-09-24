@@ -14,7 +14,7 @@ vi.mock("../src/lib/speech", () => ({
 }));
 const cards = loadFlashcards();
 const response: ChatResponse = {
-  model: "glm-5.3-flash",
+  model: "mimo-v2.6-flash",
   reply: {
     chinese: "你好吗？",
     pinyin: "Nǐ hǎo ma?",
@@ -52,7 +52,7 @@ it("lets a guest reach sign-in without making an inference request", async () =>
 
 it("starts a conversation, reveals assistance without more inference, and saves the reply", async () => {
   render(<Conversation {...props} />);
-  expect(screen.getByText("GLM-5.3-Flash")).toBeVisible();
+  expect(screen.getByText("MiMo-V2.6-Flash")).toBeVisible();
   await userEvent.click(
     screen.getByRole("button", { name: "Start a conversation" }),
   );
@@ -64,7 +64,7 @@ it("starts a conversation, reveals assistance without more inference, and saves 
   expect(screen.getByText("Nǐ hǎo ma?")).toBeVisible();
   expect(sendConversation).toHaveBeenCalledOnce();
   expect(readConversation("alice", "en").turns).toHaveLength(1);
-  expect(readConversation("alice", "en").model).toBe("glm-5.3-flash");
+  expect(readConversation("alice", "en").model).toBe("mimo-v2.6-flash");
   expect(screen.getByText("29 messages left today")).toBeVisible();
 });
 
@@ -78,7 +78,7 @@ it("displays the backend-selected model and preserves it with history", async ()
     screen.getByRole("button", { name: "Start a conversation" }),
   );
   expect(await screen.findByText("glm-5.2")).toBeVisible();
-  expect(screen.queryByText("GLM-5.3-Flash")).not.toBeInTheDocument();
+  expect(screen.queryByText("MiMo-V2.6-Flash")).not.toBeInTheDocument();
   view.unmount();
   render(<Conversation {...props} />);
   expect(screen.getByText("glm-5.2")).toBeVisible();
@@ -173,6 +173,23 @@ it("preserves the draft and prior turns after an exhausted quota", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("allowance");
   expect(screen.getByRole("textbox")).toHaveValue("你好");
   expect(readConversation("alice", "en").turns).toHaveLength(1);
+});
+
+it.each([
+  { code: "chat/deadline-exceeded" },
+  new DOMException("Timeout", "TimeoutError"),
+])("explains a timeout and keeps the learner's draft", async (cause) => {
+  saveConversation("alice", "en", {
+    version: 1, sessionId: crypto.randomUUID(), topic: "",
+    turns: [{ user: "Hello", reply: response.reply }], targetCardIds: [],
+  });
+  vi.mocked(sendConversation).mockRejectedValue(cause);
+  render(<Conversation {...props} />);
+  await userEvent.type(screen.getByRole("textbox"), "我喝咖啡！");
+  await userEvent.click(screen.getByRole("button", { name: "Send" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("took too long");
+  expect(screen.getByRole("textbox")).toHaveValue("我喝咖啡！");
+  expect(sendConversation).toHaveBeenCalledOnce();
 });
 
 it("does not write a late reply after switching accounts", async () => {

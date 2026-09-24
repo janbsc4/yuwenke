@@ -8,7 +8,7 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "yuwenke-a1df9",
     "ALLOWED_ORIGIN": "https://janbalanya.com",
-    "CHAT_MODEL": "glm-5.3-flash",
+    "CHAT_MODEL": "mimo-v2.6-flash",
     "CHAT_ENABLED": "true",
     "CHAT_USER_DAILY_LIMIT": "30",
     "CHAT_GLOBAL_DAILY_LIMIT": "300",

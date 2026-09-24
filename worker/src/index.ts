@@ -159,8 +159,11 @@ export default {
         { ...result, remaining: allowance.remaining },
         { headers },
       );
-    } catch {
+    } catch (cause) {
       // Provider errors and credentials never reach the browser or application logs.
+      if (cause instanceof ChatError && cause.code === "deadline-exceeded") {
+        return error(504, "deadline-exceeded");
+      }
       return error(503, "unavailable");
     }
   },

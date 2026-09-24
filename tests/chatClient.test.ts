@@ -15,7 +15,7 @@ const payload = {
   messages: [{ role: "user" as const, content: "Hello" }],
 };
 const result = {
-  model: "glm-5.3-flash",
+  model: "mimo-v2.6-flash",
   remaining: 29,
   targetCardIds: [],
   reply: {
@@ -66,6 +66,7 @@ it.each([
   [401, "unauthenticated"],
   [429, "resource-exhausted"],
   [503, "unavailable"],
+  [504, "deadline-exceeded"],
 ])(
   "maps HTTP %i without exposing backend error content",
   async (status, code) => {

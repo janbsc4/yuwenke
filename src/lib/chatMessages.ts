@@ -47,6 +47,8 @@ export const chatMessages = {
       "History could not be saved in this browser. You can still chat.",
     error:
       "Léi couldn’t reply. Your message is still here. Try sending it again.",
+    timeout:
+      "Léi took too long to reply. Your message is still here. Please try again in a moment.",
     quota:
       "Your allowance, or the shared conversation allowance, has been reached. Try again later.",
     offline: "You’re offline. Reconnect to continue this conversation.",
@@ -101,6 +103,8 @@ export const chatMessages = {
       "No se pudo guardar el historial en este navegador. Puedes seguir conversando.",
     error:
       "Léi no pudo responder. Tu mensaje sigue aquí. Intenta enviarlo de nuevo.",
+    timeout:
+      "Léi tardó demasiado en responder. Tu mensaje sigue aquí. Vuelve a intentarlo en un momento.",
     quota:
       "Se ha alcanzado tu cupo o el cupo compartido de conversación. Vuelve a intentarlo más tarde.",
     offline: "No tienes conexión. Conéctate para continuar esta conversación.",
