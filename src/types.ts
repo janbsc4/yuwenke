@@ -8,7 +8,7 @@ export type NeutralDirection =
   | typeof CONCEPT_DIRECTION;
 export type StudyDirection = NeutralDirection | (typeof LEGACY_DIRECTIONS)[number];
 export type ProgressStatus = "learning" | "known";
-export type StudyView = "study" | "discover" | "mastered" | "favorites";
+export type StudyView = "study" | "mastered" | "favorites";
 export type CardType = "palabra" | "frase" | "concepto";
 
 export interface LocalizedText {

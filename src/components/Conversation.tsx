@@ -14,6 +14,7 @@ import type { Flashcard, Locale, ProgressMap } from "../types";
 import { sendConversation } from "../lib/chatClient";
 import { chatMessages } from "../lib/chatMessages";
 import { topicDisplayLabel } from "../lib/messages";
+import { speakChinese, speechSupported } from "../lib/speech";
 import {
   conversationMessages,
   conversationProgress,
@@ -28,6 +29,7 @@ interface Props {
   locale: Locale;
   owner: string | null;
   configured: boolean;
+  muted?: boolean;
   onSignIn: () => void;
   onReviewCard: (id: string) => void;
 }
@@ -38,10 +40,12 @@ export default function Conversation({
   locale,
   owner,
   configured,
+  muted = false,
   onSignIn,
   onReviewCard,
 }: Props) {
   const m = chatMessages[locale];
+  const listenUnavailable = !speechSupported() ? m.speechUnavailable : muted ? m.speechMuted : undefined;
   const [session, setSession] = useState(() =>
     readConversation(owner ?? "guest", locale),
   );
@@ -277,12 +281,40 @@ export default function Conversation({
                 <p className="chat-user" dir="auto">
                   {turn.user}
                 </p>
+                {turn.reply.naturalness && (
+                  <details className="chat-naturalness" data-level={turn.reply.naturalness.level}>
+                    <summary>
+                      <span className="chat-naturalness-meter" aria-hidden="true">
+                        <span /><span /><span />
+                      </span>
+                      <span>{m.naturalness}: {m.naturalnessLevels[turn.reply.naturalness.level]}</span>
+                    </summary>
+                    <p>{turn.reply.naturalness.explanation}</p>
+                    {turn.reply.naturalness.betterChinese && (
+                      <div className="chat-better-sentence">
+                        <strong>{m.betterSentence}</strong>
+                        <p lang="zh-CN">{turn.reply.naturalness.betterChinese}</p>
+                      </div>
+                    )}
+                  </details>
+                )}
                 <article className="chat-reply" aria-label="Léi">
-                  <span className="chat-speaker">Léi</span>
+                  <div className="chat-reply-heading">
+                    <span className="chat-speaker">Léi</span>
+                    <button
+                      type="button"
+                      className="chat-listen"
+                      disabled={Boolean(listenUnavailable)}
+                      title={listenUnavailable}
+                      onClick={() => speakChinese(turn.reply.chinese)}
+                    >
+                      <span aria-hidden="true">🔊</span> {m.listen}
+                    </button>
+                  </div>
                   <p className="chat-chinese" lang="zh-CN">
                     {turn.reply.chinese}
                   </p>
-                  {turn.reply.feedback && (
+                  {turn.reply.feedback && !turn.reply.naturalness && (
                     <div className="chat-correction">
                       <strong>{m.correction}</strong>
                       <p>{turn.reply.feedback}</p>

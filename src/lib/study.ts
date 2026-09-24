@@ -147,9 +147,9 @@ export function unitBelongsToView(
 ): boolean {
   if (view === "favorites") return favorites[unit.cardId]?.favorite ?? false;
   const status = progress[unit.key]?.status;
-  if (view === "study") return status === "learning";
+  if (view === "study") return status !== "known";
   if (view === "mastered") return status === "known";
-  return status === undefined;
+  return false;
 }
 
 export function visibleUnits(
@@ -165,7 +165,7 @@ export function visibleUnits(
   return units.filter(
     (unit) =>
       unitBelongsToView(unit, view, progress, favorites) &&
-      (view !== "discover" ||
+      (view !== "study" || progress[unit.key]?.status !== undefined ||
         openPackIds.has(packIdByCardId[unit.cardId])) &&
       matchesFilters(unit.card, filters, locale),
   );
@@ -291,7 +291,7 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
   return result;
 }
 
-export function reshuffleDiscoverQueueAfterPackOpening<T>(
+export function reshuffleStudyQueueAfterPackOpening<T>(
   queue: readonly T[],
   currentIndex: number,
   additions: readonly T[],

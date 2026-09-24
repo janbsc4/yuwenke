@@ -5,8 +5,13 @@ import { sendConversation } from "../src/lib/chatClient";
 import { readConversation, saveConversation } from "../src/lib/conversation";
 import { loadFlashcards } from "../src/data/loadFlashcards";
 import type { ChatResponse } from "../shared/chat";
+import { speakChinese } from "../src/lib/speech";
 
 vi.mock("../src/lib/chatClient", () => ({ sendConversation: vi.fn() }));
+vi.mock("../src/lib/speech", () => ({
+  speakChinese: vi.fn(),
+  speechSupported: () => true,
+}));
 const cards = loadFlashcards();
 const response: ChatResponse = {
   model: "glm-5.3-flash",
@@ -52,6 +57,9 @@ it("starts a conversation, reveals assistance without more inference, and saves 
     screen.getByRole("button", { name: "Start a conversation" }),
   );
   expect(await screen.findByText("你好吗？")).toBeVisible();
+  expect(speakChinese).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", { name: "Listen" }));
+  expect(speakChinese).toHaveBeenCalledWith("你好吗？");
   await userEvent.click(screen.getByText("Pinyin", { selector: "summary" }));
   expect(screen.getByText("Nǐ hǎo ma?")).toBeVisible();
   expect(sendConversation).toHaveBeenCalledOnce();
@@ -74,6 +82,49 @@ it("displays the backend-selected model and preserves it with history", async ()
   view.unmount();
   render(<Conversation {...props} />);
   expect(screen.getByText("glm-5.2")).toBeVisible();
+});
+
+it.each([
+  ["en", "mostly_natural", "Naturalness: Mostly natural", "Put 喜欢 before 喝."],
+  ["es", "needs_work", "Naturalidad: Por mejorar", "Coloca 喜欢 antes de 喝."],
+  ["en", "natural", "Naturalness: Natural", "Your word order sounds natural."],
+] as const)("expands %s %s feedback beneath the learner's answer without inference", async (locale, level, label, explanation) => {
+  const betterChinese = level === "natural" ? "" : "我喜欢喝茶。";
+  saveConversation("alice", locale, {
+    version: 1,
+    sessionId: crypto.randomUUID(),
+    topic: "",
+    turns: [{
+      user: level === "natural" ? "我喜欢喝茶。" : "我喝喜欢茶。",
+      reply: {
+        ...response.reply,
+        naturalness: { level, explanation, betterChinese },
+      },
+    }],
+    targetCardIds: [],
+  });
+  render(<Conversation {...props} locale={locale} />);
+  const summary = screen.getByText(label).closest("summary")!;
+  expect(summary.closest(".chat-turn")?.firstElementChild).toHaveClass("chat-user");
+  expect(screen.getByText(explanation)).not.toBeVisible();
+  await userEvent.click(summary);
+  expect(screen.getByText(explanation)).toBeVisible();
+  if (betterChinese) expect(screen.getByText(betterChinese)).toBeVisible();
+  else expect(screen.queryByText("A more natural sentence")).not.toBeInTheDocument();
+  expect(sendConversation).not.toHaveBeenCalled();
+});
+
+it.each([undefined, null])("keeps history without an assessment ungraded (%s)", (naturalness) => {
+  saveConversation("alice", "en", {
+    version: 1,
+    sessionId: crypto.randomUUID(),
+    topic: "",
+    turns: [{ user: "Hello", reply: { ...response.reply, naturalness } }],
+    targetCardIds: [],
+  });
+  render(<Conversation {...props} />);
+  expect(screen.getByText("Hello")).toBeVisible();
+  expect(screen.queryByText(/^Naturalness:/)).not.toBeInTheDocument();
 });
 
 it("uses one provider session for a conversation and a new one after clearing", async () => {

@@ -79,7 +79,6 @@ export interface Messages {
   topics: Record<string, string>;
   nav: {
     goToStudy: string;
-    goToDiscover: string;
   };
   guestNote: {
     body: string;
@@ -157,8 +156,7 @@ export interface Messages {
     filteredTitle: string;
     studyTitle: string;
     studyBody: string;
-    discoverTitle: string;
-    discoverViewMastered: string;
+    viewMastered: string;
     favoritesTitle: string;
     favoritesBody: string;
     masteredTitle: string;
@@ -168,16 +166,14 @@ export interface Messages {
     title: (view: StudyView) => string;
     studyPrimary: (count: number) => string;
     studySecondary: (count: number) => string;
-    discoverPrimary: (count: number) => string;
-    discoverSecondary: (count: number) => string;
-    discoverSkipped: (count: number) => string;
+    skipped: (count: number) => string;
     favoritesPracticed: (count: number) => string;
     masteredPrimary: (count: number) => string;
     masteredSecondary: (count: number) => string;
-    discoverRemaining: (count: number) => string;
+    studyRemaining: (count: number) => string;
     suggestionEyebrow: string;
     openPack: (title: string) => string;
-    restart: (view: StudyView, discoverRemaining: number) => string;
+    restart: (view: StudyView) => string;
   };
   help: {
     trigger: string;
@@ -195,7 +191,7 @@ export interface Messages {
     closeAria: string;
     intro: string;
     openedNotice: (title: string) => string;
-    goToDiscover: string;
+    goToStudy: string;
     unopenedTitle: string;
     openedTitle: string;
     unopenedStatus: string;
@@ -267,7 +263,6 @@ const es: Messages = {
   },
   views: {
     study: "Estudiar",
-    discover: "Descubrir",
     mastered: "Dominadas",
     favorites: "Favoritas",
   },
@@ -306,7 +301,6 @@ const es: Messages = {
   },
   nav: {
     goToStudy: "Ir a Estudiar",
-    goToDiscover: "Ir a Descubrir",
   },
   guestNote: {
     body:
@@ -405,10 +399,9 @@ const es: Messages = {
   },
   empty: {
     filteredTitle: "No hay cartas que coincidan con estos filtros.",
-    studyTitle: "Aún no tienes cartas en aprendizaje.",
-    studyBody: "Clasifica algunas cartas para empezar a practicar.",
-    discoverTitle: "Ya has clasificado todas las cartas.",
-    discoverViewMastered: "Ver dominadas",
+    studyTitle: "No quedan cartas por estudiar en tus packs abiertos.",
+    studyBody: "Abre otro pack o repasa tus cartas dominadas.",
+    viewMastered: "Ver dominadas",
     favoritesTitle: "Aún no tienes cartas favoritas.",
     favoritesBody: "Usa la estrella de cualquier carta para añadirla a esta cola.",
     masteredTitle: "Aún no has marcado ninguna carta como dominada.",
@@ -418,53 +411,40 @@ const es: Messages = {
     title: (view) =>
       view === "study"
         ? "Sesión completada"
-        : view === "discover"
-          ? "Selección completada"
-          : view === "favorites"
-            ? "Repaso de favoritas completado"
-            : "Revisión completada",
+        : view === "favorites"
+          ? "Repaso de favoritas completado"
+          : "Revisión completada",
     studyPrimary: (count) =>
       count === 1 ? "sigue en aprendizaje" : "siguen en aprendizaje",
     studySecondary: (count) =>
       count === 1 ? "pasó a Dominadas" : "pasaron a Dominadas",
-    discoverPrimary: (count) =>
-      count === 1 ? "añadida a aprendizaje" : "añadidas a aprendizaje",
-    discoverSecondary: (count) =>
-      count === 1 ? "marcada como dominada" : "marcadas como dominadas",
-    discoverSkipped: (count) => (count === 1 ? "saltada" : "saltadas"),
+    skipped: (count) => (count === 1 ? "saltada" : "saltadas"),
     favoritesPracticed: (count) =>
       count === 1 ? "carta favorita practicada" : "cartas favoritas practicadas",
     masteredPrimary: (count) =>
       count === 1 ? "sigue dominada" : "siguen dominadas",
     masteredSecondary: (count) =>
       count === 1 ? "volvió a aprendizaje" : "volvieron a aprendizaje",
-    discoverRemaining: (count) =>
-      plural(count, "carta sigue sin clasificar", "cartas siguen sin clasificar"),
+    studyRemaining: (count) =>
+      plural(count, "carta disponible para seguir estudiando", "cartas disponibles para seguir estudiando"),
     suggestionEyebrow: "Siguiente sugerencia",
     openPack: (title) => `Abrir «${title}»`,
-    restart: (view, discoverRemaining) =>
+    restart: (view) =>
       view === "study"
         ? "Nueva sesión"
-        : view === "discover"
-          ? `Volver a las que saltaste (${discoverRemaining})`
-          : view === "favorites"
-            ? "Repasar de nuevo"
-            : "Revisar de nuevo",
+        : view === "favorites"
+          ? "Repasar de nuevo"
+          : "Revisar de nuevo",
   },
   help: {
     trigger: "¿Cómo funciona?",
     title: "Cómo funciona Yuwenke",
     closeAria: "Cerrar explicación",
     steps: {
-      discover: {
-        title: "Descubrir",
-        body:
-          "Mira cartas nuevas y decide si quieres añadirlas a aprendizaje, marcarlas como dominadas o saltarlas por ahora.",
-      },
       study: {
         title: "Estudiar",
         body:
-          "Practica lo que estás aprendiendo. Después de ver la respuesta, mantenlo en estudio o pásalo a Dominadas.",
+          "Practica cartas nuevas de tus packs abiertos junto con las que estás aprendiendo. Revela la respuesta, sigue aprendiendo, márcala como dominada o sáltala por ahora.",
       },
       mastered: {
         title: "Dominadas",
@@ -479,7 +459,7 @@ const es: Messages = {
       packs: {
         title: "Packs",
         body:
-          "Abre cualquier colección cuando quieras para añadir material nuevo a Descubrir. Los packs abiertos permanecen disponibles.",
+          "Abre cualquier colección cuando quieras para añadir material nuevo a Estudiar. Los packs abiertos permanecen disponibles.",
       },
     },
     detailsFlow:
@@ -498,9 +478,9 @@ const es: Messages = {
     panelTitle: "Packs de cartas",
     closeAria: "Cerrar packs",
     intro:
-      "Elige cualquier pack para añadir sus cartas a Descubrir. Una vez abierto, permanecerá en tu colección.",
+      "Elige cualquier pack para añadir sus cartas a Estudiar. Una vez abierto, permanecerá en tu colección.",
     openedNotice: (title) => `«${title}» ya está abierto.`,
-    goToDiscover: "Ir a Descubrir",
+    goToStudy: "Ir a Estudiar",
     unopenedTitle: "Por abrir",
     openedTitle: "Abiertos",
     unopenedStatus: "Sin abrir",
@@ -515,7 +495,7 @@ const es: Messages = {
     confirmEyebrowOpening: "Abriendo pack",
     confirmTitle: (title) => `Abrir ${title}`,
     confirmBody: (count) =>
-      `Sus ${plural(count, "carta")} nuevas estarán disponibles en Descubrir. Este pack no se podrá cerrar por separado.`,
+      `Sus ${plural(count, "carta")} nuevas estarán disponibles en Estudiar. Este pack no se podrá cerrar por separado.`,
     confirmBusy: (title) => `Abriendo ${title}…`,
     confirmOpen: (title) => `Abrir «${title}»`,
     opening: "Abriendo…",
@@ -596,7 +576,6 @@ const en: Messages = {
   },
   views: {
     study: "Study",
-    discover: "Discover",
     mastered: "Mastered",
     favorites: "Favorites",
   },
@@ -635,7 +614,6 @@ const en: Messages = {
   },
   nav: {
     goToStudy: "Go to Study",
-    goToDiscover: "Go to Discover",
   },
   guestNote: {
     body:
@@ -734,10 +712,9 @@ const en: Messages = {
   },
   empty: {
     filteredTitle: "No cards match these filters.",
-    studyTitle: "No cards in learning yet.",
-    studyBody: "Classify some cards to start practicing.",
-    discoverTitle: "You've classified every card.",
-    discoverViewMastered: "View mastered",
+    studyTitle: "No cards left to study in your open packs.",
+    studyBody: "Open another pack or review your mastered cards.",
+    viewMastered: "View mastered",
     favoritesTitle: "No favorite cards yet.",
     favoritesBody: "Use the star on any card to add it to this queue.",
     masteredTitle: "You haven't marked any card as mastered yet.",
@@ -747,47 +724,36 @@ const en: Messages = {
     title: (view) =>
       view === "study"
         ? "Study session complete"
-        : view === "discover"
-          ? "Discover session complete"
-          : view === "favorites"
-            ? "Favorites review complete"
-            : "Review complete",
+        : view === "favorites"
+          ? "Favorites review complete"
+          : "Review complete",
     studyPrimary: () => "kept in learning",
     studySecondary: () => "moved to Mastered",
-    discoverPrimary: () => "added to learning",
-    discoverSecondary: () => "marked as mastered",
-    discoverSkipped: () => "skipped",
+    skipped: () => "skipped",
     favoritesPracticed: (count) =>
       count === 1 ? "favorite card practiced" : "favorite cards practiced",
     masteredPrimary: () => "stayed mastered",
     masteredSecondary: () => "returned to learning",
-    discoverRemaining: (count) =>
-      plural(count, "card remains unclassified", "cards remain unclassified"),
+    studyRemaining: (count) =>
+      plural(count, "card available to keep studying", "cards available to keep studying"),
     suggestionEyebrow: "Next suggestion",
     openPack: (title) => `Open “${title}”`,
-    restart: (view, discoverRemaining) =>
+    restart: (view) =>
       view === "study"
         ? "New session"
-        : view === "discover"
-          ? `Back to the cards you skipped (${discoverRemaining})`
-          : view === "favorites"
-            ? "Practice again"
-            : "Review again",
+        : view === "favorites"
+          ? "Practice again"
+          : "Review again",
   },
   help: {
     trigger: "How does it work?",
     title: "How Yuwenke works",
     closeAria: "Close explanation",
     steps: {
-      discover: {
-        title: "Discover",
-        body:
-          "Look at new cards and decide whether to add them to learning, mark them as mastered, or skip them for now.",
-      },
       study: {
         title: "Study",
         body:
-          "Practice what you're learning. After seeing the answer, keep it in study or move it to Mastered.",
+          "Practice new cards from your open packs alongside cards you are learning. Reveal the answer, keep learning, mark it as mastered, or skip it for now.",
       },
       mastered: {
         title: "Mastered",
@@ -802,7 +768,7 @@ const en: Messages = {
       packs: {
         title: "Packs",
         body:
-          "Open any collection whenever you want to add new material to Discover. Opened packs stay available.",
+          "Open any collection whenever you want to add new material to Study. Opened packs stay available.",
       },
     },
     detailsFlow:
@@ -821,9 +787,9 @@ const en: Messages = {
     panelTitle: "Card packs",
     closeAria: "Close packs",
     intro:
-      "Choose any pack to add its cards to Discover. Once opened, it stays in your collection.",
+      "Choose any pack to add its cards to Study. Once opened, it stays in your collection.",
     openedNotice: (title) => `“${title}” is now open.`,
-    goToDiscover: "Go to Discover",
+    goToStudy: "Go to Study",
     unopenedTitle: "To open",
     openedTitle: "Open",
     unopenedStatus: "Not opened",
@@ -838,7 +804,7 @@ const en: Messages = {
     confirmEyebrowOpening: "Opening pack",
     confirmTitle: (title) => `Open ${title}`,
     confirmBody: (count) =>
-      `Its ${plural(count, "new card", "new cards")} will be available in Discover. This pack can't be closed separately.`,
+      `Its ${plural(count, "new card", "new cards")} will be available in Study. This pack can't be closed separately.`,
     confirmBusy: (title) => `Opening ${title}…`,
     confirmOpen: (title) => `Open “${title}”`,
     opening: "Opening…",

@@ -26,7 +26,7 @@ import {
   matchesFilters,
   packOpeningThresholdReached,
   progressForStudyUnits,
-  reshuffleDiscoverQueueAfterPackOpening,
+  reshuffleStudyQueueAfterPackOpening,
   shuffle,
   unitBelongsToView,
   visibleUnits,
@@ -115,7 +115,6 @@ function primaryDecisionLabel(
   status: ProgressStatus | undefined,
 ): string {
   if (view === "study") return m.decisions.keepLearning;
-  if (view === "discover") return m.decisions.addToLearning;
   if (view === "mastered" || status === "known") return m.decisions.staysMastered;
   return status === "learning" ? m.decisions.keepLearning : m.decisions.addToLearning;
 }
@@ -178,7 +177,7 @@ export default function FlashcardApp({
   const openPackIdSet = useMemo(() => new Set(openPackIds), [openPackIds]);
 
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeView, setActiveView] = useState<StudyView>("discover");
+  const [activeView, setActiveView] = useState<StudyView>("study");
   const [initializedOwner, setInitializedOwner] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -196,7 +195,7 @@ export default function FlashcardApp({
   const [packTriggerOpening, setPackTriggerOpening] = useState(false);
   const [packToConfirm, setPackToConfirm] = useState<CardPack | null>(null);
   const [packOpening, setPackOpening] = useState(false);
-  const [openedOutsideDiscover, setOpenedOutsideDiscover] = useState<CardPack | null>(null);
+  const [openedOutsideStudy, setOpenedOutsideStudy] = useState<CardPack | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [queue, setQueue] = useState<StudyUnit[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
@@ -260,13 +259,7 @@ export default function FlashcardApp({
   const counts = useMemo(() => {
     const filtered = units.filter((unit) => matchesFilters(unit.card, filters, locale));
     return {
-      study: filtered.filter((unit) =>
-        unitBelongsToView(unit, "study", studyProgress),
-      ).length,
-      discover: filtered.filter((unit) =>
-        unitBelongsToView(unit, "discover", studyProgress) &&
-        openPackIdSet.has(packIdByCardId[unit.cardId]),
-      ).length,
+      study: visibleUnits(units, "study", studyProgress, filters, favorites, openPackIdSet, packIdByCardId, locale).length,
       mastered: filtered.filter((unit) =>
         unitBelongsToView(unit, "mastered", studyProgress),
       ).length,
@@ -331,17 +324,11 @@ export default function FlashcardApp({
 
   useEffect(() => {
     if (!ready || viewInitialized) return;
-    const stored = readPreference("yuwenke:last-view:v1") as StudyView | null;
-    const candidate = stored && counts[stored] > 0 ? stored : null;
-    const initial =
-      counts.study > 0
-        ? "study"
-        : candidate ??
-          (counts.discover > 0
-            ? "discover"
-            : counts.favorites > 0
-              ? "favorites"
-              : "mastered");
+    const stored = readPreference("yuwenke:last-view:v1");
+    const savedView = stored === "discover" ? "study" : stored;
+    const candidate = savedView && Object.hasOwn(counts, savedView) && counts[savedView as StudyView] > 0
+      ? savedView as StudyView : null;
+    const initial = candidate ?? "study";
     /* eslint-disable-next-line react-hooks/set-state-in-effect -- one-time
        hydration of the persisted view after the dataset becomes ready. */
     setActiveView(initial);
@@ -386,7 +373,7 @@ export default function FlashcardApp({
     const newlyOpened = new Set(openPackIds.filter((packId) => !previous.has(packId)));
     if (
       newlyOpened.size === 0 ||
-      activeView !== "discover" ||
+      activeView !== "study" ||
       !queueReady
     ) {
       return;
@@ -398,7 +385,7 @@ export default function FlashcardApp({
         (unit) =>
           newlyOpened.has(packIdByCardId[unit.cardId]) &&
           !existingKeys.has(unit.key) &&
-          unitBelongsToView(unit, "discover", studyProgress) &&
+          unitBelongsToView(unit, "study", studyProgress) &&
           matchesFilters(unit.card, filters, locale),
       );
       if (additions.length === 0) return existingQueue;
@@ -407,7 +394,7 @@ export default function FlashcardApp({
         setCompleted(false);
         setRevealed(false);
       }
-      return reshuffleDiscoverQueueAfterPackOpening(
+      return reshuffleStudyQueueAfterPackOpening(
         existingQueue,
         queueIndex,
         additions,
@@ -613,7 +600,7 @@ export default function FlashcardApp({
   }, [activeView, advance, current, currentStatus, revealed, setStatus]);
 
   const skip = useCallback(() => {
-    if (!current || activeView !== "discover") return;
+    if (!current || activeView !== "study") return;
     setTally((value) => ({ ...value, skipped: value.skipped + 1 }));
     advance();
   }, [activeView, advance, current]);
@@ -659,7 +646,7 @@ export default function FlashcardApp({
         choosePrimary();
       } else if (event.key === "2" && revealed) {
         chooseSecondary();
-      } else if (event.key === "3" && activeView === "discover") {
+      } else if (event.key === "3" && activeView === "study") {
         skip();
       }
     };
@@ -724,7 +711,7 @@ export default function FlashcardApp({
 
   const requestPacksFromTrigger = () => {
     if (packTriggerOpening) return;
-    setOpenedOutsideDiscover(null);
+    setOpenedOutsideStudy(null);
     if (reducedMotionRequested()) {
       setPacksOpen(true);
       return;
@@ -745,8 +732,8 @@ export default function FlashcardApp({
     if (!packOpening || !packToConfirm) return;
     const timeout = window.setTimeout(() => {
       openPack(packToConfirm.id);
-      if (activeView !== "discover") {
-        setOpenedOutsideDiscover(packToConfirm);
+      if (activeView !== "study") {
+        setOpenedOutsideStudy(packToConfirm);
         setPacksOpen(true);
       }
       setPackOpening(false);
@@ -937,6 +924,7 @@ export default function FlashcardApp({
           progress={studyProgress}
           locale={locale}
           owner={user?.uid ?? null}
+          muted={speechMuted}
           configured={firebaseConfigured && import.meta.env.PUBLIC_CHAT_ENABLED === "true" && Boolean(import.meta.env.PUBLIC_CHAT_API_URL)}
           onSignIn={() => setLoginOpen(true)}
           onReviewCard={(id) => {
@@ -1107,7 +1095,7 @@ export default function FlashcardApp({
                     </button>
                   </div>
                 )}
-                {activeView === "discover" ? (
+                {activeView === "study" ? (
                   <button type="button" className="skip-button" onClick={skip}>
                     {m.session.skip} <kbd>3</kbd>
                   </button>
@@ -1120,10 +1108,9 @@ export default function FlashcardApp({
               tally={tally}
               onRestart={startNewSession}
               onChangeView={changeView}
-              learningCount={counts.study}
-              discoverRemaining={counts.discover}
+              studyRemaining={counts.study}
               suggestedPack={
-                activeView === "discover" && suggestionEligible
+                activeView === "study" && suggestionEligible
                   ? suggestedPack
                   : null
               }
@@ -1141,7 +1128,6 @@ export default function FlashcardApp({
             <EmptyState
               view={activeView}
               filtered={hasFilters}
-              learningCount={counts.study}
               onClear={resetFilters}
               onChangeView={changeView}
               packsOpen={packsOpen}
@@ -1161,7 +1147,7 @@ export default function FlashcardApp({
         panelOpen={packsOpen}
         packToConfirm={packToConfirm}
         packOpening={packOpening}
-        openedOutsideDiscover={openedOutsideDiscover}
+        openedOutsideStudy={openedOutsideStudy}
         resetOpen={resetConfirmOpen}
         resetting={resetting}
         authenticated={user !== null}
@@ -1174,9 +1160,9 @@ export default function FlashcardApp({
           if (!packOpening) setPackToConfirm(null);
         }}
         onConfirmOpen={confirmOpenPack}
-        onGoToDiscover={() => {
+        onGoToStudy={() => {
           setPacksOpen(false);
-          changeView("discover");
+          changeView("study");
         }}
         onRequestReset={() => {
           setPacksOpen(false);
@@ -1400,7 +1386,6 @@ export default function FlashcardApp({
 interface EmptyStateProps {
   view: StudyView;
   filtered: boolean;
-  learningCount: number;
   onClear: () => void;
   onChangeView: (view: StudyView) => void;
   packsOpen: boolean;
@@ -1434,7 +1419,6 @@ function PacksButton({ open, opening, onClick, m }: PacksButtonProps) {
 function EmptyState({
   view,
   filtered,
-  learningCount,
   onClear,
   onChangeView,
   packsOpen,
@@ -1454,23 +1438,11 @@ function EmptyState({
   if (view === "study") {
     return (
       <div className="empty-state">
-        <span aria-hidden="true">学</span>
+        <span aria-hidden="true">完</span>
         <h2>{m.empty.studyTitle}</h2>
         <p>{m.empty.studyBody}</p>
-        <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
-      </div>
-    );
-  }
-  if (view === "discover") {
-    return (
-      <div className="empty-state">
-        <span aria-hidden="true">完</span>
-        <h2>{m.empty.discoverTitle}</h2>
         <div className="empty-actions">
-          {learningCount > 0 ? (
-            <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>{m.nav.goToStudy}</button>
-          ) : null}
-          <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>{m.empty.discoverViewMastered}</button>
+          <button type="button" className="button button-secondary" onClick={() => onChangeView("mastered")}>{m.empty.viewMastered}</button>
           <PacksButton open={packsOpen} opening={packsOpening} onClick={onOpenPacks} m={m} />
         </div>
       </div>
@@ -1485,9 +1457,9 @@ function EmptyState({
         <button
           type="button"
           className="button button-primary"
-          onClick={() => onChangeView("discover")}
+          onClick={() => onChangeView("study")}
         >
-          {m.nav.goToDiscover}
+          {m.nav.goToStudy}
         </button>
       </div>
     );
@@ -1496,7 +1468,7 @@ function EmptyState({
     <div className="empty-state">
       <span aria-hidden="true">熟</span>
       <h2>{m.empty.masteredTitle}</h2>
-      <button type="button" className="button button-primary" onClick={() => onChangeView("discover")}>{m.nav.goToDiscover}</button>
+      <button type="button" className="button button-primary" onClick={() => onChangeView("study")}>{m.nav.goToStudy}</button>
     </div>
   );
 }
@@ -1506,8 +1478,7 @@ interface SessionSummaryProps {
   tally: SessionTally;
   onRestart: () => void;
   onChangeView: (view: StudyView) => void;
-  learningCount: number;
-  discoverRemaining: number;
+  studyRemaining: number;
   suggestedPack: CardPack | null;
   suggestedPackUnitCount: number;
   onSuggestPack: (pack: CardPack) => void;
@@ -1523,8 +1494,7 @@ function SessionSummary({
   tally,
   onRestart,
   onChangeView,
-  learningCount,
-  discoverRemaining,
+  studyRemaining,
   suggestedPack,
   suggestedPackUnitCount,
   onSuggestPack,
@@ -1534,18 +1504,8 @@ function SessionSummary({
   m,
   locale,
 }: SessionSummaryProps) {
-  const secondaryView: StudyView =
-    view === "study"
-      ? "discover"
-      : view === "discover"
-        ? "study"
-        : learningCount > 0
-          ? "study"
-          : "discover";
-  const secondaryLabel =
-    secondaryView === "study"
-      ? m.nav.goToStudy
-      : m.nav.goToDiscover;
+  const secondaryView: StudyView = view === "study" ? "mastered" : "study";
+  const secondaryLabel = view === "study" ? m.empty.viewMastered : m.nav.goToStudy;
 
   return (
     <div className="summary-card">
@@ -1557,12 +1517,7 @@ function SessionSummary({
           <>
             <p><strong>{tally.primary}</strong><span>{m.summary.studyPrimary(tally.primary)}</span></p>
             <p><strong>{tally.secondary}</strong><span>{m.summary.studySecondary(tally.secondary)}</span></p>
-          </>
-        ) : view === "discover" ? (
-          <>
-            <p><strong>{tally.primary}</strong><span>{m.summary.discoverPrimary(tally.primary)}</span></p>
-            <p><strong>{tally.secondary}</strong><span>{m.summary.discoverSecondary(tally.secondary)}</span></p>
-            <p><strong>{tally.skipped}</strong><span>{m.summary.discoverSkipped(tally.skipped)}</span></p>
+            <p><strong>{tally.skipped}</strong><span>{m.summary.skipped(tally.skipped)}</span></p>
           </>
         ) : view === "favorites" ? (
           <p>
@@ -1576,12 +1531,12 @@ function SessionSummary({
           </>
         )}
       </div>
-      {view === "discover" && discoverRemaining > 0 ? (
+      {view === "study" && studyRemaining > 0 ? (
         <p className="summary-remaining">
-          {m.summary.discoverRemaining(discoverRemaining)}.
+          {m.summary.studyRemaining(studyRemaining)}.
         </p>
       ) : null}
-      {view === "discover" && suggestedPack ? (
+      {view === "study" && suggestedPack ? (
         <article className="pack-suggestion">
           <CardPackBooster
             pack={suggestedPack}
@@ -1608,9 +1563,9 @@ function SessionSummary({
         </article>
       ) : null}
       <div className="summary-actions">
-        {view !== "discover" || discoverRemaining > 0 ? (
+        {view !== "study" || studyRemaining > 0 ? (
           <button type="button" className="button button-primary" onClick={onRestart}>
-            {m.summary.restart(view, discoverRemaining)}
+            {m.summary.restart(view)}
           </button>
         ) : null}
         <button

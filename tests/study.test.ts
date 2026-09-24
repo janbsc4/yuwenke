@@ -14,7 +14,7 @@ import {
   entriesAtResetBoundary,
   entriesWithResetBoundary,
   progressForStudyUnits,
-  reshuffleDiscoverQueueAfterPackOpening,
+  reshuffleStudyQueueAfterPackOpening,
   shuffle,
   unitBelongsToView,
   unitKey,
@@ -221,8 +221,8 @@ describe("study domain", () => {
     expect(new Set(result)).toEqual(new Set([1, 2, 3, 4]));
   });
 
-  it("reshuffles the remaining Discover queue with units from an opened pack", () => {
-    const result = reshuffleDiscoverQueueAfterPackOpening(
+  it("reshuffles the remaining Study queue with units from an opened pack", () => {
+    const result = reshuffleStudyQueueAfterPackOpening(
       ["handled", "current", "old-1", "old-2"],
       1,
       ["new-1", "new-2"],
@@ -246,10 +246,10 @@ describe("study domain", () => {
     const units = createStudyUnits(cards.slice(0, 1));
     const progress: ProgressMap = { [units[0].key]: entry(1) };
     expect(unitBelongsToView(units[0], "study", progress)).toBe(true);
-    expect(unitBelongsToView(units[1], "discover", progress)).toBe(true);
+    expect(unitBelongsToView(units[1], "study", progress)).toBe(true);
   });
 
-  it("gates only unseen Discover units by open pack membership", () => {
+  it("gates only unseen Study units by open pack membership", () => {
     const units = createStudyUnits(cards.slice(0, 2));
     const progress: ProgressMap = {
       [units[2].key]: {
@@ -263,7 +263,7 @@ describe("study domain", () => {
     expect(
       visibleUnits(
         units,
-        "discover",
+        "study",
         progress,
         { query: "", topic: "all", type: "all" },
         {},
@@ -271,7 +271,7 @@ describe("study domain", () => {
         packIdByCardId,
         "es",
       ).map((unit) => unit.cardId),
-    ).toEqual(["FC001", "FC001"]);
+    ).toEqual(["FC001", "FC001", "FC002"]);
     expect(unitBelongsToView(units[2], "study", progress)).toBe(true);
   });
 

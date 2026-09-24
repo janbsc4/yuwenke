@@ -31,15 +31,15 @@ _Avoid_: Unlock order, required sequence
 ## Learner state
 
 **Open Pack**:
-A Card Pack whose unseen Study Units are available to a learner in Discover.
+A Card Pack whose unseen Study Units are available to a learner in Study.
 _Avoid_: Active pack, enabled pack
 
-**Discover Queue**:
-The unseen Study Units currently available in Discover.
+**Study Queue**:
+Unseen Study Units from Open Packs together with units whose saved status is learning. Known units appear in Mastered. Existing learning units remain available even if pack membership changes.
 _Avoid_: Discovery deck, new-card list
 
 **Skipped Unit**:
-A Study Unit bypassed during the current Discover session without creating durable progress.
+A Study Unit bypassed during the current Study session without changing durable progress.
 _Avoid_: Skipped status, deferred card
 
 **Pack-Opening Threshold**:

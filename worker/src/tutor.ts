@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   chatRequestSchema,
+  naturalnessSchema,
   tutorReplySchema,
   type ChatCard,
   type ChatRequest,
@@ -113,9 +114,14 @@ If no vocabulary is available, start with a very simple greeting and provide hel
 If the learner is stuck or answers in ${language}, help them express that thought in simple Chinese.
 Correct genuine mistakes gently in ${language}. Do not invent errors or give an evaluation for a request to start.
 If their answer is correct, feedback may be empty. Keep corrections brief, with a natural corrected example.
+Assess only the learner's latest attempt to express something in Mandarin, including understandable pinyin or mixed-language attempts. Judge idiomatic phrasing, grammar, and fit with the conversation; a short correct reply can be fully natural. Do not penalize simplicity or invent errors.
+For a request to start, a help request, or a message with no Mandarin attempt, naturalness must be null.
+Otherwise naturalness is an object with level ("natural", "mostly_natural", or "needs_work"), explanation (1–2 brief sentences in ${language}), and betterChinese (a natural Chinese rewrite preserving the learner's intended meaning, or an empty string when no improvement is needed).
+Use "natural" for idiomatic answers with no meaningful issue, "mostly_natural" for clear answers with a minor phrasing issue, and "needs_work" for grammar or word choice that needs correction. Explain the specific issue and always supply betterChinese for the latter two levels. If meaning is ambiguous, acknowledge it and offer a likely interpretation rather than pretending certainty. For natural answers, briefly explain what works.
 Return only a JSON object with these keys:
 chinese: your Chinese reply, pinyin: tone-mark pinyin for that exact reply,
 meaning: its ${language} translation, feedback: brief ${language} correction or empty string,
+naturalness: the assessment object described above, or null,
 hint: one possible simple answer in THREE separate lines: the Chinese sentence, its tone-mark pinyin, and its ${language} translation. Include all three lines,
 practicedCardIds: catalog IDs the learner actually used in their latest answer, or [].
 Do not count words you introduced or merely asked about as practiced. Do not claim mastery or change learning status.
@@ -175,7 +181,9 @@ export async function generateTutorReply(
     const choice = completion.choices[0];
     if (choice.finish_reason === "length")
       throw new Error("Incomplete tutor response.");
-    const reply = tutorReplySchema.parse(JSON.parse(choice.message.content));
+    const reply = tutorReplySchema.extend({
+      naturalness: naturalnessSchema.nullable(),
+    }).parse(JSON.parse(choice.message.content));
     const eligible = new Set(
       [...context.targets, ...context.familiar].map((card) => card.id),
     );

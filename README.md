@@ -13,7 +13,7 @@ The site is a static Astro app with one React study interface. It can be hosted 
 It includes:
 
 - 205 source cards and 387 study units;
-- `Estudiar`, `Descubrir`, `Dominadas`, and `Favoritas` modes;
+- a combined `Estudiar` queue for new and learning cards, plus `Dominadas` and `Favoritas` modes;
 - Mandarin → Spanish and Spanish → Mandarin prompts;
 - Spanish question-and-answer prompts for concept rules;
 - search by characters, pinyin, Spanish, explanations, and tags;

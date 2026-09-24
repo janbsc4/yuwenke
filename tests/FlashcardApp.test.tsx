@@ -105,7 +105,7 @@ describe("FlashcardApp", () => {
       renderApp([card]);
       expect(await screen.findByRole("heading", { name: "Practica con Léi" })).toBeVisible();
       expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: /^Descubrir/ }));
+      await user.click(screen.getByRole("button", { name: /^Estudiar/ }));
       expect(window.location.hash).toBe("");
       expect(await screen.findByRole("searchbox")).toBeVisible();
     } finally {
@@ -136,11 +136,11 @@ describe("FlashcardApp", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("supports the guest discover flow and persists a decision", async () => {
+  it("supports the guest combined study flow and persists a decision", async () => {
     const user = userEvent.setup();
     renderApp([card]);
 
-    expect(await screen.findByText("Descubrir")).toBeInTheDocument();
+    expect(await screen.findByText("Estudiar")).toBeInTheDocument();
     expect(screen.getByText("Aprende Mucho Chino")).toBeInTheDocument();
     expect(
       screen.queryByText(/Cada carta se practica en dos sentidos/),
@@ -148,7 +148,7 @@ describe("FlashcardApp", () => {
     const reveal = await screen.findByRole("button", { name: /Mostrar respuesta/ });
     await user.click(reveal);
     expect(screen.getByText("Un saludo básico.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Añadir a aprendizaje/ }));
+    await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
 
     await waitFor(() => {
       expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning");
@@ -204,7 +204,7 @@ describe("FlashcardApp", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Concepto · Español")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("button", { name: /Descubrir/ })).getByText("1"),
+      within(screen.getByRole("button", { name: /Estudiar/ })).getByText("1"),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Mostrar respuesta/ }));
@@ -213,7 +213,7 @@ describe("FlashcardApp", () => {
     expect(screen.queryByText("Explicación")).not.toBeInTheDocument();
   });
 
-  it("prioritizes Estudiar over a saved Descubrir preference", async () => {
+  it("migrates a saved Discover preference to the combined Study view", async () => {
     const progress: ProgressEntry = {
       cardId: card.id,
       direction: "hanzi-es",
@@ -239,12 +239,32 @@ describe("FlashcardApp", () => {
     );
   });
 
-  it("shows a useful empty state for a view without cards", async () => {
+  it("shows a useful empty state for mastered cards", async () => {
     const user = userEvent.setup();
     renderApp([card]);
     await screen.findByRole("button", { name: /Estudiar/ });
-    await user.click(screen.getByRole("button", { name: /Estudiar/ }));
-    expect(await screen.findByText("Aún no tienes cartas en aprendizaje.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Dominadas/ }));
+    expect(await screen.findByText("Aún no has marcado ninguna carta como dominada.")).toBeInTheDocument();
+  });
+
+  it("practices new and learning directions once each in one session", async () => {
+    const user = userEvent.setup();
+    const learning = savedProgress("hanzi-es", "learning");
+    window.localStorage.setItem("yuwenke:guest-progress:v1", JSON.stringify({
+      schemaVersion: 1,
+      entries: { [unitKey(card.id, learning.direction)]: learning },
+    }));
+    renderApp([card]);
+    for (let index = 0; index < 2; index += 1) {
+      await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+      await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
+    }
+    expect(await screen.findByText("Sesión completada")).toBeVisible();
+    expect(screen.getByText("2 cartas disponibles para seguir estudiando.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Nueva sesión" })).toBeVisible();
+    const stored = JSON.parse(window.localStorage.getItem("yuwenke:guest-progress:v1")!);
+    expect(stored.entries[unitKey(card.id, "hanzi-meaning")].status).toBe("learning");
+    expect(stored.entries[unitKey(card.id, "meaning-hanzi")].status).toBe("learning");
   });
 
   it("favorites a whole card, exposes both directions, and can remove it", async () => {
@@ -338,7 +358,7 @@ describe("FlashcardApp", () => {
     });
   });
 
-  it("does not show a false Discover empty state with more than 200 units", async () => {
+  it("does not show a false Study empty state with more than 200 units", async () => {
     const manyCards = Array.from({ length: 101 }, (_, index) => ({
       ...card,
       id: `FC${String(index + 1).padStart(3, "0")}`,
@@ -352,14 +372,14 @@ describe("FlashcardApp", () => {
       await screen.findByRole("button", { name: /Mostrar respuesta/ }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("Ya has clasificado todas las cartas."),
+      screen.queryByText("No quedan cartas por estudiar en tus packs abiertos."),
     ).not.toBeInTheDocument();
     expect(
-      within(screen.getByRole("button", { name: /Descubrir/ })).getByText("202"),
+      within(screen.getByRole("button", { name: /Estudiar/ })).getByText("202"),
     ).toBeInTheDocument();
   });
 
-  it("reuses the persistent Packs button in the completed Discover empty state", async () => {
+  it("reuses the persistent Packs button in the completed Study empty state", async () => {
     const user = userEvent.setup();
     window.localStorage.setItem(
       "yuwenke:guest-progress:v1",
@@ -373,9 +393,9 @@ describe("FlashcardApp", () => {
     );
 
     renderApp([card]);
-    await user.click(await screen.findByRole("button", { name: /Descubrir/ }));
+    await user.click(await screen.findByRole("button", { name: /Estudiar/ }));
 
-    const emptyState = (await screen.findByText("Ya has clasificado todas las cartas."))
+    const emptyState = (await screen.findByText("No quedan cartas por estudiar en tus packs abiertos."))
       .closest<HTMLElement>(".empty-state");
     expect(emptyState).not.toBeNull();
     expect(within(emptyState!).getByRole("button", { name: "Packs" })).toHaveClass(
@@ -387,28 +407,28 @@ describe("FlashcardApp", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("makes skipped Discover cards available in the next session", async () => {
+  it("makes skipped Study cards available in the next session", async () => {
     const user = userEvent.setup();
     renderApp([card]);
 
     await user.click(await screen.findByRole("button", { name: /Saltar/ }));
     await user.click(await screen.findByRole("button", { name: /Saltar/ }));
 
-    expect(await screen.findByText("Selección completada")).toBeInTheDocument();
-    expect(screen.getByText("2 cartas siguen sin clasificar.")).toBeInTheDocument();
+    expect(await screen.findByText("Sesión completada")).toBeInTheDocument();
+    expect(screen.getByText("2 cartas disponibles para seguir estudiando.")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Ir a Descubrir" }),
+      screen.queryByRole("button", { name: "Ir a Estudiar" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Ir a Estudiar" }),
+      screen.getByRole("button", { name: "Ver dominadas" }),
     ).toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: "Volver a las que saltaste (2)" }),
+      screen.getByRole("button", { name: "Nueva sesión" }),
     );
     expect(await screen.findByRole("button", { name: /Saltar/ })).toBeInTheDocument();
   });
 
-  it("offers Descubrir after completing an Estudiar session", async () => {
+  it("offers another combined session after practicing learning cards", async () => {
     const user = userEvent.setup();
     const hanzi = savedProgress("hanzi-es", "learning");
     const spanish = savedProgress("es-hanzi", "learning");
@@ -439,10 +459,10 @@ describe("FlashcardApp", () => {
       screen.queryByRole("button", { name: "Ir a Estudiar" }),
     ).not.toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: "Ir a Descubrir" }),
+      screen.getByRole("button", { name: "Nueva sesión" }),
     );
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Descubrir/ })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: /Estudiar/ })).toHaveAttribute(
         "aria-current",
         "page",
       );
@@ -528,7 +548,7 @@ describe("FlashcardApp", () => {
     );
 
     expect(
-      within(await screen.findByRole("button", { name: /Descubrir/ })).getByText("2"),
+      within(await screen.findByRole("button", { name: /Estudiar/ })).getByText("2"),
     ).toBeInTheDocument();
     const collectionSummary = screen.getByText("Tu colección").parentElement;
     expect(collectionSummary).not.toBeNull();
@@ -561,7 +581,7 @@ describe("FlashcardApp", () => {
 
     await waitFor(() => {
       expect(
-        within(screen.getByRole("button", { name: /Descubrir/ })).getByText("4"),
+        within(screen.getByRole("button", { name: /Estudiar/ })).getByText("4"),
       ).toBeInTheDocument();
       expect(within(collectionSummary!).getByText("4 cartas")).toBeInTheDocument();
       expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
@@ -651,7 +671,7 @@ describe("FlashcardApp", () => {
       await user.click(screen.getByRole("button", { name: /Ya la sé/ }));
     }
 
-    expect(await screen.findByText("Selección completada")).toBeInTheDocument();
+    expect(await screen.findByText("Sesión completada")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Saludos" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Abrir «Saludos»" }),
@@ -679,7 +699,7 @@ describe("FlashcardApp", () => {
     }, { timeout: 1500 });
   });
 
-  it("preserves a non-Discover view after opening a pack and offers a direct action", async () => {
+  it("preserves a non-Study view after opening a pack and offers a direct action", async () => {
     const user = userEvent.setup();
     window.localStorage.setItem(
       "yuwenke:guest-progress:v1",
@@ -702,6 +722,7 @@ describe("FlashcardApp", () => {
       "aria-current",
       "page",
     );
+    await user.click(screen.getByRole("button", { name: /Favoritas/ }));
     await user.click(screen.getByRole("button", { name: "Packs" }));
     await user.click(await screen.findByRole("button", { name: /^Abrir Saludos:/ }));
     await user.click(
@@ -712,14 +733,14 @@ describe("FlashcardApp", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Estudiar/ })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: /Favoritas/ })).toHaveAttribute(
         "aria-current",
         "page",
       );
       expect(
         within(screen.getByRole("dialog", { name: "Packs de cartas" })).getByRole(
           "button",
-          { name: "Ir a Descubrir" },
+          { name: "Ir a Estudiar" },
         ),
       ).toBeInTheDocument();
     }, { timeout: 1500 });
@@ -735,7 +756,7 @@ describe("FlashcardApp", () => {
       />,
     );
     await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
-    await user.click(screen.getByRole("button", { name: /Añadir a aprendizaje/ }));
+    await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
     expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning");
 
     await user.click(screen.getByRole("button", { name: "Packs" }));
@@ -931,7 +952,7 @@ it("opens conversation without letting study shortcuts change the hidden flashca
   expect(await screen.findByRole("main", { name: "Practica con Léi" })).toBeVisible();
   fireEvent.keyDown(window, { key: "3" });
   fireEvent.keyDown(window, { code: "Space" });
-  await userEvent.click(screen.getByRole("button", { name: /Descubrir/ }));
+  await userEvent.click(screen.getByRole("button", { name: /Estudiar/ }));
   expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(before);
   expect(screen.getByRole("button", { name: /Mostrar respuesta/ })).toBeVisible();
 });

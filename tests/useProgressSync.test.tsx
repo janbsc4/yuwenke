@@ -9,7 +9,7 @@ import { loadFlashcards } from "../src/data/loadFlashcards";
 import { localCardPacks } from "../src/lib/localCardPacks";
 import { localFavorites } from "../src/lib/localFavorites";
 import { localProgress } from "../src/lib/localProgress";
-import { unitKey } from "../src/lib/study";
+import { createStudyUnits, unitKey, visibleUnits } from "../src/lib/study";
 import type { CardPackState, FavoriteEntry, ProgressEntry } from "../src/types";
 
 const user = {
@@ -122,6 +122,36 @@ function renderAuthenticatedSync(client: ProgressSyncFirebaseClient) {
 }
 
 describe("authenticated progress synchronization", () => {
+  it("combines unseen units with Firebase learning progress without writing progress for unseen cards", async () => {
+    const { client, publishProgress } = firebaseAdapter();
+    const { result } = renderAuthenticatedSync(client);
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalledWith("alice", {}));
+    vi.mocked(client.writeCloudProgressBatch).mockClear();
+    const learning: ProgressEntry = {
+      ...progressEntry(), direction: "hanzi-meaning", resetAt: 0, schemaVersion: 2,
+    };
+    const known: ProgressEntry = {
+      ...learning, cardId: "FC002", status: "known",
+    };
+    act(() => publishProgress({
+      [unitKey(learning.cardId, learning.direction)]: learning,
+      [unitKey(known.cardId, known.direction)]: known,
+    }));
+    await waitFor(() => expect(Object.keys(result.current.progress)).toHaveLength(2));
+    const units = createStudyUnits(options.cards.filter((card) => ["FC001", "FC002"].includes(card.id)));
+    const queue = visibleUnits(units, "study", result.current.progress,
+      { query: "", topic: "all", type: "all" }, {}, new Set(["CP001"]), options.packIdByCardId, "en");
+    expect(queue.map((unit) => unit.key)).toEqual(["FC001::hanzi-meaning", "FC001::meaning-hanzi"]);
+    expect(result.current.progress["FC001::meaning-hanzi"]).toBeUndefined();
+    expect(client.writeCloudProgress).not.toHaveBeenCalled();
+    expect(client.writeCloudProgressBatch).not.toHaveBeenCalled();
+    act(() => result.current.setStatus("FC001", "meaning-hanzi", "learning"));
+    await waitFor(() => expect(client.writeCloudProgress).toHaveBeenCalledWith("alice", expect.objectContaining({
+      cardId: "FC001", direction: "meaning-hanzi", status: "learning", schemaVersion: 2, resetAt: 0,
+    })));
+  });
+
   it("performs Pack-State Migration and unions guest packs on sign-in", async () => {
     const progress = progressEntry();
     const favorite = favoriteEntry();

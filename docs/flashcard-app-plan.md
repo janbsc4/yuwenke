@@ -1,3 +1,5 @@
+> Historical implementation plan. The current Study flow is defined in [ADR-0002](adr/0002-unified-study-queue.md).
+
 # GitHub Pages Flashcard App
 
 > **Status: Historical.** This document records the original v1 implementation plan for the 171-card application. It is retained as design history, not as the current product or architecture specification. For current repository guidance, read `AGENTS.md` and `README.md`; for domain vocabulary and accepted decisions, read `CONTEXT.md` and `docs/adr/`.

@@ -12,7 +12,7 @@ interface CardPackDialogsProps {
   panelOpen: boolean;
   packToConfirm: CardPack | null;
   packOpening: boolean;
-  openedOutsideDiscover: CardPack | null;
+  openedOutsideStudy: CardPack | null;
   resetOpen: boolean;
   resetting: boolean;
   authenticated: boolean;
@@ -23,7 +23,7 @@ interface CardPackDialogsProps {
   onRequestOpen: (pack: CardPack) => void;
   onCancelOpen: () => void;
   onConfirmOpen: () => void;
-  onGoToDiscover: () => void;
+  onGoToStudy: () => void;
   onRequestReset: () => void;
   onCancelReset: () => void;
   onConfirmReset: () => void;
@@ -38,7 +38,7 @@ export function CardPackDialogs({
   panelOpen,
   packToConfirm,
   packOpening,
-  openedOutsideDiscover,
+  openedOutsideStudy,
   resetOpen,
   resetting,
   authenticated,
@@ -49,7 +49,7 @@ export function CardPackDialogs({
   onRequestOpen,
   onCancelOpen,
   onConfirmOpen,
-  onGoToDiscover,
+  onGoToStudy,
   onRequestReset,
   onCancelReset,
   onConfirmReset,
@@ -79,11 +79,11 @@ export function CardPackDialogs({
               <button type="button" aria-label={m.packs.closeAria} onClick={onClosePanel}>×</button>
             </div>
             <p className="packs-intro">{m.packs.intro}</p>
-            {openedOutsideDiscover ? (
+            {openedOutsideStudy ? (
               <div className="pack-opened-notice" role="status">
-                <p>{m.packs.openedNotice(localized(openedOutsideDiscover.title, locale))}</p>
-                <button type="button" className="button button-primary" onClick={onGoToDiscover}>
-                  {m.packs.goToDiscover}
+                <p>{m.packs.openedNotice(localized(openedOutsideStudy.title, locale))}</p>
+                <button type="button" className="button button-primary" onClick={onGoToStudy}>
+                  {m.packs.goToStudy}
                 </button>
               </div>
             ) : null}

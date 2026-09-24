@@ -25,6 +25,7 @@ beforeEach(() => {
               pinyin: "Nǐ hǎo",
               meaning: "Hello",
               feedback: "",
+              naturalness: null,
               hint: "你好",
               practicedCardIds: [],
             }),

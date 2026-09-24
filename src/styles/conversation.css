@@ -120,10 +120,95 @@
 .chat-reply {
   max-width: 95%;
 }
+.chat-turn:has(.chat-naturalness) .chat-user {
+  margin-bottom: 6px;
+}
+.chat-naturalness {
+  --assessment-color: var(--jade);
+  width: fit-content;
+  max-width: 85%;
+  margin: 0 0 22px auto;
+  font-size: 0.8rem;
+}
+.chat-naturalness[data-level="mostly_natural"] {
+  --assessment-color: var(--amber);
+}
+.chat-naturalness[data-level="needs_work"] {
+  --assessment-color: var(--cinnabar);
+}
+.chat-naturalness summary {
+  min-height: 44px;
+  align-content: center;
+  color: var(--ink);
+}
+.chat-naturalness-meter {
+  display: inline-flex;
+  gap: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.chat-naturalness-meter span {
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--assessment-color);
+}
+.chat-naturalness[data-level="mostly_natural"] .chat-naturalness-meter span:last-child,
+.chat-naturalness[data-level="needs_work"] .chat-naturalness-meter span:not(:first-child) {
+  background: var(--border);
+}
+.chat-naturalness[open] {
+  width: min(85%, 480px);
+}
+.chat-naturalness > p {
+  margin: 4px 0 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-better-sentence {
+  padding: 12px;
+  border-left: 3px solid var(--assessment-color);
+  background: var(--surface-warm);
+  border-radius: 0 8px 8px 0;
+}
+.chat-better-sentence strong {
+  font-weight: 600;
+}
+.chat-better-sentence p {
+  margin: 6px 0 0;
+  font: 1.25rem/1.8 var(--font-hanzi);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .chat-speaker {
   color: var(--jade);
   font-size: 0.8rem;
   font-weight: 700;
+}
+.chat-reply-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chat-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--jade);
+  font-size: 0.85rem;
+}
+.chat-listen:hover:not(:disabled) {
+  background: var(--jade-soft);
+}
+.chat-listen:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .chat-chinese {
   font-family: var(--font-hanzi);

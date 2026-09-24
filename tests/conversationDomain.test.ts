@@ -25,6 +25,7 @@ const reply: TutorReply = {
   pinyin: "Nǐ xiǎng hē chá ma?",
   meaning: "Do you want tea?",
   feedback: "",
+  naturalness: null,
   hint: "我想喝茶。",
   practicedCardIds: [],
 };
@@ -139,6 +140,26 @@ describe("conversation learning context", () => {
 });
 
 describe("inference responses", () => {
+  it("validates and returns naturalness with the same inference response", async () => {
+    const naturalness = {
+      level: "needs_work",
+      explanation: "Put 喜欢 before 喝.",
+      betterChinese: "我喜欢喝茶。",
+    };
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => Response.json({
+      choices: [{ message: { content: JSON.stringify({ ...reply, naturalness }) } }],
+    }));
+    const result = await generateTutorReply(request, cards, {
+      apiKey: "test-secret", model: "glm-5.3-flash", fetch: fetchMock,
+    });
+    expect(result.reply.naturalness).toEqual(naturalness);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    naturalness.betterChinese = "";
+    await expect(generateTutorReply(request, cards, {
+      apiKey: "test-secret", model: "glm-5.3-flash", fetch: fetchMock,
+    })).rejects.toMatchObject({ code: "unavailable" });
+  });
+
   it("calls Go and filters hallucinated or unstudied recap IDs", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(

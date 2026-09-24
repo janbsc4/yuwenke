@@ -58,11 +58,22 @@ export const chatRequestSchema = z
     }
   });
 
+export const naturalnessSchema = z.object({
+  level: z.enum(["natural", "mostly_natural", "needs_work"]),
+  explanation: z.string().trim().min(1).max(1000),
+  betterChinese: z.string().trim().max(1500),
+}).refine(
+  (assessment) => assessment.level === "natural" || assessment.betterChinese.length > 0,
+  { message: "An answer needing improvement must include a better Chinese sentence." },
+);
+
 export const tutorReplySchema = z.object({
   chinese: z.string().trim().min(1).max(1500),
   pinyin: z.string().trim().min(1).max(2000),
   meaning: z.string().trim().min(1).max(2000),
   feedback: z.string().trim().max(2000),
+  // Older saved conversations and replies from the previous backend have no assessment.
+  naturalness: naturalnessSchema.nullable().optional(),
   hint: z.string().trim().min(1).max(1000),
   practicedCardIds: z.array(cardId).max(12),
 });

@@ -1,6 +1,6 @@
 # ADR-0001: Card packs for progressive discovery
 
-Status: Accepted
+Status: Accepted; Discover-specific queue and completion behavior superseded by [ADR-0002](0002-unified-study-queue.md).
 
 ## Context
 

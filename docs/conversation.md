@@ -4,6 +4,8 @@ The Converse tab uses each signed-in learner's current local progress, including
 
 Léi replies in short Chinese sentences, with expandable pinyin, a translation, a possible answer, and brief corrections in English or Spanish. The recap links practiced words back to their cards without changing their learning status. The header displays GLM-5.3-Flash and updates from the model selected by the backend.
 
+Each new Mandarin attempt can receive a clickable naturalness indicator below the learner's message: Natural, Mostly natural, or Needs work. Expanding it shows Léi's explanation and a suggested sentence when improvement is needed. This assessment is generated with the normal reply, not an extra inference request. Start/help requests and older history without an assessment remain ungraded. These are AI suggestions, not proficiency scores. Reply audio uses the app's existing Chinese voice and mute settings.
+
 The browser saves the latest twelve exchanges separately for each account and interface language. A new conversation asks before deleting history. The backend sends bounded conversation history and selected vocabulary to OpenCode Go, without account names or email addresses. It does not store transcripts.
 
 ## Hosting and authentication
