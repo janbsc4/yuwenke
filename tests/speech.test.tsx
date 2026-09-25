@@ -184,6 +184,16 @@ describe("speakChinese", () => {
     expect(speech.preferredVoiceUri()).toBe("");
   });
 
+  it("remembers whether chat replies should autoplay", async () => {
+    const speech = await import("../src/lib/speech");
+
+    expect(speech.chatAutoplayEnabled()).toBe(false);
+    speech.setChatAutoplayEnabled(true);
+    expect(speech.chatAutoplayEnabled()).toBe(true);
+    speech.setChatAutoplayEnabled(false);
+    expect(speech.chatAutoplayEnabled()).toBe(false);
+  });
+
   it("lists only Chinese voices with their identifiers", async () => {
     stubSpeechApi([fakeVoice("en-US"), fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
     const speech = await import("../src/lib/speech");

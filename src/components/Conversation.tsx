@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -14,7 +15,12 @@ import type { Flashcard, Locale, ProgressMap } from "../types";
 import { guestMessagesRemaining, sendConversation } from "../lib/chatClient";
 import { chatMessages } from "../lib/chatMessages";
 import { topicDisplayLabel } from "../lib/messages";
-import { speakChinese, speechSupported } from "../lib/speech";
+import {
+  chatAutoplayEnabled,
+  setChatAutoplayEnabled,
+  speakChinese,
+  speechSupported,
+} from "../lib/speech";
 import {
   conversationMessages,
   conversationProgress,
@@ -24,6 +30,13 @@ import {
 import "../styles/conversation.css";
 
 type PinyinReader = typeof import("pinyin-pro").pinyin;
+
+const keyboardGuideUrls = {
+  windows: "https://support.microsoft.com/en-us/windows/hardware/input-devices/microsoft-simplified-chinese-ime",
+  mac: "https://support.apple.com/guide/chinese-input-method/set-up-the-input-source-cim6023ab944/mac",
+  iphone: "https://support.apple.com/guide/iphone/iph73b71eb/ios",
+  android: "https://support.google.com/gboard/answer/7068494",
+};
 
 function chineseWithPinyin(chinese: string, pinyin: PinyinReader) {
   const characters = Array.from(chinese);
@@ -50,6 +63,17 @@ function naturalnessExplanation(
   return hanziCount > 0 && (latinWords < 2 || hanziCount > latinCount)
     ? fallback[level]
     : explanation;
+}
+
+function revealInTranscript(transcript: HTMLElement | null, element: HTMLElement | null) {
+  if (!element || !transcript) return;
+  const panel = element.getBoundingClientRect();
+  const viewport = transcript.getBoundingClientRect();
+  const space = viewport.height - 24;
+  const offset = panel.height > space
+    ? panel.top - viewport.top - 12
+    : Math.max(0, panel.bottom - viewport.bottom + 12);
+  if (offset > 0) transcript.scrollTop += offset;
 }
 
 interface Props {
@@ -87,9 +111,15 @@ export default function Conversation({
     owner ? null : guestMessagesRemaining(),
   );
   const [confirmClear, setConfirmClear] = useState(false);
+  const [autoplay, setAutoplay] = useState(chatAutoplayEnabled);
+  const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [revealedPinyin, setRevealedPinyin] = useState<Set<number>>(new Set());
+  const [openAid, setOpenAid] = useState<Record<number, "meaning" | "hint" | null>>({});
   const [pinyinReader, setPinyinReader] = useState<PinyinReader | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const keyboardHelpRef = useRef<HTMLDivElement>(null);
+  const lastOpenedAid = useRef<number | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const sending = useRef(false);
@@ -117,6 +147,15 @@ export default function Conversation({
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [session.turns.length, busy]);
+  useLayoutEffect(() => {
+    const index = lastOpenedAid.current;
+    if (index === null || !openAid[index]) return;
+    revealInTranscript(transcriptRef.current, document.getElementById(`chat-aid-${index}`));
+    lastOpenedAid.current = null;
+  }, [openAid]);
+  useEffect(() => {
+    if (keyboardHelpOpen) keyboardHelpRef.current?.scrollIntoView?.({ block: "start" });
+  }, [keyboardHelpOpen]);
 
   async function send(message: string) {
     const content = message.trim();
@@ -146,9 +185,11 @@ export default function Conversation({
         targetCardIds: result.targetCardIds,
       };
       setSession(next);
+      setOpenAid({});
       setStorageFailed(!saveConversation(ownerKey, locale, next));
       setRemaining(result.remaining);
       setDraft("");
+      if (autoplay && !muted && speechSupported()) speakChinese(result.reply.chinese);
     } catch (cause) {
       if (!mounted.current) return;
       const timedOut =
@@ -204,6 +245,19 @@ export default function Conversation({
     setError("");
     setConfirmClear(false);
     setRevealedPinyin(new Set());
+    setOpenAid({});
+  }
+
+  function toggleAid(index: number, aid: "meaning" | "hint") {
+    const opening = openAid[index] !== aid;
+    lastOpenedAid.current = opening ? index : null;
+    setOpenAid((current) => ({ ...current, [index]: opening ? aid : null }));
+  }
+
+  function toggleAutoplay() {
+    const next = !autoplay;
+    setAutoplay(next);
+    setChatAutoplayEnabled(next);
   }
 
   async function togglePinyin(index: number) {
@@ -263,6 +317,23 @@ export default function Conversation({
           </button>
         )}
       </header>
+      {configured && (
+        <div className="chat-preferences">
+          <button
+            type="button"
+            className="chat-autoplay"
+            aria-pressed={autoplay}
+            disabled={Boolean(listenUnavailable)}
+            title={listenUnavailable ?? undefined}
+            onClick={toggleAutoplay}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
+            </svg>
+            {m.autoplay}
+          </button>
+        </div>
+      )}
       {confirmClear && (
         <div className="chat-clear" role="group" aria-label={m.confirmClear}>
           <p>{m.confirmClear}</p>
@@ -322,6 +393,7 @@ export default function Conversation({
           )}
           <div
             className="chat-transcript"
+            ref={transcriptRef}
             role="log"
             aria-label={m.title}
             aria-live="polite"
@@ -333,13 +405,19 @@ export default function Conversation({
                   {turn.user}
                 </p>
                 {turn.reply.naturalness && (
-                  <details className="chat-naturalness" data-level={turn.reply.naturalness.level}>
+                  <details
+                    className="chat-naturalness"
+                    data-level={turn.reply.naturalness.level}
+                    onToggle={(event) => {
+                      if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
+                    }}
+                  >
                     <summary>
                       <span className="chat-disclosure-icon" aria-hidden="true" />
                       <span className="chat-naturalness-meter" aria-hidden="true">
                         <span /><span /><span />
                       </span>
-                      <span>{m.naturalness}: {m.naturalnessLevels[turn.reply.naturalness.level]}</span>
+                      <span>{m.naturalnessLevels[turn.reply.naturalness.level]}</span>
                     </summary>
                     <p>{naturalnessExplanation(turn.reply.naturalness.explanation, turn.reply.naturalness.level, m.naturalnessFallback)}</p>
                     {turn.reply.naturalness.betterChinese && (
@@ -351,23 +429,26 @@ export default function Conversation({
                   </details>
                 )}
                 <article className="chat-reply" aria-label="Léi">
-                  <div className="chat-reply-heading">
-                    <span className="chat-speaker">Léi</span>
+                  <span className="chat-speaker">Léi</span>
+                  <div className="chat-reply-line">
                     <button
                       type="button"
                       className="chat-listen"
+                      aria-label={m.listen}
                       disabled={Boolean(listenUnavailable)}
-                      title={listenUnavailable}
+                      title={listenUnavailable ?? m.listen}
                       onClick={() => speakChinese(turn.reply.chinese)}
                     >
-                      <span aria-hidden="true">🔊</span> {m.listen}
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
+                      </svg>
                     </button>
+                    <p className="chat-chinese" lang="zh-CN">
+                      {revealedPinyin.has(index) && pinyinReader
+                        ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
+                        : turn.reply.chinese}
+                    </p>
                   </div>
-                  <p className="chat-chinese" lang="zh-CN">
-                    {revealedPinyin.has(index) && pinyinReader
-                      ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
-                      : turn.reply.chinese}
-                  </p>
                   {turn.reply.feedback && !turn.reply.naturalness && (
                     <div className="chat-correction">
                       <strong>{m.correction}</strong>
@@ -383,15 +464,30 @@ export default function Conversation({
                     >
                       {revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
                     </button>
-                    <details>
-                      <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.meaning}</summary>
-                      <p>{turn.reply.meaning}</p>
-                    </details>
-                    <details>
-                      <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.hint}</summary>
-                      <p>{turn.reply.hint}</p>
-                    </details>
+                    <button
+                      type="button"
+                      className="chat-aid-toggle"
+                      aria-expanded={openAid[index] === "meaning"}
+                      aria-controls={openAid[index] === "meaning" ? `chat-aid-${index}` : undefined}
+                      onClick={() => toggleAid(index, "meaning")}
+                    >
+                      {m.meaning}
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-aid-toggle"
+                      aria-expanded={openAid[index] === "hint"}
+                      aria-controls={openAid[index] === "hint" ? `chat-aid-${index}` : undefined}
+                      onClick={() => toggleAid(index, "hint")}
+                    >
+                      {m.hint}
+                    </button>
                   </div>
+                  {openAid[index] && (
+                    <p className="chat-aid-panel" id={`chat-aid-${index}`}>
+                      {openAid[index] === "meaning" ? turn.reply.meaning : turn.reply.hint}
+                    </p>
+                  )}
                 </article>
               </div>
             ))}
@@ -455,6 +551,39 @@ export default function Conversation({
             </details>
           )}
           {storageFailed && <p role="status">{m.savedError}</p>}
+          <div className="chat-keyboard-help">
+            <button
+              type="button"
+              className="chat-keyboard-toggle"
+              aria-expanded={keyboardHelpOpen}
+              aria-controls={keyboardHelpOpen ? "chat-keyboard-guide" : undefined}
+              onClick={() => setKeyboardHelpOpen((open) => !open)}
+            >
+              <span className="chat-disclosure-icon" aria-hidden="true" />
+              {m.keyboardHelp.title}
+            </button>
+            {keyboardHelpOpen && (
+              <div className="chat-keyboard-guide" id="chat-keyboard-guide" ref={keyboardHelpRef}>
+                <p>{m.keyboardHelp.intro}</p>
+                <div className="chat-keyboard-platforms">
+                  {([
+                    ["Windows", m.keyboardHelp.windows, keyboardGuideUrls.windows],
+                    ["Mac", m.keyboardHelp.mac, keyboardGuideUrls.mac],
+                    ["iPhone / iPad", m.keyboardHelp.iphone, keyboardGuideUrls.iphone],
+                    ["Android (Gboard)", m.keyboardHelp.android, keyboardGuideUrls.android],
+                  ] as const).map(([platform, instructions, url]) => (
+                    <section key={platform}>
+                      <h3>{platform}</h3>
+                      <p>{instructions}</p>
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        {m.keyboardHelp.official}
+                      </a>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
       <p className="chat-privacy">{m.privacy}</p>

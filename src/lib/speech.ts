@@ -1,6 +1,7 @@
 const CHINESE_LANG = /^zh([_-]|$)|^cmn/i;
 const VOICE_STORAGE_KEY = "yuwenke:tts-voice:v1";
 const MUTED_STORAGE_KEY = "yuwenke:tts-muted:v1";
+const CHAT_AUTOPLAY_STORAGE_KEY = "yuwenke:chat-autoplay:v1";
 
 /**
  * macOS lists every voice twice (compact and Enhanced/Premium variants share
@@ -96,6 +97,23 @@ export function setSpeechMuted(muted: boolean): void {
   try {
     if (muted) window.localStorage.setItem(MUTED_STORAGE_KEY, "1");
     else window.localStorage.removeItem(MUTED_STORAGE_KEY);
+  } catch {
+    /* storage unavailable: the preference only lasts for this page load */
+  }
+}
+
+export function chatAutoplayEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(CHAT_AUTOPLAY_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setChatAutoplayEnabled(enabled: boolean): void {
+  try {
+    if (enabled) window.localStorage.setItem(CHAT_AUTOPLAY_STORAGE_KEY, "1");
+    else window.localStorage.removeItem(CHAT_AUTOPLAY_STORAGE_KEY);
   } catch {
     /* storage unavailable: the preference only lasts for this page load */
   }
