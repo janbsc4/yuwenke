@@ -300,10 +300,6 @@ export default function Conversation({
           <div>
             <h1>{m.title}</h1>
             <p>{m.subtitle}</p>
-            <p className="chat-model">
-              {m.model}{" "}
-              <span>{chatModelLabel(session.model ?? DEFAULT_CHAT_MODEL)}</span>
-            </p>
           </div>
         </div>
         {session.turns.length > 0 && (
@@ -401,36 +397,43 @@ export default function Conversation({
           >
             {session.turns.map((turn, index) => (
               <div className="chat-turn" key={index}>
-                <p className="chat-user" dir="auto">
-                  {turn.user}
-                </p>
-                {turn.reply.naturalness && (
-                  <details
-                    className="chat-naturalness"
-                    data-level={turn.reply.naturalness.level}
-                    onToggle={(event) => {
-                      if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
-                    }}
-                  >
-                    <summary>
-                      <span className="chat-disclosure-icon" aria-hidden="true" />
-                      <span className="chat-naturalness-meter" aria-hidden="true">
-                        <span /><span /><span />
-                      </span>
-                      <span>{m.naturalnessLevels[turn.reply.naturalness.level]}</span>
-                    </summary>
-                    <p>{naturalnessExplanation(turn.reply.naturalness.explanation, turn.reply.naturalness.level, m.naturalnessFallback)}</p>
-                    {turn.reply.naturalness.betterChinese && (
-                      <div className="chat-better-sentence">
-                        <strong>{m.betterSentence}</strong>
-                        <p lang="zh-CN">{turn.reply.naturalness.betterChinese}</p>
-                      </div>
-                    )}
-                  </details>
-                )}
+                <div className="chat-learner">
+                  <p className="chat-user" dir="auto">
+                    {turn.user}
+                  </p>
+                  {turn.reply.naturalness && (
+                    <details
+                      className="chat-naturalness"
+                      data-level={turn.reply.naturalness.level}
+                      onToggle={(event) => {
+                        if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
+                      }}
+                    >
+                      <summary>
+                        <span className="chat-disclosure-icon" aria-hidden="true" />
+                        <span className="chat-naturalness-meter" aria-hidden="true">
+                          <span /><span /><span />
+                        </span>
+                        <span>{m.naturalnessLevels[turn.reply.naturalness.level]}</span>
+                      </summary>
+                      <p>{naturalnessExplanation(turn.reply.naturalness.explanation, turn.reply.naturalness.level, m.naturalnessFallback)}</p>
+                      {turn.reply.naturalness.betterChinese && (
+                        <div className="chat-better-sentence">
+                          <strong>{m.betterSentence}</strong>
+                          <p lang="zh-CN">{turn.reply.naturalness.betterChinese}</p>
+                        </div>
+                      )}
+                    </details>
+                  )}
+                </div>
                 <article className="chat-reply" aria-label="Léi">
                   <span className="chat-speaker">Léi</span>
                   <div className="chat-reply-line">
+                    <p className="chat-chinese" lang="zh-CN">
+                      {revealedPinyin.has(index) && pinyinReader
+                        ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
+                        : turn.reply.chinese}
+                    </p>
                     <button
                       type="button"
                       className="chat-listen"
@@ -443,11 +446,6 @@ export default function Conversation({
                         <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
                       </svg>
                     </button>
-                    <p className="chat-chinese" lang="zh-CN">
-                      {revealedPinyin.has(index) && pinyinReader
-                        ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
-                        : turn.reply.chinese}
-                    </p>
                   </div>
                   {turn.reply.feedback && !turn.reply.naturalness && (
                     <div className="chat-correction">
@@ -586,6 +584,10 @@ export default function Conversation({
           </div>
         </>
       )}
+      <p className="chat-model">
+        {m.model}{" "}
+        <span>{chatModelLabel(session.model ?? DEFAULT_CHAT_MODEL)}</span>
+      </p>
       <p className="chat-privacy">{m.privacy}</p>
     </main>
   );

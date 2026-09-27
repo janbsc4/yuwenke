@@ -210,7 +210,8 @@ it.each([
   });
   render(<Conversation {...props} locale={locale} />);
   const summary = screen.getByText(label).closest("summary")!;
-  expect(summary.closest(".chat-turn")?.firstElementChild).toHaveClass("chat-user");
+  expect(summary.closest(".chat-learner")?.firstElementChild).toHaveClass("chat-user");
+  expect(summary.closest(".chat-learner")).toContainElement(screen.getByText(level === "natural" ? "我喜欢喝茶。" : "我喝喜欢茶。"));
   expect(screen.getByText(explanation)).not.toBeVisible();
   await userEvent.click(summary);
   expect(screen.getByText(explanation)).toBeVisible();
