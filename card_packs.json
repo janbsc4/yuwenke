@@ -98,5 +98,15 @@
     },
     "mark": "食",
     "theme": "jade"
+  },
+  {
+    "id": "CP011",
+    "title": { "es": "Fechas y calendario", "en": "Dates and calendar" },
+    "description": {
+      "es": "Meses, días de la semana, fechas, años y cumpleaños, con referencias como hoy, mañana y el año que viene.",
+      "en": "Months, weekdays, dates, years, and birthdays, with references such as today, tomorrow, and next year."
+    },
+    "mark": "历",
+    "theme": "lilac"
   }
 ]

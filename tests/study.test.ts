@@ -54,7 +54,7 @@ describe("study domain", () => {
 
   it("creates two units for language cards and one concept unit for concepts", () => {
     const units = createStudyUnits(cards);
-    expect(units).toHaveLength(397);
+    expect(units).toHaveLength(442);
     expect(units.slice(0, 2).map((unit) => unit.direction)).toEqual([
       "hanzi-meaning",
       "meaning-hanzi",

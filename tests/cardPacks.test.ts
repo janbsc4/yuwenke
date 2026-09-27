@@ -23,6 +23,7 @@ describe("card pack authoring data", () => {
       "CP008",
       "CP009",
       "CP010",
+      "CP011",
     ]);
     expect(packs.map(({ mark, theme }) => `${mark}/${theme}`)).toEqual([
       "启/cinnabar",
@@ -35,6 +36,7 @@ describe("card pack authoring data", () => {
       "数/amber",
       "行/cinnabar",
       "食/jade",
+      "历/lilac",
     ]);
     expect(Object.keys(packIdByCardId)).toHaveLength(cards.length);
     expect(packIdByCardId.FC001).toBe("CP001");
@@ -53,6 +55,9 @@ describe("card pack authoring data", () => {
     expect(packIdByCardId.FC206).toBe("CP003");
     expect(packIdByCardId.FC209).toBe("CP002");
     expect(packIdByCardId.FC210).toBe("CP002");
+    for (let id = 211; id <= 235; id += 1) {
+      expect(packIdByCardId[`FC${id}`]).toBe("CP011");
+    }
     expect(
       packs.every((pack) =>
         Object.values(packIdByCardId).includes(pack.id),
@@ -77,6 +82,7 @@ describe("card pack authoring data", () => {
       CP008: 38,
       CP009: 24,
       CP010: 44,
+      CP011: 45,
     });
   });
 

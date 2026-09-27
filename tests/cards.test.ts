@@ -6,16 +6,16 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(210);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(210);
+    expect(cards).toHaveLength(235);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(235);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 210 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 235 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.every((card) => card.ingles && card.explicacion_ingles && card.ejemplo_ingles && card.etiquetas_ingles)).toBe(true);
     expect(cards.find((card) => card.id === "FC089")?.pinyin).toBe("shuí / shéi");
     expect(cards.find((card) => card.id === "FC086")?.nombres_propios).toContain("张欣");
-    expect(cards.slice(-5).map((card) => card.hanzi)).toEqual([
+    expect(cards.slice(205, 210).map((card) => card.hanzi)).toEqual([
       "朋友",
       "男朋友",
       "女朋友",
@@ -195,7 +195,7 @@ describe("flashcard CSV", () => {
     const cards = loadFlashcards();
     const concepts = cards.filter((card) => card.tipo === "concepto");
 
-    expect(concepts).toHaveLength(23);
+    expect(concepts).toHaveLength(28);
     expect(
       concepts.every(
         (card) => card.espanol.startsWith("¿") && card.espanol.endsWith("?"),
