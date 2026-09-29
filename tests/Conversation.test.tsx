@@ -56,7 +56,7 @@ it("autoplays only new Léi replies when enabled and remembers the choice", asyn
     turns: [{ user: "你好", reply: response.reply }], targetCardIds: [],
   });
   const view = render(<Conversation {...props} />);
-  const autoplay = screen.getByRole("button", { name: "Autoplay replies" });
+  const autoplay = screen.getByRole("button", { name: "Autoplay sounds" });
   expect(autoplay).toHaveAttribute("aria-pressed", "false");
   expect(speakChinese).not.toHaveBeenCalled();
   await userEvent.click(autoplay);
@@ -67,7 +67,7 @@ it("autoplays only new Léi replies when enabled and remembers the choice", asyn
   await waitFor(() => expect(speakChinese).toHaveBeenCalledExactlyOnceWith("你好吗？"));
   view.unmount();
   render(<Conversation {...props} />);
-  expect(screen.getByRole("button", { name: "Autoplay replies" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Autoplay sounds" })).toHaveAttribute("aria-pressed", "true");
   expect(speakChinese).toHaveBeenCalledTimes(1);
 });
 
@@ -78,7 +78,7 @@ it("keeps autoplay silent when muted or speech is unavailable", async () => {
     turns: [{ user: "你好", reply: response.reply }], targetCardIds: [],
   });
   const view = render(<Conversation {...props} muted />);
-  expect(screen.getByRole("button", { name: "Autoplay replies" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Autoplay sounds" })).toBeDisabled();
   await userEvent.type(screen.getByRole("textbox"), "我很好");
   await userEvent.click(screen.getByRole("button", { name: "Send" }));
   await waitFor(() => expect(sendConversation).toHaveBeenCalledOnce());
@@ -86,7 +86,7 @@ it("keeps autoplay silent when muted or speech is unavailable", async () => {
   view.unmount();
   vi.mocked(speechSupported).mockReturnValue(false);
   render(<Conversation {...props} />);
-  expect(screen.getByRole("button", { name: "Autoplay replies" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Autoplay sounds" })).toBeDisabled();
   expect(speakChinese).not.toHaveBeenCalled();
 });
 

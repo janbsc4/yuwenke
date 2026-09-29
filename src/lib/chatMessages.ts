@@ -2,7 +2,7 @@ export const chatMessages = {
   en: {
     model: "Model:",
     title: "Practice with Léi",
-    subtitle: "Your words, in conversation.",
+    subtitle: "Chats using your study words",
     intro:
       "Practice a few words you’re learning, with familiar words to help you along. Léi keeps the conversation short and gives you help when you need it.",
     topic: "Conversation topic",
@@ -16,6 +16,7 @@ export const chatMessages = {
       "Your three free messages are used. Sign in to continue practicing.",
     unavailable:
       "Conversation is not available yet. You can keep practicing with your flashcards.",
+    privacyTitle: "What gets sent to the AI",
     privacy:
       "Your messages and selected learning material are sent to our AI provider. History stays in this browser. AI corrections can be wrong; chat does not change your card progress.",
     input: "Your reply",
@@ -25,7 +26,7 @@ export const chatMessages = {
     showPinyin: "Show pinyin",
     hidePinyin: "Hide pinyin",
     listen: "Listen",
-    autoplay: "Autoplay replies",
+    autoplay: "Autoplay sounds",
     keyboardHelp: {
       title: "Set up a Chinese keyboard",
       intro: "Choose Simplified Chinese Pinyin. Type the sound with Latin letters, then select the characters, for example ni hao → 你好.",
@@ -76,7 +77,7 @@ export const chatMessages = {
   es: {
     model: "Modelo:",
     title: "Practica con Léi",
-    subtitle: "Tus palabras, en conversación.",
+    subtitle: "Conversa con las palabras que estudias",
     intro:
       "Practica algunas palabras que estás aprendiendo, con otras que ya conoces como apoyo. Léi conversa con frases cortas y te ayuda cuando lo necesitas.",
     topic: "Tema de conversación",
@@ -90,6 +91,7 @@ export const chatMessages = {
       "Ya has usado tus tres mensajes gratis. Inicia sesión para seguir practicando.",
     unavailable:
       "La conversación aún no está disponible. Puedes seguir practicando con tus tarjetas.",
+    privacyTitle: "Qué se envía a la IA",
     privacy:
       "Tus mensajes y el material de aprendizaje seleccionado se envían a nuestro proveedor de IA. El historial se guarda en este navegador. La IA puede equivocarse; el chat no cambia el progreso de tus tarjetas.",
     input: "Tu respuesta",
@@ -99,7 +101,7 @@ export const chatMessages = {
     showPinyin: "Mostrar pinyin",
     hidePinyin: "Ocultar pinyin",
     listen: "Escuchar",
-    autoplay: "Reproducir automáticamente",
+    autoplay: "Reproducir sonidos",
     keyboardHelp: {
       title: "Configurar un teclado chino",
       intro: "Elige pinyin de chino simplificado. Escribe la pronunciación con letras latinas y selecciona los caracteres, por ejemplo ni hao → 你好.",

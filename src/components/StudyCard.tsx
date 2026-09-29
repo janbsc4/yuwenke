@@ -1,3 +1,4 @@
+import { AppIcon } from "./AppIcon";
 import { Fragment, forwardRef, useEffect, type RefObject } from "react";
 
 import type { Locale, StudyUnit } from "../types";
@@ -75,7 +76,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
         aria-pressed={favorite}
         onClick={onToggleFavorite}
       >
-        <span aria-hidden="true">{favorite ? "★" : "☆"}</span>
+        <AppIcon name="favorites" />
       </button>
       <div className="card-prompt">
         <p className="eyebrow">{m.card.promptEyebrow}</p>
@@ -119,7 +120,7 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
               aria-label={m.card.speak}
               onClick={() => speakChinese(card.hanzi)}
             >
-              <span aria-hidden="true">🔊</span>
+              <AppIcon name="sound" />
             </button>
           ) : null}
 

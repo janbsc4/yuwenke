@@ -75,6 +75,7 @@ export interface Messages {
   };
   views: Record<StudyView, string>;
   viewsAria: string;
+  viewDescriptions: Record<StudyView, string>;
   cardTypes: Record<CardType, string>;
   topics: Record<string, string>;
   nav: {
@@ -82,7 +83,6 @@ export interface Messages {
   };
   guestNote: {
     body: string;
-    cta: string;
   };
   storageWarning: string;
   toastCloseAria: string;
@@ -249,11 +249,11 @@ const es: Messages = {
     offline: "Sin conexión · cambios pendientes",
     error: "No se pudo sincronizar",
     local: "Guardado local",
-    guest: "Solo en este dispositivo",
+    guest: "Invitado · guardado aquí",
     retry: "Reintentar",
   },
   account: {
-    signIn: "Iniciar sesión",
+    signIn: "Guardar progreso",
     menuAria: "Abrir menú de cuenta",
     yourAccount: "Tu cuenta",
     resetStudy: "Restablecer estudio",
@@ -265,6 +265,11 @@ const es: Messages = {
     study: "Estudiar",
     mastered: "Dominadas",
     favorites: "Favoritas",
+  },
+  viewDescriptions: {
+    study: "Piensa la respuesta, dila en voz alta y comprueba.",
+    mastered: "Repasa lo que ya sabes para no olvidarlo.",
+    favorites: "Las tarjetas que has guardado para volver a ellas.",
   },
   viewsAria: "Modos de estudio",
   cardTypes: {
@@ -306,7 +311,6 @@ const es: Messages = {
   guestNote: {
     body:
       "Estás estudiando como invitado. Tu progreso, favoritas y packs se guardan en este dispositivo.",
-    cta: "Sincronizar con Google",
   },
   storageWarning:
     "Tu progreso, favoritas y packs no se guardarán en este dispositivo.",
@@ -512,7 +516,7 @@ const es: Messages = {
   login: {
     title: "Guarda tu progreso",
     body:
-      "Inicia sesión para continuar en otros dispositivos. El progreso y las favoritas y packs guardados aquí se conservarán al sincronizar.",
+      "Inicia sesión para continuar en otros dispositivos.",
     googleReady: "Continuar con Google",
     googlePreparing: "Preparando Google…",
     configNote:
@@ -563,11 +567,11 @@ const en: Messages = {
     offline: "Offline · changes pending",
     error: "Couldn't sync",
     local: "Saved locally",
-    guest: "Only on this device",
+    guest: "Guest · saved on this device",
     retry: "Retry",
   },
   account: {
-    signIn: "Sign in",
+    signIn: "Save progress",
     menuAria: "Open account menu",
     yourAccount: "Your account",
     resetStudy: "Reset study",
@@ -579,6 +583,11 @@ const en: Messages = {
     study: "Study",
     mastered: "Mastered",
     favorites: "Favorites",
+  },
+  viewDescriptions: {
+    study: "Think it through, say it aloud, then check your answer.",
+    mastered: "Revisit what you know to keep it fresh.",
+    favorites: "The cards you saved to come back to.",
   },
   viewsAria: "Study modes",
   cardTypes: {
@@ -620,7 +629,6 @@ const en: Messages = {
   guestNote: {
     body:
       "You're studying as a guest. Your progress, favorites, and packs are saved on this device.",
-    cta: "Sync with Google",
   },
   storageWarning:
     "Your progress, favorites, and packs won't be saved on this device.",
@@ -822,7 +830,7 @@ const en: Messages = {
   login: {
     title: "Save your progress",
     body:
-      "Sign in to continue on other devices. The progress, favorites, and packs saved here will be kept when you sync.",
+      "Sign in to continue on other devices.",
     googleReady: "Continue with Google",
     googlePreparing: "Preparing Google…",
     configNote:

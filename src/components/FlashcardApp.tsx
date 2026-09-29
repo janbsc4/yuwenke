@@ -53,6 +53,7 @@ import {
   type ChineseVoiceOption,
 } from "../lib/speech";
 import { useProgressSync } from "../hooks/useProgressSync";
+import { AppIcon } from "./AppIcon";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
 import { CardPackBooster } from "./CardPackBooster";
@@ -763,7 +764,7 @@ export default function FlashcardApp({
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${chatOpen ? " app-shell--chat" : ""}`}>
       <header className="site-header">
         <a className="brand" href={homeUrl()} aria-label={m.brand.homeAria}>
           <img
@@ -778,6 +779,26 @@ export default function FlashcardApp({
             <small>{m.brand.tagline}</small>
           </span>
         </a>
+
+        <nav className="view-tabs" aria-label={m.viewsAria}>
+          {(Object.keys(m.views) as StudyView[]).map((view) => (
+            <button
+              type="button"
+              key={view}
+              className={!chatOpen && view === activeView ? "is-active" : ""}
+              aria-current={!chatOpen && view === activeView ? "page" : undefined}
+              onClick={() => changeView(view)}
+            >
+              <AppIcon name={view} />
+              <span>{m.views[view]}</span>
+              <span className="count-pill">{counts[view]}</span>
+            </button>
+          ))}
+          <button type="button" className={chatOpen ? "is-active" : ""} aria-current={chatOpen ? "page" : undefined} onClick={() => setChatOpen(true)}>
+            <AppIcon name="chat" />
+            <span>{locale === "es" ? "Conversa" : "Converse"}</span>
+          </button>
+        </nav>
 
         <div className="header-tools">
           <div className="account-area">
@@ -833,12 +854,14 @@ export default function FlashcardApp({
             ) : (
               <button
                 type="button"
-                className="button button-small button-ink"
+                className="button button-small button-ink save-progress"
+                aria-label={m.account.signIn}
                 onClick={() => setLoginOpen(true)}
                 ref={loginButtonRef}
                 title={firebaseConfigured ? undefined : m.account.syncUnavailableTitle}
               >
-                {m.account.signIn}
+                <AppIcon name="account" />
+                <span>{m.account.signIn}</span>
               </button>
             )}
           </div>
@@ -851,7 +874,7 @@ export default function FlashcardApp({
             ref={voiceButtonRef}
             onClick={() => setVoiceOpen(true)}
           >
-            <span aria-hidden="true">{speechMuted ? "🔇" : "🗣"}</span>
+            <AppIcon name={speechMuted ? "muted" : "sound"} />
           </button>
           {SUPPORTED_LOCALES.length > 1 ? (
             <div
@@ -875,32 +898,6 @@ export default function FlashcardApp({
         </div>
       </header>
 
-      <nav className="view-tabs" aria-label={m.viewsAria}>
-        {(Object.keys(m.views) as StudyView[]).map((view) => (
-          <button
-            type="button"
-            key={view}
-            className={!chatOpen && view === activeView ? "is-active" : ""}
-            aria-current={!chatOpen && view === activeView ? "page" : undefined}
-            onClick={() => changeView(view)}
-          >
-            <span>{m.views[view]}</span>
-            <span className="count-pill">{counts[view]}</span>
-          </button>
-        ))}
-        <button type="button" className={chatOpen ? "is-active" : ""} aria-current={chatOpen ? "page" : undefined} onClick={() => setChatOpen(true)}>
-          <span>{locale === "es" ? "Conversa" : "Converse"}</span>
-        </button>
-      </nav>
-
-      {!user ? (
-        <aside className="guest-note">
-          <p>{m.guestNote.body}</p>
-          <button type="button" className="text-button" onClick={() => setLoginOpen(true)}>
-            {m.guestNote.cta}
-          </button>
-        </aside>
-      ) : null}
 
       {!storageAvailable ? (
         <div className="inline-alert" role="status">
@@ -936,7 +933,11 @@ export default function FlashcardApp({
           }}
         />
       </Suspense>}
-      <div hidden={chatOpen}>
+      <div className="study-workspace" hidden={chatOpen}>
+      <div className="study-heading">
+        <h1>{m.views[activeView]}</h1>
+        <p>{m.viewDescriptions[activeView]}</p>
+      </div>
       <div className="search-row">
         <div className="search-field">
           <span className="search-icon" aria-hidden="true">⌕</span>
@@ -1282,8 +1283,8 @@ export default function FlashcardApp({
             ref={loginDialogRef}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <div className="dialog-mark" lang="zh-Hans" aria-hidden="true">记</div>
             <h2 id="login-title">{m.login.title}</h2>
+            <p>{m.guestNote.body}</p>
             <p>{m.login.body}</p>
             {firebaseConfigured ? (
               <button

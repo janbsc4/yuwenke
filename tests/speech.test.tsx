@@ -426,7 +426,6 @@ describe("voice settings dialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
 
     expect(screen.getByRole("checkbox", { name: "Silenciar pronunciación" })).toBeChecked();
-    expect(screen.getByRole("button", { name: "Elegir voz de pronunciación" })).toHaveTextContent("🔇");
   });
 
   it("shows getting-started instructions per platform", async () => {

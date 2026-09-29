@@ -136,11 +136,23 @@ describe("FlashcardApp", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("explains device-only storage from Save progress and restores focus when closed", async () => {
+    const user = userEvent.setup();
+    renderApp([card]);
+    const save = await screen.findByRole("button", { name: "Guardar progreso" });
+    await user.click(save);
+    expect(screen.getByRole("dialog", { name: "Guarda tu progreso" })).toBeVisible();
+    expect(screen.getByText(/Estás estudiando como invitado/)).toBeVisible();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(save).toHaveFocus();
+  });
+
   it("supports the guest combined study flow and persists a decision", async () => {
     const user = userEvent.setup();
     renderApp([card]);
 
-    expect(await screen.findByText("Estudiar")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Estudiar", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("Aprende Mucho Chino")).toBeInTheDocument();
     expect(
       screen.queryByText(/Cada carta se practica en dos sentidos/),

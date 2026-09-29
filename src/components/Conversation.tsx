@@ -1,3 +1,4 @@
+import { AppIcon } from "./AppIcon";
 import {
   useEffect,
   useLayoutEffect,
@@ -291,7 +292,7 @@ export default function Conversation({
   }
 
   return (
-    <main className="conversation" aria-label={m.title}>
+    <main className={`conversation${configured && session.turns.length ? " conversation--active" : ""}`} aria-label={m.title}>
       <header className="chat-heading">
         <div className="chat-identity">
           <span className="chat-seal" lang="zh-CN" aria-hidden="true">
@@ -302,34 +303,33 @@ export default function Conversation({
             <p>{m.subtitle}</p>
           </div>
         </div>
-        {session.turns.length > 0 && (
-          <button
-            className="text-button"
-            type="button"
-            disabled={busy}
-            onClick={() => setConfirmClear(true)}
-          >
-            {m.newChat}
-          </button>
-        )}
-      </header>
-      {configured && (
-        <div className="chat-preferences">
-          <button
-            type="button"
-            className="chat-autoplay"
-            aria-pressed={autoplay}
-            disabled={Boolean(listenUnavailable)}
-            title={listenUnavailable ?? undefined}
-            onClick={toggleAutoplay}
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
-            </svg>
-            {m.autoplay}
-          </button>
+        <div className="chat-header-tools">
+          {configured && (
+            <button
+              type="button"
+              className="chat-autoplay"
+              aria-pressed={autoplay}
+              disabled={Boolean(listenUnavailable)}
+              title={listenUnavailable ?? undefined}
+              onClick={toggleAutoplay}
+            >
+              <span className="chat-switch" aria-hidden="true" />
+              {m.autoplay}
+            </button>
+          )}
+          {session.turns.length > 0 && (
+            <button
+              className="button button-small"
+              type="button"
+              disabled={busy}
+              onClick={() => setConfirmClear(true)}
+            >
+              {m.newChat}
+            </button>
+          )}
         </div>
-      )}
+      </header>
+
       {confirmClear && (
         <div className="chat-clear" role="group" aria-label={m.confirmClear}>
           <p>{m.confirmClear}</p>
@@ -517,18 +517,15 @@ export default function Conversation({
                 onChange={(event) => setDraft(event.target.value)}
               />
               <button
-                className="button button-ink"
+                className="button chat-send"
+                aria-label={m.send}
+                title={m.send}
                 type="submit"
                 disabled={busy || !draft.trim() || (!owner && remaining === 0)}
               >
-                {m.send}
+                <AppIcon name="send" />
               </button>
             </form>
-          )}
-          {remaining !== null && (
-            <p className="chat-allowance">
-              {remaining} {owner ? m.remaining : m.guestRemaining}
-            </p>
           )}
           {!owner && remaining === 0 && (
             <div className="chat-intro">
@@ -584,11 +581,21 @@ export default function Conversation({
           </div>
         </>
       )}
-      <p className="chat-model">
-        {m.model}{" "}
-        <span>{chatModelLabel(session.model ?? DEFAULT_CHAT_MODEL)}</span>
-      </p>
-      <p className="chat-privacy">{m.privacy}</p>
+      <footer className="chat-footer">
+        {configured && remaining !== null && (
+          <p className="chat-allowance">
+            {remaining} {owner ? m.remaining : m.guestRemaining}
+          </p>
+        )}
+        <p className="chat-model">
+          {m.model}{" "}
+          <span>{chatModelLabel(session.model ?? DEFAULT_CHAT_MODEL)}</span>
+        </p>
+        <details className="chat-privacy">
+          <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.privacyTitle}</summary>
+          <p>{m.privacy}</p>
+        </details>
+      </footer>
     </main>
   );
 }
