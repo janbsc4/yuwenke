@@ -395,7 +395,7 @@ export function useProgressSync(
           confirmedRef.current.favorites = true;
         }
         settleSyncState(uid);
-        setNotice("syncCompleted");
+        setNotice((current) => current === "willSyncWhenOnline" ? null : current);
         succeeded = true;
       } catch {
         if (generation === generationRef.current) {

@@ -17,7 +17,6 @@ function plural(
  * happened and the interface renders the active locale's wording.
  */
 export type NoticeKey =
-  | "syncCompleted"
   | "willSyncWhenOnline"
   | "syncStartFailed"
   | "syncPrepareFailed"
@@ -524,7 +523,6 @@ const es: Messages = {
     notNow: "Ahora no",
   },
   notices: {
-    syncCompleted: "Progreso, favoritas y packs sincronizados.",
     willSyncWhenOnline: "Guardaremos este cambio cuando vuelva la conexión.",
     syncStartFailed:
       "No se pudo iniciar la sincronización. Tu progreso local sigue a salvo.",
@@ -838,7 +836,6 @@ const en: Messages = {
     notNow: "Not now",
   },
   notices: {
-    syncCompleted: "Progress, favorites, and packs synced.",
     willSyncWhenOnline: "We'll save this change when the connection is back.",
     syncStartFailed: "Couldn't start sync. Your local progress is still safe.",
     syncPrepareFailed: "Couldn't prepare sync. Your local progress is still safe.",

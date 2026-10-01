@@ -67,6 +67,11 @@ interface AdapterControls {
     pendingWrites?: boolean,
   ) => void;
   publishPackState: (state: CardPackState) => void;
+  publishFavorites: (
+    favorites: Record<string, FavoriteEntry>,
+    serverConfirmed?: boolean,
+    pendingWrites?: boolean,
+  ) => void;
 }
 
 function firebaseAdapter(
@@ -78,6 +83,9 @@ function firebaseAdapter(
   let packStateObserver:
     | Parameters<ProgressSyncFirebaseClient["observeCloudCardPackState"]>[1]
     | null = null;
+  let favoritesObserver:
+    | Parameters<ProgressSyncFirebaseClient["observeCloudFavorites"]>[1]
+    | null = null;
 
   const client: ProgressSyncFirebaseClient = {
     observeAuth: vi.fn((onUser) => {
@@ -88,7 +96,10 @@ function firebaseAdapter(
       progressObserver = onProgress;
       return () => undefined;
     }),
-    observeCloudFavorites: vi.fn(() => () => undefined),
+    observeCloudFavorites: vi.fn((_uid, onFavorites) => {
+      favoritesObserver = onFavorites;
+      return () => undefined;
+    }),
     observeCloudCardPackState: vi.fn((_uid, onState) => {
       packStateObserver = onState;
       return () => undefined;
@@ -109,6 +120,8 @@ function firebaseAdapter(
     publishProgress: (progress, serverConfirmed = true, pendingWrites = false) =>
       progressObserver?.(progress, serverConfirmed, pendingWrites),
     publishPackState: (state) => packStateObserver?.(state, true, false),
+    publishFavorites: (favorites, serverConfirmed = true, pendingWrites = false) =>
+      favoritesObserver?.(favorites, serverConfirmed, pendingWrites),
   };
 }
 
@@ -122,6 +135,39 @@ function renderAuthenticatedSync(client: ProgressSyncFirebaseClient) {
 }
 
 describe("authenticated progress synchronization", () => {
+  it("uses the header state without a success notice and waits for every cloud snapshot before showing synced", async () => {
+    const { client, publishProgress, publishFavorites, publishPackState } = firebaseAdapter();
+    const { result } = renderAuthenticatedSync(client);
+    await waitFor(() => expect(client.writeCloudFavoritesBatch).toHaveBeenCalled());
+    await waitFor(() => expect(localCardPacks.readOutbox("alice").value).toBeNull());
+    expect(result.current.syncState).toBe("syncing");
+    expect(result.current.notice).toBeNull();
+
+    act(() => {
+      publishPackState(packState());
+      publishProgress({}, false);
+      publishFavorites({});
+    });
+    expect(result.current.syncState).toBe("syncing");
+
+    act(() => publishProgress({}));
+    await waitFor(() => expect(result.current.syncState).toBe("synced"));
+    expect(result.current.notice).toBeNull();
+
+    let finishWrite: (() => void) | undefined;
+    vi.mocked(client.writeCloudProgress).mockImplementation(() => new Promise<void>((resolve) => {
+      finishWrite = resolve;
+    }));
+    act(() => result.current.setStatus("FC001", "hanzi-meaning", "learning"));
+    await waitFor(() => expect(client.writeCloudProgress).toHaveBeenCalled());
+    expect(result.current.syncState).toBe("syncing");
+    expect(result.current.notice).toBeNull();
+
+    await act(async () => finishWrite?.());
+    await waitFor(() => expect(result.current.syncState).toBe("synced"));
+    expect(result.current.notice).toBeNull();
+  });
+
   it("combines unseen units with Firebase learning progress without writing progress for unseen cards", async () => {
     const { client, publishProgress } = firebaseAdapter();
     const { result } = renderAuthenticatedSync(client);
@@ -309,6 +355,7 @@ describe("authenticated progress synchronization", () => {
     const { result } = renderAuthenticatedSync(client);
 
     await waitFor(() => expect(result.current.syncState).toBe("error"));
+    expect(result.current.notice).toBe("willSyncWhenOnline");
     expect(localProgress.readOutbox("alice").value).not.toEqual({});
 
     await act(async () => result.current.retry());
@@ -326,5 +373,6 @@ describe("authenticated progress synchronization", () => {
       ]);
     }
     expect(localProgress.readOutbox("alice").value).toEqual({});
+    expect(result.current.notice).toBeNull();
   });
 });

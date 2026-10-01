@@ -752,6 +752,18 @@ export default function FlashcardApp({
     }
   };
 
+  const syncLabel = user
+    ? syncState === "syncing"
+      ? m.sync.syncing
+      : syncState === "synced"
+        ? m.sync.synced
+        : syncState === "offline"
+          ? m.sync.offline
+          : syncState === "error"
+            ? m.sync.error
+            : m.sync.local
+    : m.sync.guest;
+
   if (!ready || !viewInitialized) {
     return (
       <div className="app-shell loading-shell" aria-live="polite">
@@ -802,18 +814,8 @@ export default function FlashcardApp({
 
         <div className="header-tools">
           <div className="account-area">
-            <span className={`sync-label sync-${syncState}`}>
-              {user
-                ? syncState === "syncing"
-                  ? m.sync.syncing
-                  : syncState === "synced"
-                    ? m.sync.synced
-                    : syncState === "offline"
-                      ? m.sync.offline
-                      : syncState === "error"
-                        ? m.sync.error
-                        : m.sync.local
-                : m.sync.guest}
+            <span className={`sync-label sync-${syncState}`} role="status" title={syncLabel}>
+              <span className="sync-status-text">{syncLabel}</span>
             </span>
             {syncState === "error" && user ? (
               <button className="text-button" type="button" onClick={() => void retry()}>
