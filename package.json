@@ -17,6 +17,7 @@
     "test:all": "npm test && npm run test:rules",
     "build:chat": "npm run build:chat:catalog && tsc -p worker/tsconfig.json && wrangler deploy --config worker/wrangler.jsonc --dry-run --outdir dist",
     "build:chat:catalog": "node --experimental-strip-types scripts/build_chat_catalog.mjs",
+    "check:chat:deployment": "node scripts/validate_chat_catalog.mjs",
     "deploy:chat": "npm run build:chat && wrangler deploy --config worker/wrangler.jsonc",
     "dev:chat": "wrangler dev --config worker/wrangler.jsonc",
     "pretest": "npm run build:chat",

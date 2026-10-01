@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { loadFlashcards } from "../src/data/loadFlashcards.ts";
 import { loadCardPackData } from "../src/data/loadCardPacks.ts";
 
@@ -21,5 +22,13 @@ const catalog = cards.map((card) =>
 );
 const directory = new URL("../worker/generated/", import.meta.url);
 await mkdir(directory, { recursive: true });
-await writeFile(new URL("catalog.json", directory), JSON.stringify(catalog));
+const serialized = JSON.stringify(catalog);
+const version = {
+  sha256: createHash("sha256").update(serialized).digest("hex"),
+  cardCount: catalog.length,
+};
+await Promise.all([
+  writeFile(new URL("catalog.json", directory), serialized),
+  writeFile(new URL("catalog-version.json", directory), JSON.stringify(version)),
+]);
 console.log(`Built conversation catalog with ${catalog.length} source cards.`);

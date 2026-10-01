@@ -5,6 +5,7 @@ import type {
 import { z } from "zod";
 import { DEFAULT_CHAT_MODEL, type ChatCard } from "../../shared/chat";
 import catalog from "../generated/catalog.json";
+import catalogVersion from "../generated/catalog-version.json";
 import { verifyFirebaseToken } from "./auth";
 import { consumeQuota } from "./quota";
 import { ChatError, generateTutorReply, parseChatRequest } from "./tutor";
@@ -160,7 +161,13 @@ export default {
       }, { status, headers });
     if (origin && origin !== env.ALLOWED_ORIGIN)
       return error(403, "permission-denied");
-    if (new URL(request.url).pathname !== "/conversation")
+    const path = new URL(request.url).pathname;
+    // Pages can verify this deployment without sending learner data or spending quota.
+    if (path === "/catalog-version") {
+      if (request.method !== "GET") return error(405, "invalid-argument");
+      return Response.json(catalogVersion, { headers });
+    }
+    if (path !== "/conversation")
       return error(404, "not-found");
     if (request.method === "OPTIONS")
       return new Response(null, {

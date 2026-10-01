@@ -1,6 +1,7 @@
 import worker, { type Env } from "../worker/src/index";
 import { verifyFirebaseToken } from "../worker/src/auth";
 import { ChatError, generateTutorReply } from "../worker/src/tutor";
+import catalogVersion from "../worker/generated/catalog-version.json";
 
 vi.mock("../worker/src/auth", () => ({ verifyFirebaseToken: vi.fn() }));
 vi.mock("../worker/src/tutor", async (original) => ({
@@ -55,6 +56,16 @@ beforeEach(() => {
   vi.mocked(verifyFirebaseToken).mockResolvedValue("alice");
   reserve.mockResolvedValue(Response.json({ remaining: 29 }));
   vi.mocked(generateTutorReply).mockResolvedValue(reply);
+});
+it("exposes only the public catalog fingerprint without authentication, inference, or quota", async () => {
+  const response = await worker.fetch(new Request("https://lei.example/catalog-version"), env);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(catalogVersion);
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(verifyFirebaseToken).not.toHaveBeenCalled();
+  expect(reserve).not.toHaveBeenCalled();
+  expect(generateTutorReply).not.toHaveBeenCalled();
+  expect((await worker.fetch(new Request("https://lei.example/catalog-version", { method: "POST" }), env)).status).toBe(405);
 });
 it("authenticates before reserving allowance or calling inference", async () => {
   expect(

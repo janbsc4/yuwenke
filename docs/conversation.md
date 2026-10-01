@@ -29,7 +29,7 @@ The Google public-key cache is managed by `jose`. Like Firebase's default token 
    npx wrangler login
    ```
 
-2. Review `worker/wrangler.jsonc`. It contains the Firebase project ID, exact permitted website origin, model, usage limits, and the SQLite Durable Object binding. It contains no secrets. The Worker exposes only `POST /conversation` and its CORS preflight.
+2. Review `worker/wrangler.jsonc`. It contains the Firebase project ID, exact permitted website origin, model, usage limits, and the SQLite Durable Object binding. It contains no secrets. The Worker exposes `POST /conversation`, its CORS preflight, and a public `GET /catalog-version` with only the catalog fingerprint and card count.
 
 3. Deploy the Worker, then store the inference key using Wrangler's secret prompt. The Worker rejects inference until its secret exists:
 
@@ -51,7 +51,7 @@ The Google public-key cache is managed by `jose`. Like Firebase's default token 
 
 5. Try the guest messages in both languages, then sign in and continue. Check pinyin, corrections, response time, and the model label. Use a second account to verify history separation. A live model test is separate from mocked automated tests.
 
-`npm run deploy:chat` validates and rebuilds the card catalog from the source CSV before uploading. Deploy the Worker again after changing the catalog. CI builds and tests the Worker but does not deploy it or access the inference key.
+`npm run deploy:chat` validates and rebuilds the card catalog from the source CSV before uploading. Deploy the Worker again after changing the catalog. Before publishing Pages, CI runs `npm run check:chat:deployment` against the live Worker and requires its catalog fingerprint to match the site's source cards. This prevents new cards from reaching the site while Léi still rejects their progress as unknown IDs. The check sends no learner data and consumes no conversation allowance. CI builds and tests the Worker but does not deploy it or access the inference key.
 
 ## Local development
 

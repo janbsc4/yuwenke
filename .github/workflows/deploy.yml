@@ -56,6 +56,10 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      - name: Verify deployed Léi catalog matches the site
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: npm run check:chat:deployment
+
       - name: Configure GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
