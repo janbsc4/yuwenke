@@ -515,6 +515,18 @@ export default function Conversation({
                 disabled={busy || (!owner && remaining === 0)}
                 placeholder={m.placeholder}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  // Enter must still confirm characters while the Chinese IME is composing.
+                  // Safari's composition-ending Enter still uses this legacy IME marker.
+                  // eslint-disable-next-line @typescript-eslint/no-deprecated
+                  const isComposing = event.nativeEvent.isComposing || event.keyCode === 229;
+                  if (
+                    event.key !== "Enter" || event.shiftKey ||
+                    isComposing
+                  ) return;
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }}
               />
               <button
                 className="button chat-send"
