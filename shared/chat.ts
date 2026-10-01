@@ -3,10 +3,12 @@ import { z } from "zod";
 export const CHAT_MAX_MESSAGE = 1500;
 export const CHAT_MAX_HISTORY = 24;
 export const CHAT_MAX_HISTORY_CHARS = 12000;
-export const DEFAULT_CHAT_MODEL = "mimo-v2.6-flash";
+export const DEFAULT_CHAT_MODEL = "glm-5.3-flash";
 
 export function chatModelLabel(model: string): string {
-  return model === DEFAULT_CHAT_MODEL ? "MiMo-V2.6-Flash" : model;
+  if (model === "glm-5.3-flash") return "GLM-5.3-Flash";
+  if (model === "mimo-v2.6-flash") return "MiMo-V2.6-Flash";
+  return model;
 }
 
 const cardId = z.string().regex(/^FC\d{3}$/);
@@ -22,6 +24,7 @@ export const chatRequestSchema = z
   .object({
     sessionId: z.uuid(),
     locale: z.enum(["en", "es"]),
+    supportsExplanations: z.boolean().optional(),
     topic: z.string().trim().max(80),
     progress: z.array(chatProgressSchema).max(2000),
     messages: z
@@ -67,7 +70,9 @@ export const naturalnessSchema = z.object({
   { message: "An answer needing improvement must include a better Chinese sentence." },
 );
 
-export const tutorReplySchema = z.object({
+const conversationReplySchema = z.object({
+  // Missing kind keeps replies from older backends and saved history readable.
+  kind: z.literal("conversation").optional(),
   chinese: z.string().trim().min(1).max(1500),
   pinyin: z.string().trim().min(1).max(2000),
   meaning: z.string().trim().min(1).max(2000),
@@ -77,6 +82,18 @@ export const tutorReplySchema = z.object({
   hint: z.string().trim().min(1).max(1000),
   practicedCardIds: z.array(cardId).max(12),
 });
+
+const explanationReplySchema = z.object({
+  kind: z.literal("explanation"),
+  explanation: z.string().trim().min(1).max(3000),
+  naturalness: z.null().default(null),
+  practicedCardIds: z.array(cardId).max(0).default([]),
+});
+
+export const tutorReplySchema = z.union([
+  conversationReplySchema,
+  explanationReplySchema,
+]);
 
 export const chatResponseSchema = z.object({
   model: z.string().trim().min(1).max(120),

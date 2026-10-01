@@ -21,7 +21,7 @@ vi.mock("../src/lib/speech", () => ({
   },
 }));
 const cards = loadFlashcards();
-const response: ChatResponse = {
+const response = {
   model: "mimo-v2.6-flash",
   reply: {
     chinese: "你好吗？",
@@ -33,7 +33,7 @@ const response: ChatResponse = {
   },
   targetCardIds: [cards[0].id],
   remaining: 29,
-};
+} satisfies ChatResponse;
 const props = {
   cards,
   progress: {},
@@ -127,7 +127,7 @@ it("gives a guest three messages before asking for sign-in", async () => {
 
 it("starts a conversation, reveals assistance without more inference, and saves the reply", async () => {
   render(<Conversation {...props} />);
-  expect(screen.getByText("MiMo-V2.6-Flash")).toBeVisible();
+  expect(screen.getByText("GLM-5.3-Flash")).toBeVisible();
   await userEvent.click(
     screen.getByRole("button", { name: "Start a conversation" }),
   );

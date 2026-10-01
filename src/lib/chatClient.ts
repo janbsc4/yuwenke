@@ -55,7 +55,7 @@ export async function sendConversation(request: ChatRequest) {
       ...(token ? { Authorization: `Bearer ${token}` } :
         { "X-Lei-Guest-Id": identity?.id ?? "" }),
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify({ ...request, supportsExplanations: true }),
     signal: AbortSignal.timeout(70000),
   });
   if (!response.ok) {

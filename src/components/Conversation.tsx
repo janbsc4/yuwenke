@@ -190,7 +190,9 @@ export default function Conversation({
       setStorageFailed(!saveConversation(ownerKey, locale, next));
       setRemaining(result.remaining);
       setDraft("");
-      if (autoplay && !muted && speechSupported()) speakChinese(result.reply.chinese);
+      if (result.reply.kind !== "explanation" && autoplay && !muted && speechSupported()) {
+        speakChinese(result.reply.chinese);
+      }
     } catch (cause) {
       if (!mounted.current) return;
       const timedOut =
@@ -395,16 +397,16 @@ export default function Conversation({
             aria-live="polite"
             aria-relevant="additions"
           >
-            {session.turns.map((turn, index) => (
+            {session.turns.map(({ user, reply }, index) => (
               <div className="chat-turn" key={index}>
                 <div className="chat-learner">
                   <p className="chat-user" dir="auto">
-                    {turn.user}
+                    {user}
                   </p>
-                  {turn.reply.naturalness && (
+                  {reply.naturalness && (
                     <details
                       className="chat-naturalness"
-                      data-level={turn.reply.naturalness.level}
+                      data-level={reply.naturalness.level}
                       onToggle={(event) => {
                         if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
                       }}
@@ -414,13 +416,13 @@ export default function Conversation({
                         <span className="chat-naturalness-meter" aria-hidden="true">
                           <span /><span /><span />
                         </span>
-                        <span>{m.naturalnessLevels[turn.reply.naturalness.level]}</span>
+                        <span>{m.naturalnessLevels[reply.naturalness.level]}</span>
                       </summary>
-                      <p>{naturalnessExplanation(turn.reply.naturalness.explanation, turn.reply.naturalness.level, m.naturalnessFallback)}</p>
-                      {turn.reply.naturalness.betterChinese && (
+                      <p>{naturalnessExplanation(reply.naturalness.explanation, reply.naturalness.level, m.naturalnessFallback)}</p>
+                      {reply.naturalness.betterChinese && (
                         <div className="chat-better-sentence">
                           <strong>{m.betterSentence}</strong>
-                          <p lang="zh-CN">{turn.reply.naturalness.betterChinese}</p>
+                          <p lang="zh-CN">{reply.naturalness.betterChinese}</p>
                         </div>
                       )}
                     </details>
@@ -428,63 +430,69 @@ export default function Conversation({
                 </div>
                 <article className="chat-reply" aria-label="Léi">
                   <span className="chat-speaker">Léi</span>
-                  <div className="chat-reply-line">
-                    <p className="chat-chinese" lang="zh-CN">
-                      {revealedPinyin.has(index) && pinyinReader
-                        ? chineseWithPinyin(turn.reply.chinese, pinyinReader)
-                        : turn.reply.chinese}
-                    </p>
-                    <button
-                      type="button"
-                      className="chat-listen"
-                      aria-label={m.listen}
-                      disabled={Boolean(listenUnavailable)}
-                      title={listenUnavailable ?? m.listen}
-                      onClick={() => speakChinese(turn.reply.chinese)}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
-                      </svg>
-                    </button>
-                  </div>
-                  {turn.reply.feedback && !turn.reply.naturalness && (
-                    <div className="chat-correction">
-                      <strong>{m.correction}</strong>
-                      <p>{turn.reply.feedback}</p>
-                    </div>
-                  )}
-                  <div className="chat-aids">
-                    <button
-                      type="button"
-                      className="chat-pinyin-toggle"
-                      aria-expanded={revealedPinyin.has(index)}
-                      onClick={() => void togglePinyin(index)}
-                    >
-                      {revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
-                    </button>
-                    <button
-                      type="button"
-                      className="chat-aid-toggle"
-                      aria-expanded={openAid[index] === "meaning"}
-                      aria-controls={openAid[index] === "meaning" ? `chat-aid-${index}` : undefined}
-                      onClick={() => toggleAid(index, "meaning")}
-                    >
-                      {m.meaning}
-                    </button>
-                    <button
-                      type="button"
-                      className="chat-aid-toggle"
-                      aria-expanded={openAid[index] === "hint"}
-                      aria-controls={openAid[index] === "hint" ? `chat-aid-${index}` : undefined}
-                      onClick={() => toggleAid(index, "hint")}
-                    >
-                      {m.hint}
-                    </button>
-                  </div>
-                  {openAid[index] && (
-                    <p className="chat-aid-panel" id={`chat-aid-${index}`}>
-                      {openAid[index] === "meaning" ? turn.reply.meaning : turn.reply.hint}
-                    </p>
+                  {reply.kind === "explanation" ? (
+                    <p className="chat-explanation" lang={locale}>{reply.explanation}</p>
+                  ) : (
+                    <>
+                      <div className="chat-reply-line">
+                        <p className="chat-chinese" lang="zh-CN">
+                          {revealedPinyin.has(index) && pinyinReader
+                            ? chineseWithPinyin(reply.chinese, pinyinReader)
+                            : reply.chinese}
+                        </p>
+                        <button
+                          type="button"
+                          className="chat-listen"
+                          aria-label={m.listen}
+                          disabled={Boolean(listenUnavailable)}
+                          title={listenUnavailable ?? m.listen}
+                          onClick={() => speakChinese(reply.chinese)}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
+                          </svg>
+                        </button>
+                      </div>
+                      {reply.feedback && !reply.naturalness && (
+                        <div className="chat-correction">
+                          <strong>{m.correction}</strong>
+                          <p>{reply.feedback}</p>
+                        </div>
+                      )}
+                      <div className="chat-aids">
+                        <button
+                          type="button"
+                          className="chat-pinyin-toggle"
+                          aria-expanded={revealedPinyin.has(index)}
+                          onClick={() => void togglePinyin(index)}
+                        >
+                          {revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
+                        </button>
+                        <button
+                          type="button"
+                          className="chat-aid-toggle"
+                          aria-expanded={openAid[index] === "meaning"}
+                          aria-controls={openAid[index] === "meaning" ? `chat-aid-${index}` : undefined}
+                          onClick={() => toggleAid(index, "meaning")}
+                        >
+                          {m.meaning}
+                        </button>
+                        <button
+                          type="button"
+                          className="chat-aid-toggle"
+                          aria-expanded={openAid[index] === "hint"}
+                          aria-controls={openAid[index] === "hint" ? `chat-aid-${index}` : undefined}
+                          onClick={() => toggleAid(index, "hint")}
+                        >
+                          {m.hint}
+                        </button>
+                      </div>
+                      {openAid[index] && (
+                        <p className="chat-aid-panel" id={`chat-aid-${index}`}>
+                          {openAid[index] === "meaning" ? reply.meaning : reply.hint}
+                        </p>
+                      )}
+                    </>
                   )}
                 </article>
               </div>

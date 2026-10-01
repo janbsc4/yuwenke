@@ -50,7 +50,7 @@ it("sends a Firebase ID token to the configured Worker and validates the reply",
         "Content-Type": "application/json",
         Authorization: "Bearer firebase-id-token",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, supportsExplanations: true }),
     }),
   );
 });

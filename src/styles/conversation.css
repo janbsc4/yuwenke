@@ -263,6 +263,13 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.chat-explanation {
+  margin: 12px 0 0;
+  color: var(--ink);
+  font: 1rem/1.65 var(--font-ui);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
 .chat-chinese {
   min-width: 0;
   font-family: var(--font-hanzi);

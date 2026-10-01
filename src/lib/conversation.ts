@@ -46,7 +46,10 @@ export function conversationMessages(
 ): ChatRequest["messages"] {
   const messages: ChatRequest["messages"] = turns.flatMap((turn) => [
     { role: "user" as const, content: turn.user },
-    { role: "assistant" as const, content: turn.reply.chinese },
+    {
+      role: "assistant" as const,
+      content: turn.reply.kind === "explanation" ? turn.reply.explanation : turn.reply.chinese,
+    },
   ]);
   messages.push({ role: "user", content: message });
   while (

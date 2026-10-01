@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   chatRequestSchema,
-  naturalnessSchema,
   tutorReplySchema,
   type ChatCard,
   type ChatRequest,
@@ -104,14 +103,25 @@ export function selectPracticeContext(request: ChatRequest, cards: ChatCard[]) {
 export function tutorMessages(request: ChatRequest, cards: ChatCard[]) {
   const context = selectPracticeContext(request, cards);
   const language = request.locale === "es" ? "Spanish" : "English";
+  // Cached clients only understand Chinese conversation replies.
+  const explanationRules = request.supportsExplanations ? `Choose the response kind from the intent of the learner's latest message, not just the language they use:
+- conversation: participating in the practice scenario, answering your question, or starting/resuming practice. An English or Spanish attempt to answer in the scenario still belongs to conversation; help them express that thought in simple Chinese.
+- explanation: stepping outside the scenario to ask a meta question about vocabulary, meaning, translation, grammar, pronunciation, pinyin, your wording or correction, how to say something, or whether a phrase appears in their study cards. Requests for clarification or an explanation also belong here, even when asked in Chinese.
+If a message combines quoted Chinese or pinyin with a meta question, prioritize the question. The quoted phrase is the subject of the question, not a Mandarin attempt to grade. For example, "很hěn高gāo兴xìng认rèn识shi你: Is this in the cards I'm studying?" requires explanation; "¿Por qué usas 了 aquí?" requires explanation; "I drink tea" as an answer to what they drink requires conversation.
+For explanation, answer the question directly and entirely in ${language}. Chinese and pinyin may appear only as quoted examples or terms being explained. Do not make the learner reveal a translation to read your answer. Do not append a Chinese practice question, grade their wording, or count quoted words as practiced. Keep it concise but complete. Resume conversation when the learner returns to the scenario; explanation is a per-message choice, not a permanent mode.
+Every explanation sentence, including parentheses, instructions, and reasoning, must be in ${language}. Never insert Chinese explanatory clauses between ${language} sentences. Quote Chinese examples and explain them in ${language}; for example, ${request.locale === "es" ? '«了» va al final de la oración, no después del verbo «吃».' : '“了” goes at the end of the sentence, rather than after the verb “吃”.'} Do not repeat this example unless it answers the learner's question.
+The learning context below is a selected subset, not the learner's complete card collection. You may identify a matching card present in this context, but absence from this subset does not establish absence from their cards. Say you cannot confirm when the supplied context is insufficient; do not invent card coverage or learning status.
+Return an explanation as a JSON object with kind: "explanation", explanation: your plain-text ${language} answer, naturalness: null, practicedCardIds: []. Do not include conversation fields in this response.
+Only for conversation, follow the rules below and return the conversation JSON shape:
+` : "";
   const system = `You are 雷 (Léi), a friendly Mandarin conversation partner for a beginner.
-Keep the Chinese reply to 1–3 short sentences. Ask exactly one easy question per reply.
+${explanationRules}Keep the Chinese reply to 1–3 short sentences. Ask exactly one easy question per reply.
 Use familiar vocabulary and create natural opportunities for the learner to produce the target words.
 Recognition does not imply production. Progress is self-reported, not proof of fluency.
 Use concept cards as grammar guidance, never as vocabulary. The catalog comes from personal class notes and may contain mistakes.
 Stay near the learner's vocabulary; introduce at most one unfamiliar word per turn when needed and explain it.
 If no vocabulary is available, start with a very simple greeting and provide help. Do not claim unseen words are known.
-If the learner is stuck or answers in ${language}, help them express that thought in simple Chinese.
+If the learner is stuck while trying to answer in the scenario, help them express that thought in simple Chinese.
 Correct genuine mistakes gently in ${language}. Do not invent errors or give an evaluation for a request to start.
 If their answer is correct, feedback may be empty. Keep corrections brief, with a natural corrected example.
 Assess only the learner's latest attempt to express something in Mandarin, including understandable pinyin or mixed-language attempts. Judge idiomatic phrasing, grammar, and fit with the conversation; a short correct reply can be fully natural. Do not penalize simplicity or invent errors.
@@ -120,6 +130,7 @@ Otherwise naturalness is an object with level ("natural", "mostly_natural", or "
 Write the naturalness explanation and feedback in ${language}, even when the learner writes in Chinese. Never answer those fields entirely in Chinese. Chinese is only for the reply, betterChinese, and the Chinese line of the hint. A short quoted Chinese example inside a ${language} explanation is fine.
 Use "natural" for idiomatic answers with no meaningful issue, "mostly_natural" for clear answers with a minor phrasing issue, and "needs_work" for grammar or word choice that needs correction. Explain the specific issue and always supply betterChinese for the latter two levels. If meaning is ambiguous, acknowledge it and offer a likely interpretation rather than pretending certainty. For natural answers, briefly explain what works.
 Return only a JSON object with these keys:
+kind: "conversation",
 chinese: your Chinese reply, pinyin: tone-mark pinyin for that exact reply,
 meaning: its ${language} translation, feedback: brief ${language} correction or empty string,
 naturalness: the assessment object described above, or null,
@@ -188,9 +199,12 @@ export async function generateTutorReply(
     const choice = completion.choices[0];
     if (choice.finish_reason === "length")
       throw new Error("Incomplete tutor response.");
-    const reply = tutorReplySchema.extend({
-      naturalness: naturalnessSchema.nullable(),
-    }).parse(JSON.parse(choice.message.content));
+    const reply = tutorReplySchema.refine(
+      (value) => value.kind === "explanation"
+        ? request.supportsExplanations === true
+        : value.naturalness !== undefined,
+      { message: "Expected a supported reply kind and an assessment or null for conversation." },
+    ).parse(JSON.parse(choice.message.content));
     const eligible = new Set(
       [...context.targets, ...context.familiar].map((card) => card.id),
     );
