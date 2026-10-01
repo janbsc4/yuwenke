@@ -1,5 +1,6 @@
 ---
 import FlashcardApp from "../../../components/FlashcardApp";
+import HomeScreenHint from "../../../components/HomeScreenHint.astro";
 import { loadFlashcards } from "../../../data/loadFlashcards";
 import { loadCardPackData } from "../../../data/loadCardPacks";
 import { SUPPORTED_LOCALES, localeUrl } from "../../../lib/locale";
@@ -68,6 +69,7 @@ const assetUrl = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
       initialLocale={locale}
       client:load
     />
+    <HomeScreenHint />
     <noscript>
       <p class="noscript-message">{meta.noscript}</p>
     </noscript>

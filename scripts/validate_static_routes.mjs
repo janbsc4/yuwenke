@@ -51,6 +51,7 @@ export function validateLocalizedRouteHtml(html, locale) {
   if (!metadata) throw new Error(`Locale no soportado: ${locale}`);
 
   const document = new JSDOM(html).window.document;
+  singleElement(document, "[data-home-screen-hint]", route);
   if (document.documentElement.lang !== locale) {
     throw new Error(
       `${route} tiene html[lang] = ${document.documentElement.lang}; se esperaba ${locale}.`,
@@ -92,17 +93,39 @@ export function validateLocalizedRouteHtml(html, locale) {
   }
 }
 
-export function resolveLandingLangFromHtml(html, saved, browserLanguages) {
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-  if (!script) throw new Error("La página raíz no contiene el resolver de idioma.");
+export function resolveEntryFromHtml(html, saved, browserLanguages, {
+  standalone = false,
+  appleStandalone = false,
+  storageBlocked = false,
+  search = "",
+  hash = "",
+} = {}) {
+  const script = new JSDOM(html).window.document.querySelector("script")?.textContent;
+  if (!script) throw new Error("La ruta de entrada no contiene el resolver de idioma.");
 
   let lang = "";
+  let destination = null;
   runInNewContext(script, {
-    navigator: { languages: browserLanguages, language: browserLanguages[0] ?? "" },
+    navigator: {
+      languages: browserLanguages,
+      language: browserLanguages[0] ?? "",
+      standalone: appleStandalone,
+    },
     document: { documentElement: { setAttribute: (_name, value) => { lang = value; } } },
-    window: { localStorage: { getItem: () => saved } },
+    window: {
+      localStorage: { getItem: () => {
+        if (storageBlocked) throw new Error("Storage blocked");
+        return saved;
+      } },
+      matchMedia: () => ({ matches: standalone }),
+      location: { search, hash, replace: (url) => { destination = url; } },
+    },
   });
-  return lang;
+  return { lang, destination };
+}
+
+export function resolveLandingLangFromHtml(html, saved, browserLanguages) {
+  return resolveEntryFromHtml(html, saved, browserLanguages).lang;
 }
 
 export function validateLandingRouteHtml(html) {
@@ -111,6 +134,18 @@ export function validateLandingRouteHtml(html) {
   const canonical = `${site}${base}`;
 
   const document = new JSDOM(html).window.document;
+  const hintCount = document.querySelectorAll("[data-home-screen-hint]").length;
+  if (hintCount !== 0) {
+    throw new Error(`${route} contiene ${hintCount} sugerencias de instalación; se esperaba 0.`);
+  }
+  const suppressionScript = singleElement(document, "script[data-install-suppression]", route).textContent;
+  let suppressed = false;
+  runInNewContext(suppressionScript, { window: { addEventListener: (event, callback) => {
+    if (event === "beforeinstallprompt") callback({ preventDefault: () => { suppressed = true; } });
+  } } });
+  if (!suppressed) {
+    throw new Error(`${route} bloquea la promoción automática de instalación = false; se esperaba true.`);
+  }
   if (!document.documentElement.hasAttribute("data-lang")) {
     throw new Error(`${route} debe exponer html[data-lang] para el interruptor bilingüe.`);
   }
@@ -121,6 +156,22 @@ export function validateLandingRouteHtml(html) {
   for (const locale of Object.keys(expectedMetadata)) {
     if (!appLinks.includes(`${base}app/${locale}/`)) {
       throw new Error(`${route} debe enlazar a la app en ${locale} (${base}app/${locale}/).`);
+    }
+  }
+}
+
+export function validateAppEntryRouteHtml(html) {
+  const { site, base } = siteAndBase();
+  const route = `${base}app/`;
+  const document = new JSDOM(html).window.document;
+  singleElement(document, "script[data-app-launch]", route);
+  requireAttribute(document, 'link[rel="manifest"]', "href", `${base}site.webmanifest`, route);
+  for (const locale of Object.keys(expectedMetadata)) {
+    const link = document.querySelector(`a[lang="${locale}"]`);
+    const actual = link && new URL(link.getAttribute("href"), site).pathname;
+    const expected = `${base}app/${locale}/`;
+    if (actual !== expected) {
+      throw new Error(`${route} tiene enlace de idioma ${locale} = ${actual}; se esperaba ${expected}.`);
     }
   }
 }
@@ -153,6 +204,8 @@ export async function validateStaticRoutes(distDirectory = resolve("dist")) {
 
   const rootHtml = await readFile(resolve(distDirectory, "index.html"), "utf8");
   validateLandingRouteHtml(rootHtml);
+  const appEntryHtml = await readFile(resolve(distDirectory, "app", "index.html"), "utf8");
+  validateAppEntryRouteHtml(appEntryHtml);
 
   const rootCases = [
     ["es", ["en-US"], "es"],
@@ -168,6 +221,18 @@ export async function validateStaticRoutes(distDirectory = resolve("dist")) {
     if (actual !== expected) {
       throw new Error(`La raíz resolvió el idioma ${actual}; se esperaba ${expected}.`);
     }
+    const expectedUrl = `${siteAndBase().base}app/${expected}/`;
+    for (const [html, options, destination] of [
+      [rootHtml, {}, null],
+      [rootHtml, { standalone: true }, expectedUrl],
+      [rootHtml, { appleStandalone: true }, expectedUrl],
+      [appEntryHtml, {}, expectedUrl],
+    ]) {
+      const actualUrl = resolveEntryFromHtml(html, saved, languages, options).destination;
+      if (actualUrl !== destination) {
+        throw new Error(`La entrada abrió ${actualUrl}; se esperaba ${destination}.`);
+      }
+    }
   }
 
   await assertAuditsNotDeployed(distDirectory);
@@ -176,5 +241,5 @@ export async function validateStaticRoutes(distDirectory = resolve("dist")) {
 const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
 if (import.meta.url === invokedPath) {
   await validateStaticRoutes();
-  console.log("Rutas estáticas validadas: landing raíz y app localizada.");
+  console.log("Rutas estáticas validadas: landing raíz, entrada de app y app localizada.");
 }

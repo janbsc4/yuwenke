@@ -50,6 +50,9 @@ const meta = messages.es.metadata;
     <meta property="og:image:alt" content={meta.ogImageAlt} />
     <title>Yuwenke · 语文课</title>
     <script is:inline set:html={landingLangResolverScript()} />
+    <script is:inline data-install-suppression>
+      window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());
+    </script>
     <script is:inline>document.documentElement.classList.add("js");</script>
     <style is:inline set:html={`@font-face{font-family:"Young Serif";font-style:normal;font-weight:400;font-display:swap;src:url('${fontUrl}') format("woff2");}`}></style>
     <script>

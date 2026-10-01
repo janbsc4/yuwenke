@@ -53,7 +53,7 @@ describe("Yuwenke identity assets", () => {
   it("uses base-path-safe relative URLs in the web manifest", () => {
     const manifest = JSON.parse(publicFile("site.webmanifest").toString("utf8"));
     expect(manifest.name).toBe("Yuwenke");
-    expect(manifest.start_url).toBe("./");
+    expect(manifest.start_url).toBe("./app/");
     expect(manifest.scope).toBe("./");
     expect(manifest.background_color).toBe("#ffffff");
     expect(manifest.theme_color).toBe("#ffffff");
@@ -61,5 +61,12 @@ describe("Yuwenke identity assets", () => {
       "icon-192.png",
       "icon-512.png",
     ]);
+  });
+
+  it("keeps the previous installed identity when the launch URL changes", () => {
+    const manifest = JSON.parse(publicFile("site.webmanifest").toString("utf8")) as { id: string };
+    const previousStart = new URL("./", "https://example.test/yuwenke/site.webmanifest");
+    // Unlike start_url, a relative manifest id resolves against the origin.
+    expect(new URL(manifest.id, previousStart.origin).href).toBe(previousStart.href);
   });
 });

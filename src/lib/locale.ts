@@ -42,8 +42,8 @@ export function localizedCardContent(
 }
 
 /**
- * Root-route policy: honor the saved choice first, then pick Spanish only
- * when the browser prefers it; English is the fallback for anything else.
+ * Entry-route policy: honor the saved choice first, then use the first supported
+ * browser language; English is the fallback for anything else.
  * Targets outside the available locales clamp to the default locale.
  */
 export function resolveLocalePreference(
@@ -82,13 +82,7 @@ export function parseLocaleFromPath(pathname: string): Locale | null {
   return null;
 }
 
-/**
- * Pre-paint script for the bilingual landing page: picks the language with the
- * same policy as resolveLocalePreference and sets <html data-lang> before the
- * first paint, so only one language ever flashes. Inlined verbatim into the
- * landing <head> and executed by the route validator in a sandbox.
- */
-export function landingLangResolverScript(): string {
+function localeResolverScript(launchApp: boolean): string {
   const available = JSON.stringify([...SUPPORTED_LOCALES]);
   const storageKey = JSON.stringify(LOCALE_STORAGE_KEY);
   const fallback = SUPPORTED_LOCALES.includes("en") ? "en" : DEFAULT_LOCALE;
@@ -107,5 +101,18 @@ export function landingLangResolverScript(): string {
   if (!target) { target = ${JSON.stringify(fallback)}; }
   document.documentElement.setAttribute("data-lang", target);
   document.documentElement.setAttribute("lang", target);
+  if (${launchApp ? "true" : 'navigator.standalone || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches)'}) {
+    window.location.replace(${JSON.stringify(`${import.meta.env.BASE_URL}${APP_SEGMENT}/`)} + target + "/" + window.location.search + window.location.hash);
+  }
 })();`;
+}
+
+/** Resolve the landing language before paint and recover older installed shortcuts. */
+export function landingLangResolverScript(): string {
+  return localeResolverScript(false);
+}
+
+/** The installed app's entry route shares the landing page's language policy. */
+export function appLaunchResolverScript(): string {
+  return localeResolverScript(true);
 }

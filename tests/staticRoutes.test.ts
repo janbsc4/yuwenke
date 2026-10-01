@@ -5,12 +5,14 @@ import { runInNewContext } from "node:vm";
 
 import { afterEach } from "vitest";
 
-import { landingLangResolverScript } from "../src/lib/locale";
+import { appLaunchResolverScript, landingLangResolverScript } from "../src/lib/locale";
 import {
   assertAuditsNotDeployed,
+  resolveEntryFromHtml,
   resolveLandingLangFromHtml,
   validateLocalizedRouteHtml,
   validateLandingRouteHtml,
+  validateAppEntryRouteHtml,
 } from "../scripts/validate_static_routes.mjs";
 
 const site = "https://janbsc4.github.io";
@@ -43,6 +45,7 @@ function routeHtml(locale: "es" | "en") {
 <meta property="og:url" content="${canonical}">
 <script src="${base}_astro/app.js"></script>
 </head>
+<body><aside data-home-screen-hint hidden></aside></body>
 </html>`;
 }
 
@@ -80,6 +83,11 @@ describe("localized static route validation", () => {
       "exactamente un elemento",
     );
   });
+
+  it("requires the installation hint in the app", () => {
+    const html = routeHtml("en").replace('<aside data-home-screen-hint hidden></aside>', "");
+    expect(() => validateLocalizedRouteHtml(html, "en")).toThrow("[data-home-screen-hint]");
+  });
 });
 
 describe("landing root validation", () => {
@@ -88,6 +96,7 @@ describe("landing root validation", () => {
 <html lang="es" data-lang="es">
 <head>
 <link rel="canonical" href="${site}${base}">
+<script data-install-suppression>window.addEventListener("beforeinstallprompt", (event) => event.preventDefault());</script>
 </head>
 <body>
 <a href="${base}app/es/">Abrir</a>
@@ -98,6 +107,16 @@ describe("landing root validation", () => {
 
   it("accepts a landing page that links both app locales", () => {
     expect(() => validateLandingRouteHtml(landingHtml())).not.toThrow();
+  });
+
+  it("rejects an installation banner on the landing page", () => {
+    const html = landingHtml().replace("</body>", '<aside data-home-screen-hint></aside></body>');
+    expect(() => validateLandingRouteHtml(html)).toThrow("se esperaba 0");
+  });
+
+  it("requires the landing page to suppress Chrome's automatic install promotion", () => {
+    const html = landingHtml().replace("event.preventDefault()", "event");
+    expect(() => validateLandingRouteHtml(html)).toThrow("se esperaba true");
   });
 
   it("rejects a landing page missing the bilingual data-lang flag", () => {
@@ -133,6 +152,48 @@ describe("landing root validation", () => {
       } },
     });
     expect(attributes).toEqual({ "data-lang": expected, lang: expected });
+  });
+});
+
+describe("Home Screen app entry", () => {
+  const rootHtml = `<script>${landingLangResolverScript()}</script>`;
+  const appHtml = `<script data-app-launch>${appLaunchResolverScript()}</script>`;
+
+  it("keeps ordinary browser visits on the landing page", () => {
+    expect(resolveEntryFromHtml(rootHtml, "es", ["en-US"]).destination).toBeNull();
+  });
+
+  it.each([
+    { standalone: true },
+    { appleStandalone: true },
+  ])("sends an existing installed root shortcut to the saved language (%j)", (options) => {
+    expect(resolveEntryFromHtml(rootHtml, "es", ["en-US"], options).destination).toBe("/app/es/");
+  });
+
+  it("launches the app in the saved language while keeping conversation links", () => {
+    expect(resolveEntryFromHtml(appHtml, "en", ["es-ES"], {
+      search: "?source=homescreen", hash: "#conversation",
+    }).destination).toBe("/app/en/?source=homescreen#conversation");
+  });
+
+  it("uses browser language when storage is blocked", () => {
+    expect(resolveEntryFromHtml(appHtml, "en", ["es-ES"], {
+      storageBlocked: true,
+    }).destination).toBe("/app/es/");
+  });
+
+  it("falls back to English when neither language preference is supported", () => {
+    expect(resolveEntryFromHtml(appHtml, "fr", ["de-DE"]).destination).toBe("/app/en/");
+  });
+
+  it("requires the app entry to link its manifest and both language fallbacks", () => {
+    const html = `${appHtml}
+      <link rel="manifest" href="${base}site.webmanifest">
+      <a lang="es" href="${base}app/es/">Abrir</a>
+      <a lang="en" href="${base}app/en/">Open</a>`;
+    expect(() => validateAppEntryRouteHtml(html)).not.toThrow();
+    expect(() => validateAppEntryRouteHtml(html.replace(`${base}app/en/`, "/wrong/")))
+      .toThrow("se esperaba /yuwenke/app/en/");
   });
 });
 
