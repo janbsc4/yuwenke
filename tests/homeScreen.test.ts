@@ -13,18 +13,12 @@ describe("mobile Home Screen suggestion", () => {
   beforeEach(() => {
     document.documentElement.lang = "en";
     document.body.innerHTML = `<aside hidden>
-      <div data-home-screen-platform="safari" hidden>
-        <div data-home-screen-lang="es" hidden>Añadir a pantalla de inicio</div>
-        <div data-home-screen-lang="en" hidden>Add to Home Screen</div>
-      </div>
-      <div data-home-screen-platform="android" hidden>
-        <div data-home-screen-lang="es" hidden><button data-home-screen-install>Instalar Yuwenke</button></div>
-        <div data-home-screen-lang="en" hidden><button data-home-screen-install>Install Yuwenke</button></div>
-      </div>
+      <div data-home-screen-lang="es" hidden><button data-home-screen-install>Instalar Yuwenke</button></div>
+      <div data-home-screen-lang="en" hidden><button data-home-screen-install>Install Yuwenke</button></div>
       <button type="button" data-home-screen-dismiss></button>
     </aside>`;
     hint = document.querySelector("aside")!;
-    vi.stubGlobal("navigator", { userAgent: iPhoneSafari, maxTouchPoints: 1, standalone: false });
+    vi.stubGlobal("navigator", { userAgent: androidChrome, maxTouchPoints: 5, standalone: false });
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
   });
 
@@ -37,39 +31,33 @@ describe("mobile Home Screen suggestion", () => {
 
   it.each([
     [iPhoneSafari, 1],
+    [iPhoneSafari.replaceAll("26", "27"), 1],
     [iPhoneSafari.replace("iPhone", "iPad"), 5],
     [iPadSafari, 5],
-  ])("offers instructions in Safari on Apple touch devices (%s)", (userAgent, maxTouchPoints) => {
+  ])("does not promote iOS installs that lose the browser's sign-in state (%s)", (userAgent, maxTouchPoints) => {
     vi.stubGlobal("navigator", { userAgent, maxTouchPoints });
     cleanup = initHomeScreenHint(hint);
-    expect(hint.hidden).toBe(false);
-    expect(hint.querySelector<HTMLElement>('[data-home-screen-lang="en"]')!.hidden).toBe(false);
+    window.dispatchEvent(installEvent().event);
+    expect(cleanup).toBeUndefined();
+    expect(hint.hidden).toBe(true);
   });
 
   it.each([
     [iPadSafari, 0],
     [iPhoneSafari.replace("Version/26.0", "CriOS/140.0"), 1],
     [iPhoneSafari.replace("Version/26.0", "FxiOS/140.0"), 1],
-    ["Mozilla/5.0 (Linux; Android) Chrome/140.0 Safari/537.36", 5],
+    [androidChrome.replace("Chrome/140.0.0.0", "Firefox/140.0"), 5],
     ["Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148", 1],
-  ])("stays hidden outside mobile Safari (%s)", (userAgent, maxTouchPoints) => {
+  ])("stays hidden outside Android Chrome (%s)", (userAgent, maxTouchPoints) => {
     vi.stubGlobal("navigator", { userAgent, maxTouchPoints });
     cleanup = initHomeScreenHint(hint);
-    expect(hint.hidden).toBe(true);
-  });
-
-  it.each(["apple", "display-mode"])("stays hidden in an installed app detected by %s", (mode) => {
-    if (mode === "apple") {
-      vi.stubGlobal("navigator", { userAgent: iPhoneSafari, standalone: true });
-    } else {
-      vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    }
-    cleanup = initHomeScreenHint(hint);
+    window.dispatchEvent(installEvent().event);
     expect(hint.hidden).toBe(true);
   });
 
   it("updates the copy and dismissal label when the learner switches language", async () => {
     cleanup = initHomeScreenHint(hint);
+    window.dispatchEvent(installEvent().event);
     document.documentElement.lang = "es";
     await Promise.resolve();
     expect(hint.querySelector<HTMLElement>('[data-home-screen-lang="es"]')!.hidden).toBe(false);
@@ -79,6 +67,7 @@ describe("mobile Home Screen suggestion", () => {
 
   it("remembers dismissal on later visits", () => {
     cleanup = initHomeScreenHint(hint);
+    window.dispatchEvent(installEvent().event);
     hint.querySelector<HTMLButtonElement>("[data-home-screen-dismiss]")!.click();
     expect(hint.hidden).toBe(true);
     expect(window.localStorage.getItem(HOME_SCREEN_HINT_DISMISSED_KEY)).toBe("1");
@@ -87,10 +76,11 @@ describe("mobile Home Screen suggestion", () => {
     expect(hint.hidden).toBe(true);
   });
 
-  it("can be shown and dismissed when Safari blocks storage", () => {
+  it("can be shown and dismissed when Chrome blocks storage", () => {
     vi.spyOn(window.localStorage, "getItem").mockImplementation(() => { throw new Error("Blocked"); });
     vi.spyOn(window.localStorage, "setItem").mockImplementation(() => { throw new Error("Blocked"); });
     cleanup = initHomeScreenHint(hint);
+    window.dispatchEvent(installEvent().event);
     expect(hint.hidden).toBe(false);
     expect(() => hint.querySelector<HTMLButtonElement>("[data-home-screen-dismiss]")!.click()).not.toThrow();
     expect(hint.hidden).toBe(true);
@@ -119,8 +109,7 @@ describe("mobile Home Screen suggestion", () => {
     window.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
     expect(hint.hidden).toBe(false);
-    expect(hint.querySelector<HTMLElement>('[data-home-screen-platform="safari"]')!.hidden).toBe(true);
-    expect(hint.querySelector<HTMLElement>('[data-home-screen-platform="android"]')!.hidden).toBe(false);
+    expect(installButton()).toBeVisible();
     expect(prompt).not.toHaveBeenCalled();
     installButton().click();
     await vi.waitFor(() => expect(prompt).toHaveBeenCalledTimes(1));

@@ -5,17 +5,12 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-/** Safari needs Share instructions; Android Chrome can offer a native install dialog. */
+/** Promote installation only where the browser and installed app share sign-in storage. */
 export function initHomeScreenHint(element: HTMLElement): (() => void) | undefined {
-  const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-  const isSafari = isAppleMobile && /Version\/.*Safari\//.test(navigator.userAgent) &&
-    !/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(navigator.userAgent);
   const isAndroidChrome = /Android/.test(navigator.userAgent) && /Chrome\//.test(navigator.userAgent) &&
     !/EdgA|OPR|SamsungBrowser|; wv\)/.test(navigator.userAgent);
-  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone ||
-    window.matchMedia?.("(display-mode: standalone)").matches;
-  if ((!isSafari && !isAndroidChrome) || standalone) return;
+  // iOS Home Screen apps isolate the localStorage used by Firebase sign-in.
+  if (!isAndroidChrome || window.matchMedia?.("(display-mode: standalone)").matches) return;
 
   try {
     if (window.localStorage.getItem(HOME_SCREEN_HINT_DISMISSED_KEY) === "1") return;
@@ -25,9 +20,6 @@ export function initHomeScreenHint(element: HTMLElement): (() => void) | undefin
 
   const dismissButton = element.querySelector<HTMLButtonElement>("[data-home-screen-dismiss]");
   const installButtons = element.querySelectorAll<HTMLButtonElement>("[data-home-screen-install]");
-  for (const copy of element.querySelectorAll<HTMLElement>("[data-home-screen-platform]")) {
-    copy.hidden = copy.dataset.homeScreenPlatform !== (isSafari ? "safari" : "android");
-  }
   const syncLanguage = () => {
     const locale = document.documentElement.lang === "es" ? "es" : "en";
     for (const copy of element.querySelectorAll<HTMLElement>("[data-home-screen-lang]")) {
@@ -41,7 +33,7 @@ export function initHomeScreenHint(element: HTMLElement): (() => void) | undefin
   syncLanguage();
   const observer = new MutationObserver(syncLanguage);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
-  element.hidden = !isSafari;
+  element.hidden = true;
 
   let deferredPrompt: BeforeInstallPromptEvent | null = null;
   let dismissed = false;
@@ -88,11 +80,9 @@ export function initHomeScreenHint(element: HTMLElement): (() => void) | undefin
   };
   const requestInstall = () => { void install(); };
   dismissButton?.addEventListener("click", dismiss);
-  if (isAndroidChrome) {
-    window.addEventListener("beforeinstallprompt", installReady);
-    window.addEventListener("appinstalled", appInstalled);
-    for (const button of installButtons) button.addEventListener("click", requestInstall);
-  }
+  window.addEventListener("beforeinstallprompt", installReady);
+  window.addEventListener("appinstalled", appInstalled);
+  for (const button of installButtons) button.addEventListener("click", requestInstall);
   return () => {
     observer.disconnect();
     dismissButton?.removeEventListener("click", dismiss);
