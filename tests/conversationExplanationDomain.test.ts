@@ -9,7 +9,7 @@ const practiceReply = {
   hint: "我喜欢喝茶。\nWǒ xǐhuān hē chá.\nI like drinking tea.", practicedCardIds: [],
 };
 const explanation: TutorReply = {
-  kind: "explanation", explanation: "了 marks a change of state here.",
+  kind: "explanation", explanation: "了 (le — change-of-state particle) marks a change of state here.",
   naturalness: null, practicedCardIds: [],
 };
 const request: ChatRequest = {
@@ -48,6 +48,21 @@ it.each(["en", "es"] as const)("returns a meta answer in the same inference call
   expect(prompt).toContain("quoted phrase is the subject of the question, not a Mandarin attempt to grade");
   expect(prompt).toContain("absence from this subset does not establish absence from their cards");
   expect(prompt).toContain("explanation is a per-message choice, not a permanent mode");
+});
+
+it.each([
+  { locale: "en" as const, supportsExplanations: true, language: "English" },
+  { locale: "en" as const, supportsExplanations: false, language: "English" },
+  { locale: "es" as const, supportsExplanations: true, language: "Spanish" },
+  { locale: "es" as const, supportsExplanations: false, language: "Spanish" },
+])("requires Hanzi, tone-mark pinyin, and $language meanings in explanations and ratings (meta support: $supportsExplanations)", ({ locale, supportsExplanations, language }) => {
+  const prompt = tutorMessages({ ...request, locale, supportsExplanations }, []).messages[0].content;
+  expect(prompt).toContain(`For all ${language} explanatory prose, including explanation, naturalness.explanation, and feedback`);
+  expect(prompt).toContain("return a mandarinGlosses array covering EVERY distinct contiguous run of Hanzi");
+  expect(prompt).toContain(locale === "es" ? '"meaning":"beber"' : '"meaning":"to drink"');
+  expect(prompt).toContain("This includes quoted learner text, corrections, and grammar particles");
+  expect(prompt).toContain("not the separate Chinese practice reply, betterChinese, or Chinese line of the hint");
+  expect(prompt).toContain("every repeated reference");
 });
 
 it("still requires an assessment or null on newly generated practice replies", async () => {
