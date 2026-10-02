@@ -13,6 +13,7 @@ interface StudyCardProps {
   revealed: boolean;
   favorite: boolean;
   muted: boolean;
+  onSkip?: () => void;
   onToggleFavorite: () => void;
   promptRef: RefObject<HTMLHeadingElement | null>;
   m: Messages;
@@ -41,7 +42,7 @@ export function HighlightedText({ text, properNames }: HighlightedTextProps) {
 }
 
 export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyCard(
-  { unit, packTitle, revealed, favorite, muted, onToggleFavorite, promptRef, m, locale },
+  { unit, packTitle, revealed, favorite, muted, onSkip, onToggleFavorite, promptRef, m, locale },
   answerRef,
 ) {
   const { card, direction } = unit;
@@ -69,6 +70,11 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
 
   return (
     <article className={`study-card ${revealed ? "is-revealed" : ""}`}>
+      {onSkip ? (
+        <button type="button" className="skip-button card-skip" onClick={onSkip}>
+          {m.session.skip} <kbd>3</kbd>
+        </button>
+      ) : null}
       <button
         type="button"
         className={`favorite-button ${favorite ? "is-favorite" : ""}`}
@@ -103,26 +109,28 @@ export const StudyCard = forwardRef<HTMLElement, StudyCardProps>(function StudyC
               {card.id} · {packTitle}
             </p>
           </div>
-          <p
-            className={hanziAnswer ? "answer-hanzi" : "answer-spanish"}
-            lang={hanziAnswer ? "zh-Hans" : locale}
-          >
-            <HighlightedText
-              text={answerText}
-              properNames={card.nombres_propios}
-            />
-          </p>
-
-          {!muted && !conceptCard ? (
-            <button
-              type="button"
-              className="speak-button"
-              aria-label={m.card.speak}
-              onClick={() => speakChinese(card.hanzi)}
+          <div className="answer-main">
+            <p
+              className={hanziAnswer ? "answer-hanzi" : "answer-spanish"}
+              lang={hanziAnswer ? "zh-Hans" : locale}
             >
-              <AppIcon name="sound" />
-            </button>
-          ) : null}
+              <HighlightedText
+                text={answerText}
+                properNames={card.nombres_propios}
+              />
+            </p>
+
+            {!muted && !conceptCard ? (
+              <button
+                type="button"
+                className="speak-button"
+                aria-label={m.card.speak}
+                onClick={() => speakChinese(card.hanzi)}
+              >
+                <AppIcon name="sound" />
+              </button>
+            ) : null}
+          </div>
 
           {!conceptCard ? (
             <dl className="answer-details">

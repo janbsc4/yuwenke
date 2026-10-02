@@ -1,10 +1,12 @@
 export const chatMessages = {
   en: {
-    model: "Model:",
+    settings: "Conversation settings",
+    practiceLabel: "Mandarin",
+    welcome: "A little Chinese, every day.",
     title: "Practice with Léi",
     subtitle: "Chats using your study words",
     intro:
-      "Practice a few words you’re learning, with familiar words to help you along. Léi keeps the conversation short and gives you help when you need it.",
+      "A short conversation with the words you’re learning. Reveal pinyin, a translation, or a hint whenever you need it.",
     topic: "Conversation topic",
     anyTopic: "Let Léi choose",
     start: "Start a conversation",
@@ -20,7 +22,7 @@ export const chatMessages = {
     privacy:
       "Your messages and selected learning material are sent to our AI provider. History stays in this browser. AI corrections can be wrong; chat does not change your card progress.",
     input: "Your reply",
-    placeholder: "Write in Chinese, or ask for help in English…",
+    placeholder: "Chinese or English…",
     send: "Send",
     thinking: "Léi is thinking…",
     showPinyin: "Show pinyin",
@@ -29,6 +31,7 @@ export const chatMessages = {
     autoplay: "Autoplay sounds",
     keyboardHelp: {
       title: "Set up a Chinese keyboard",
+      close: "Close keyboard setup",
       intro: "Choose Simplified Chinese Pinyin. Type the sound with Latin letters, then select the characters, for example ni hao → 你好.",
       official: "Official guide",
       windows: "Settings → Time & language → Language & region. Add Chinese (Simplified), then choose Microsoft Pinyin. Switch keyboards with Windows + Space.",
@@ -40,6 +43,7 @@ export const chatMessages = {
     speechUnavailable: "Speech is not supported in this browser.",
     meaning: "Meaning",
     hint: "Help me reply",
+    hintShort: "Hint",
     correction: "A small correction",
     naturalnessLevels: {
       natural: "Natural",
@@ -56,7 +60,6 @@ export const chatMessages = {
     clear: "Delete conversation",
     confirmClear: "Delete this conversation from this browser?",
     cancel: "Keep conversation",
-    targets: "Words to practice",
     recap: "Words you used",
     recapNote: "Suggested by Léi. Open a card to review it.",
     emptyProgress:
@@ -75,11 +78,13 @@ export const chatMessages = {
     startMessage: "Start a short Chinese conversation with me.",
   },
   es: {
-    model: "Modelo:",
+    settings: "Ajustes de conversación",
+    practiceLabel: "Mandarín",
+    welcome: "Un poco de chino, cada día.",
     title: "Practica con Léi",
     subtitle: "Conversa con las palabras que estudias",
     intro:
-      "Practica algunas palabras que estás aprendiendo, con otras que ya conoces como apoyo. Léi conversa con frases cortas y te ayuda cuando lo necesitas.",
+      "Conversa con las palabras que estudias. Consulta el pinyin, el significado o una pista cuando lo necesites.",
     topic: "Tema de conversación",
     anyTopic: "Que elija Léi",
     start: "Empezar una conversación",
@@ -95,7 +100,7 @@ export const chatMessages = {
     privacy:
       "Tus mensajes y el material de aprendizaje seleccionado se envían a nuestro proveedor de IA. El historial se guarda en este navegador. La IA puede equivocarse; el chat no cambia el progreso de tus tarjetas.",
     input: "Tu respuesta",
-    placeholder: "Escribe en chino o pide ayuda en español…",
+    placeholder: "Chino o español…",
     send: "Enviar",
     thinking: "Léi está pensando…",
     showPinyin: "Mostrar pinyin",
@@ -104,6 +109,7 @@ export const chatMessages = {
     autoplay: "Reproducir sonidos",
     keyboardHelp: {
       title: "Configurar un teclado chino",
+      close: "Cerrar configuración del teclado",
       intro: "Elige pinyin de chino simplificado. Escribe la pronunciación con letras latinas y selecciona los caracteres, por ejemplo ni hao → 你好.",
       official: "Guía oficial",
       windows: "Configuración → Hora e idioma → Idioma y región. Añade chino simplificado y elige Microsoft Pinyin. Cambia de teclado con Windows + Espacio.",
@@ -115,6 +121,7 @@ export const chatMessages = {
     speechUnavailable: "Este navegador no admite la lectura en voz alta.",
     meaning: "Significado",
     hint: "Ayúdame a responder",
+    hintShort: "Pista",
     correction: "Una pequeña corrección",
     naturalnessLevels: {
       natural: "Natural",
@@ -131,7 +138,6 @@ export const chatMessages = {
     clear: "Borrar conversación",
     confirmClear: "¿Borrar esta conversación de este navegador?",
     cancel: "Conservar conversación",
-    targets: "Palabras para practicar",
     recap: "Palabras que has usado",
     recapNote: "Sugeridas por Léi. Abre una tarjeta para repasarla.",
     emptyProgress:

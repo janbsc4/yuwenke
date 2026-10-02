@@ -92,6 +92,7 @@ it("keeps autoplay silent when muted or speech is unavailable", async () => {
 
 it.each(["en", "es"] as const)("explains pinyin keyboard setup in %s", async (locale) => {
   render(<Conversation {...props} locale={locale} />);
+  await userEvent.click(screen.getByLabelText(locale === "en" ? "Conversation settings" : "Ajustes de conversación"));
   const help = screen.getByRole("button", { name: locale === "en" ? "Set up a Chinese keyboard" : "Configurar un teclado chino" });
   expect(help).toHaveAttribute("aria-expanded", "false");
   await userEvent.click(help);
@@ -100,6 +101,18 @@ it.each(["en", "es"] as const)("explains pinyin keyboard setup in %s", async (lo
     expect(screen.getByRole("heading", { name: platform })).toBeVisible();
   }
   expect(screen.getAllByRole("link", { name: locale === "en" ? "Official guide" : "Guía oficial" })).toHaveLength(4);
+  await userEvent.click(screen.getByRole("button", { name: locale === "en" ? "Close keyboard setup" : "Cerrar configuración del teclado" }));
+  expect(help).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("heading", { name: "Windows" })).not.toBeInTheDocument();
+  expect(help).toHaveFocus();
+  await userEvent.click(help);
+  fireEvent.keyDown(help, { key: "Escape" });
+  expect(help).toHaveAttribute("aria-expanded", "false");
+  expect(help).toBeVisible();
+  await userEvent.click(help);
+  await userEvent.click(screen.getByRole("button", { name: locale === "en" ? "Start a conversation" : "Empezar una conversación" }));
+  await userEvent.click(screen.getByLabelText(locale === "en" ? "Conversation settings" : "Ajustes de conversación"));
+  expect(help).toHaveAttribute("aria-expanded", "false");
 });
 
 it("gives a guest three messages before asking for sign-in", async () => {
@@ -127,18 +140,23 @@ it("gives a guest three messages before asking for sign-in", async () => {
 
 it("starts a conversation, reveals assistance without more inference, and saves the reply", async () => {
   render(<Conversation {...props} />);
-  expect(screen.getByText("GLM-5.3-Flash")).toBeVisible();
+  await userEvent.click(screen.getByLabelText("Conversation settings"));
+  expect(screen.queryByText("GLM-5.3-Flash")).not.toBeInTheDocument();
   await userEvent.click(
     screen.getByRole("button", { name: "Start a conversation" }),
   );
   expect(await screen.findByText("你好吗？")).toBeVisible();
+  expect(screen.queryByText("Start a short Chinese conversation with me.")).not.toBeInTheDocument();
+  expect(sendConversation).toHaveBeenCalledWith(expect.objectContaining({
+    messages: [{ role: "user", content: "Start a short Chinese conversation with me." }],
+  }));
   expect(speakChinese).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: "Listen" }));
   expect(speakChinese).toHaveBeenCalledWith("你好吗？");
   await userEvent.click(screen.getByRole("button", { name: "Meaning" }));
   expect(screen.getByText("How are you?")).toBeVisible();
   expect(screen.getByRole("button", { name: "Meaning" })).toHaveAttribute("aria-expanded", "true");
-  await userEvent.click(screen.getByRole("button", { name: "Help me reply" }));
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(screen.getByText("我很好。Wǒ hěn hǎo. I’m well.")).toBeVisible();
   expect(screen.queryByText("How are you?")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Meaning" })).toHaveAttribute("aria-expanded", "false");
@@ -173,7 +191,7 @@ it("scrolls newly opened help into the transcript viewport", async () => {
   geometry.mockRestore();
 });
 
-it("displays the backend-selected model and preserves it with history", async () => {
+it("preserves the backend-selected model with history without displaying it", async () => {
   vi.mocked(sendConversation).mockResolvedValue({
     ...response,
     model: "glm-5.2",
@@ -182,11 +200,15 @@ it("displays the backend-selected model and preserves it with history", async ()
   await userEvent.click(
     screen.getByRole("button", { name: "Start a conversation" }),
   );
-  expect(await screen.findByText("glm-5.2")).toBeVisible();
+  await userEvent.click(screen.getByLabelText("Conversation settings"));
+  await waitFor(() => expect(readConversation("alice", "en").model).toBe("glm-5.2"));
+  expect(screen.queryByText("glm-5.2")).not.toBeInTheDocument();
   expect(screen.queryByText("MiMo-V2.6-Flash")).not.toBeInTheDocument();
   view.unmount();
   render(<Conversation {...props} />);
-  expect(screen.getByText("glm-5.2")).toBeVisible();
+  await userEvent.click(screen.getByLabelText("Conversation settings"));
+  expect(screen.queryByText("glm-5.2")).not.toBeInTheDocument();
+  expect(readConversation("alice", "en").model).toBe("glm-5.2");
 });
 
 it.each([
@@ -380,4 +402,72 @@ it("prevents duplicate requests while a reply is pending", async () => {
   fireEvent.click(start);
   fireEvent.click(start);
   await waitFor(() => expect(sendConversation).toHaveBeenCalledOnce());
+});
+
+it("keeps supporting controls in settings and dismisses them with Escape or an outside tap", async () => {
+  render(<Conversation {...props} />);
+  const settings = screen.getByLabelText("Conversation settings");
+  const privacy = screen.getByText("What gets sent to the AI");
+  expect(privacy).not.toBeVisible();
+  await userEvent.click(settings);
+  expect(privacy).toBeVisible();
+  expect(screen.queryByText("Model:")).not.toBeInTheDocument();
+  expect(screen.queryByText("GLM-5.3-Flash")).not.toBeInTheDocument();
+  fireEvent.keyDown(settings, { key: "Escape" });
+  expect(privacy).not.toBeVisible();
+  expect(settings).toHaveFocus();
+  await userEvent.click(settings);
+  expect(privacy).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Start a conversation" }));
+  expect(privacy).not.toBeVisible();
+});
+
+it("keeps target words out of the conversation interface", () => {
+  saveConversation("alice", "en", {
+    version: 1, sessionId: crypto.randomUUID(), topic: "",
+    turns: [{ user: "你好", reply: response.reply }], targetCardIds: [cards[0].id],
+  });
+  render(<Conversation {...props} />);
+  expect(screen.queryByText("Words to practice")).not.toBeInTheDocument();
+  expect(document.querySelector(".chat-targets")).not.toBeInTheDocument();
+  expect(readConversation("alice", "en").targetCardIds).toEqual([cards[0].id]);
+});
+
+it("resizes the chat for the visible keyboard viewport and cleans up when leaving chat", () => {
+  const viewport = Object.assign(new EventTarget(), { height: 664, offsetTop: 0 });
+  const removeListener = vi.spyOn(viewport, "removeEventListener");
+  vi.stubGlobal("visualViewport", viewport);
+  try {
+    const shell = document.createElement("div");
+    shell.className = "app-shell app-shell--chat";
+    document.body.append(shell);
+    const view = render(<Conversation {...props} />, { container: shell });
+    expect(shell.style.getPropertyValue("--chat-viewport-height")).toBe("664px");
+    const transcript = screen.getByRole("log");
+    Object.defineProperties(transcript, {
+      scrollHeight: { value: 900 },
+      clientHeight: { get: () => Number.parseInt(shell.style.getPropertyValue("--chat-viewport-height")) - 200 },
+    });
+    transcript.scrollTop = 436;
+    viewport.height = 340;
+    viewport.offsetTop = 24;
+    viewport.dispatchEvent(new Event("resize"));
+    expect(shell.style.getPropertyValue("--chat-viewport-height")).toBe("340px");
+    expect(shell.style.getPropertyValue("--chat-viewport-top")).toBe("24px");
+    expect(transcript.scrollTop).toBe(900);
+    transcript.scrollTop = 100;
+    viewport.height = 400;
+    viewport.offsetTop = 0;
+    viewport.dispatchEvent(new Event("scroll"));
+    expect(shell.style.getPropertyValue("--chat-viewport-top")).toBe("0px");
+    expect(transcript.scrollTop).toBe(100);
+    view.unmount();
+    expect(shell.style.getPropertyValue("--chat-viewport-height")).toBe("");
+    expect(shell.style.getPropertyValue("--chat-viewport-top")).toBe("");
+    expect(removeListener).toHaveBeenCalledWith("resize", expect.any(Function));
+    expect(removeListener).toHaveBeenCalledWith("scroll", expect.any(Function));
+    shell.remove();
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

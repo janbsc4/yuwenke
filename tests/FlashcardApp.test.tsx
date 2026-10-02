@@ -136,16 +136,17 @@ describe("FlashcardApp", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("explains device-only storage from Save progress and restores focus when closed", async () => {
+  it("opens Save progress from the guest profile and restores focus when closed", async () => {
     const user = userEvent.setup();
     renderApp([card]);
-    const save = await screen.findByRole("button", { name: "Guardar progreso" });
-    await user.click(save);
+    const profile = await screen.findByRole("button", { name: "Abrir menú de cuenta" });
+    await user.click(profile);
+    await user.click(screen.getByRole("menuitem", { name: "Guardar progreso" }));
     expect(screen.getByRole("dialog", { name: "Guarda tu progreso" })).toBeVisible();
     expect(screen.getByText(/Estás estudiando como invitado/)).toBeVisible();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(save).toHaveFocus();
+    expect(profile).toHaveFocus();
   });
 
   it("supports the guest combined study flow and persists a decision", async () => {
@@ -491,7 +492,9 @@ describe("FlashcardApp", () => {
   it("explains the study flow in an accessible dialog and restores focus", async () => {
     const user = userEvent.setup();
     renderApp([card]);
-    const trigger = await screen.findByRole("button", { name: "¿Cómo funciona?" });
+    const profile = await screen.findByRole("button", { name: "Abrir menú de cuenta" });
+    await user.click(profile);
+    const trigger = screen.getByRole("menuitem", { name: "¿Cómo funciona?" });
 
     await user.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" });
@@ -505,24 +508,74 @@ describe("FlashcardApp", () => {
 
     await user.keyboard("{Escape}");
     expect(dialog).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    expect(profile).toHaveFocus();
   });
 
-  it("opens help from the mobile filter sheet without leaving two dialogs open", async () => {
+  it("keeps filters in one dialog and returns focus to the filter control", async () => {
     const user = userEvent.setup();
-    renderApp([card]);
+    renderApp([card, { ...secondCard, tipo: "concepto" }]);
 
     const filterButton = await screen.findByRole("button", { name: "Filtros" });
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(filterButton).toHaveAttribute("aria-expanded", "false");
     await user.click(filterButton);
     const filters = screen.getByRole("dialog", { name: "Filtrar cartas" });
-    await user.click(
-      within(filters).getByRole("button", { name: "¿Cómo funciona?" }),
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(filterButton).toHaveAttribute("aria-expanded", "true");
+    await user.selectOptions(
+      within(filters).getByRole("combobox", { name: "Tipo" }),
+      "concepto",
     );
+    await user.click(within(filters).getByRole("button", { name: "Aplicar filtros" }));
 
     expect(screen.queryByRole("dialog", { name: "Filtrar cartas" })).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "Cómo funciona Yuwenke" })).toBeInTheDocument();
+    expect(await screen.findByText("Concepto · Español")).toBeInTheDocument();
+    expect(filterButton).toHaveTextContent("Filtros · 1");
+    await waitFor(() => expect(filterButton).toHaveFocus());
+  });
+
+  it("keeps Packs beside the study heading and Skip on the card", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card, secondCard]);
+    await screen.findByRole("button", { name: /Mostrar respuesta/ });
+    const heading = container.querySelector(".study-heading")!;
+    const studyCard = container.querySelector(".study-card")!;
+    const decisions = container.querySelector(".decision-area")!;
+
+    expect(within(heading as HTMLElement).getByRole("button", { name: "Packs" })).toBeInTheDocument();
+    const skip = within(studyCard as HTMLElement).getByRole("button", { name: /Saltar/ });
+    expect(within(decisions as HTMLElement).queryByRole("button", { name: /Saltar/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Mostrar respuesta/ }));
+    expect(skip).toBeInTheDocument();
+    expect(within(decisions as HTMLElement).getAllByRole("button")).toHaveLength(2);
+    await user.click(skip);
+    expect(await screen.findByText("Carta 2 de 4", { selector: ".session-progress span" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Respuesta" })).not.toBeInTheDocument();
+  });
+
+  it("preserves the revealed card when filter changes are cancelled", async () => {
+    const user = userEvent.setup();
+    renderApp([card, secondCard]);
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    const prompt = screen.getByRole("heading", { level: 2 }).textContent;
+    const filterButton = screen.getByRole("button", { name: "Filtros" });
+
+    await user.click(filterButton);
+    const dialog = screen.getByRole("dialog", { name: "Filtrar cartas" });
+    await user.selectOptions(within(dialog).getByRole("combobox", { name: "Tipo" }), "concepto");
     await user.keyboard("{Escape}");
-    expect(filterButton).toHaveFocus();
+
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(prompt);
+    expect(screen.getByRole("region", { name: "Respuesta" })).toBeInTheDocument();
+    expect(filterButton).toHaveTextContent("Filtros");
+    expect(filterButton).not.toHaveTextContent("· 1");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "4");
+
+    await user.click(filterButton);
+    expect(within(screen.getByRole("dialog")).getByRole("combobox", { name: "Tipo" })).toHaveValue("all");
+    await user.selectOptions(within(screen.getByRole("dialog")).getByRole("combobox", { name: "Tipo" }), "concepto");
+    await user.click(screen.getByRole("button", { name: "Cerrar filtros" }));
+    expect(screen.getByRole("region", { name: "Respuesta" })).toBeInTheDocument();
   });
 
   it("highlights proper names in Hanzi, pinyin, and Spanish", async () => {
@@ -562,9 +615,10 @@ describe("FlashcardApp", () => {
     expect(
       within(await screen.findByRole("button", { name: /Estudiar/ })).getByText("2"),
     ).toBeInTheDocument();
-    const collectionSummary = screen.getByText("Tu colección").parentElement;
-    expect(collectionSummary).not.toBeNull();
-    expect(within(collectionSummary!).getByText("2 cartas")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
+      "aria-valuemax",
+      "2",
+    );
     const packsButton = screen.getByRole("button", { name: "Packs" });
     await user.click(packsButton);
     expect(packsButton).toHaveClass("is-opening");
@@ -595,7 +649,6 @@ describe("FlashcardApp", () => {
       expect(
         within(screen.getByRole("button", { name: /Estudiar/ })).getByText("4"),
       ).toBeInTheDocument();
-      expect(within(collectionSummary!).getByText("4 cartas")).toBeInTheDocument();
       expect(screen.getByRole("progressbar", { name: "Progreso de la sesión" })).toHaveAttribute(
         "aria-valuemax",
         "4",

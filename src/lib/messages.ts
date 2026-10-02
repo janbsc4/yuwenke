@@ -316,7 +316,7 @@ const es: Messages = {
   toastCloseAria: "Cerrar aviso",
   search: {
     aria: "Buscar en las cartas",
-    placeholder: "Busca caracteres, pinyin o español…",
+    placeholder: "Buscar cartas…",
     clearAria: "Borrar búsqueda",
   },
   filters: {
@@ -633,7 +633,7 @@ const en: Messages = {
   toastCloseAria: "Close notice",
   search: {
     aria: "Search the cards",
-    placeholder: "Search characters, pinyin, or English…",
+    placeholder: "Search cards…",
     clearAria: "Clear search",
   },
   filters: {

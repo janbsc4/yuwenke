@@ -7,11 +7,7 @@ import {
   useState,
   type SyntheticEvent,
 } from "react";
-import {
-  CHAT_MAX_MESSAGE,
-  DEFAULT_CHAT_MODEL,
-  chatModelLabel,
-} from "../../shared/chat";
+import { CHAT_MAX_MESSAGE } from "../../shared/chat";
 import type { Flashcard, Locale, ProgressMap } from "../types";
 import { guestMessagesRemaining, sendConversation } from "../lib/chatClient";
 import { chatMessages } from "../lib/chatMessages";
@@ -77,6 +73,12 @@ function revealInTranscript(transcript: HTMLElement | null, element: HTMLElement
   if (offset > 0) transcript.scrollTop += offset;
 }
 
+function fitReplyInput(input: HTMLTextAreaElement | null) {
+  if (!input) return;
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+}
+
 interface Props {
   cards: Flashcard[];
   progress: ProgressMap;
@@ -100,7 +102,11 @@ export default function Conversation({
 }: Props) {
   const m = chatMessages[locale];
   const ownerKey = owner ?? "guest";
-  const listenUnavailable = !speechSupported() ? m.speechUnavailable : muted ? m.speechMuted : undefined;
+  const listenUnavailable = !speechSupported()
+    ? m.speechUnavailable
+    : muted
+      ? m.speechMuted
+      : undefined;
   const [session, setSession] = useState(() =>
     readConversation(ownerKey, locale),
   );
@@ -115,13 +121,16 @@ export default function Conversation({
   const [autoplay, setAutoplay] = useState(chatAutoplayEnabled);
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [revealedPinyin, setRevealedPinyin] = useState<Set<number>>(new Set());
-  const [openAid, setOpenAid] = useState<Record<number, "meaning" | "hint" | null>>({});
+  const [openAid, setOpenAid] = useState<
+    Record<number, "meaning" | "hint" | null>
+  >({});
   const [pinyinReader, setPinyinReader] = useState<PinyinReader | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const optionsRef = useRef<HTMLDetailsElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const keyboardHelpRef = useRef<HTMLDivElement>(null);
   const lastOpenedAid = useRef<number | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const sending = useRef(false);
   const snapshot = useMemo(
@@ -146,17 +155,73 @@ export default function Conversation({
     };
   }, []);
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: "nearest" });
-  }, [session.turns.length, busy]);
+    const transcript = transcriptRef.current;
+    if (transcript) transcript.scrollTop = session.turns.length || busy || error ? transcript.scrollHeight : 0;
+  }, [session.turns.length, busy, error]);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const shell = mainRef.current?.closest<HTMLElement>(".app-shell");
+    if (!viewport || !shell) return;
+    // iOS resizes the visual viewport, rather than 100dvh, for the keyboard.
+    const resize = () => {
+      const transcript = transcriptRef.current;
+      const atBottom = transcript && transcript.scrollHeight - transcript.clientHeight - transcript.scrollTop < 24;
+      shell.style.setProperty("--chat-viewport-height", `${viewport.height}px`);
+      shell.style.setProperty("--chat-viewport-top", `${viewport.offsetTop}px`);
+      fitReplyInput(inputRef.current);
+      if (atBottom) transcript.scrollTop = transcript.scrollHeight;
+    };
+    resize();
+    viewport.addEventListener("resize", resize);
+    viewport.addEventListener("scroll", resize);
+    return () => {
+      viewport.removeEventListener("resize", resize);
+      viewport.removeEventListener("scroll", resize);
+      shell.style.removeProperty("--chat-viewport-height");
+      shell.style.removeProperty("--chat-viewport-top");
+    };
+  }, []);
+  useEffect(() => {
+    const dismiss = (event: PointerEvent) => {
+      const options = optionsRef.current;
+      if (options && event.target instanceof Node && !options.contains(event.target)) {
+        options.open = false;
+        setKeyboardHelpOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, []);
+  useLayoutEffect(() => {
+    fitReplyInput(inputRef.current);
+  }, [draft, session.turns.length]);
   useLayoutEffect(() => {
     const index = lastOpenedAid.current;
     if (index === null || !openAid[index]) return;
-    revealInTranscript(transcriptRef.current, document.getElementById(`chat-aid-${index}`));
+    revealInTranscript(
+      transcriptRef.current,
+      document.getElementById(`chat-aid-${index}`),
+    );
     lastOpenedAid.current = null;
   }, [openAid]);
   useEffect(() => {
-    if (keyboardHelpOpen) keyboardHelpRef.current?.scrollIntoView?.({ block: "start" });
+    if (keyboardHelpOpen)
+      revealInTranscript(
+        optionsRef.current?.querySelector<HTMLElement>(".chat-options-panel") ??
+          null,
+        keyboardHelpRef.current,
+      );
   }, [keyboardHelpOpen]);
+
+  useEffect(() => {
+    if (confirmClear && transcriptRef.current)
+      transcriptRef.current.scrollTop = 0;
+  }, [confirmClear]);
+
+  function dismissKeyboardHelp() {
+    setKeyboardHelpOpen(false);
+    optionsRef.current?.querySelector<HTMLButtonElement>(".chat-keyboard-toggle")?.focus();
+  }
 
   async function send(message: string) {
     const content = message.trim();
@@ -294,15 +359,18 @@ export default function Conversation({
   }
 
   return (
-    <main className={`conversation${configured && session.turns.length ? " conversation--active" : ""}`} aria-label={m.title}>
+    <main ref={mainRef} className="conversation" aria-label={m.title}>
       <header className="chat-heading">
         <div className="chat-identity">
           <span className="chat-seal" lang="zh-CN" aria-hidden="true">
             雷
           </span>
           <div>
-            <h1>{m.title}</h1>
-            <p>{m.subtitle}</p>
+            <h1>
+              <span className="chat-title-full">{m.title}</span>
+              <span className="chat-title-short">Léi</span>
+            </h1>
+            <p><span className="chat-title-full">{m.subtitle}</span><span className="chat-title-short">{m.practiceLabel}</span></p>
           </div>
         </div>
         <div className="chat-header-tools">
@@ -310,85 +378,166 @@ export default function Conversation({
             <button
               type="button"
               className="chat-autoplay"
+              aria-label={m.autoplay}
               aria-pressed={autoplay}
               disabled={Boolean(listenUnavailable)}
-              title={listenUnavailable ?? undefined}
+              title={listenUnavailable ?? m.autoplay}
               onClick={toggleAutoplay}
             >
-              <span className="chat-switch" aria-hidden="true" />
-              {m.autoplay}
+              <AppIcon name="sound" />
+              <span aria-hidden="true">Auto</span>
+              <span className="chat-autoplay-dot" aria-hidden="true" />
             </button>
           )}
           {session.turns.length > 0 && (
             <button
-              className="button button-small"
+              className="chat-new"
               type="button"
+              aria-label={m.newChat}
+              title={m.newChat}
               disabled={busy}
               onClick={() => setConfirmClear(true)}
             >
-              {m.newChat}
+              <AppIcon name="newChat" />
             </button>
           )}
+          <details
+            className="chat-options"
+            ref={optionsRef}
+            onToggle={(event) => {
+              if (!event.currentTarget.open) setKeyboardHelpOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                if (keyboardHelpOpen) {
+                  dismissKeyboardHelp();
+                } else {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector("summary")?.focus();
+                }
+              }
+            }}
+          >
+            <summary aria-label={m.settings} title={m.settings}>
+              <svg
+                className="app-icon"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <circle cx="5" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="19" cy="12" r="1.8" />
+              </svg>
+            </summary>
+            <div className="chat-options-panel">
+              <h2>{m.settings}</h2>
+              <details className="chat-privacy">
+                <summary>
+                  <span className="chat-disclosure-icon" aria-hidden="true" />
+                  {m.privacyTitle}
+                </summary>
+                <p>{m.privacy}</p>
+              </details>
+              {configured && (
+                <>
+                  {practiced.length > 0 && (
+                    <details className="chat-recap">
+                      <summary>
+                        <span
+                          className="chat-disclosure-icon"
+                          aria-hidden="true"
+                        />
+                        {m.recap} · {practiced.length}
+                      </summary>
+                      <p>{m.recapNote}</p>
+                      <div>{cardButtons(practiced)}</div>
+                    </details>
+                  )}
+                  <div className="chat-keyboard-help">
+                    <button
+                      type="button"
+                      className="chat-keyboard-toggle"
+                      aria-expanded={keyboardHelpOpen}
+                      aria-controls={
+                        keyboardHelpOpen ? "chat-keyboard-guide" : undefined
+                      }
+                      onClick={() => setKeyboardHelpOpen((open) => !open)}
+                    >
+                      <span
+                        className="chat-disclosure-icon"
+                        aria-hidden="true"
+                      />
+                      {m.keyboardHelp.title}
+                    </button>
+                    {keyboardHelpOpen && (
+                      <div
+                        className="chat-keyboard-guide"
+                        id="chat-keyboard-guide"
+                        ref={keyboardHelpRef}
+                      >
+                        <button
+                          type="button"
+                          className="chat-keyboard-close"
+                          aria-label={m.keyboardHelp.close}
+                          title={m.keyboardHelp.close}
+                          onClick={dismissKeyboardHelp}
+                        >
+                          <AppIcon name="close" />
+                        </button>
+                        <p>{m.keyboardHelp.intro}</p>
+                        <div className="chat-keyboard-platforms">
+                          {(
+                            [
+                              [
+                                "Windows",
+                                m.keyboardHelp.windows,
+                                keyboardGuideUrls.windows,
+                              ],
+                              [
+                                "Mac",
+                                m.keyboardHelp.mac,
+                                keyboardGuideUrls.mac,
+                              ],
+                              [
+                                "iPhone / iPad",
+                                m.keyboardHelp.iphone,
+                                keyboardGuideUrls.iphone,
+                              ],
+                              [
+                                "Android (Gboard)",
+                                m.keyboardHelp.android,
+                                keyboardGuideUrls.android,
+                              ],
+                            ] as const
+                          ).map(([platform, instructions, url]) => (
+                            <section key={platform}>
+                              <h3>{platform}</h3>
+                              <p>{instructions}</p>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {m.keyboardHelp.official}
+                              </a>
+                            </section>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </details>
         </div>
       </header>
 
-      {confirmClear && (
-        <div className="chat-clear" role="group" aria-label={m.confirmClear}>
-          <p>{m.confirmClear}</p>
-          <button className="button button-small" type="button" onClick={clear}>
-            {m.clear}
-          </button>
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => setConfirmClear(false)}
-          >
-            {m.cancel}
-          </button>
-        </div>
-      )}
       {!configured ? (
         <p className="chat-intro">{m.unavailable}</p>
       ) : (
         <>
-          {session.turns.length === 0 && (
-            <div className="chat-intro">
-              <p>{m.intro}</p>
-              {!owner && <p>{m.guestIntro}</p>}
-              {!snapshot.length && <p>{m.emptyProgress}</p>}
-              <label className="chat-topic">
-                {m.topic}
-                <select
-                  value={session.topic}
-                  disabled={busy}
-                  onChange={(event) =>
-                    setSession({ ...session, topic: event.target.value })
-                  }
-                >
-                  <option value="">{m.anyTopic}</option>
-                  {topics.map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topicDisplayLabel(locale, topic)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className="button button-ink"
-                type="button"
-                disabled={busy || (!owner && remaining === 0)}
-                onClick={() => void send(m.startMessage)}
-              >
-                {m.start}
-              </button>
-            </div>
-          )}
-          {session.targetCardIds.length > 0 && (
-            <aside className="chat-targets">
-              <span>{m.targets}</span>
-              <div>{cardButtons(session.targetCardIds)}</div>
-            </aside>
-          )}
           <div
             className="chat-transcript"
             ref={transcriptRef}
@@ -397,37 +546,97 @@ export default function Conversation({
             aria-live="polite"
             aria-relevant="additions"
           >
+            {confirmClear && (
+              <div
+                className="chat-clear"
+                role="group"
+                aria-label={m.confirmClear}
+              >
+                <p>{m.confirmClear}</p>
+                <button
+                  className="button button-small"
+                  type="button"
+                  onClick={clear}
+                >
+                  {m.clear}
+                </button>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                >
+                  {m.cancel}
+                </button>
+              </div>
+            )}
+            {session.turns.length === 0 && (
+              <div className="chat-intro chat-welcome">
+                <span className="chat-welcome-character" lang="zh-CN" aria-hidden="true">聊</span>
+                <h2>{m.welcome}</h2>
+                <p>{m.intro}</p>
+                <label className="chat-topic">
+                  {m.topic}
+                  <select
+                    value={session.topic}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setSession({ ...session, topic: event.target.value })
+                    }
+                  >
+                    <option value="">{m.anyTopic}</option>
+                    {topics.map((topic) => (
+                      <option key={topic} value={topic}>
+                        {topicDisplayLabel(locale, topic)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="button button-ink"
+                  type="button"
+                  disabled={busy || (!owner && remaining === 0)}
+                  onClick={() => void send(m.startMessage)}
+                >
+                  {m.start}
+                  <AppIcon name="chat" />
+                </button>
+                {!owner && <p className="chat-welcome-note">{m.guestIntro}</p>}
+                {!snapshot.length && <p className="chat-welcome-note">{m.emptyProgress}</p>}
+              </div>
+            )}
             {session.turns.map(({ user, reply }, index) => (
               <div className="chat-turn" key={index}>
-                <div className="chat-learner">
-                  <p className="chat-user" dir="auto">
-                    {user}
-                  </p>
-                  {reply.naturalness && (
-                    <details
-                      className="chat-naturalness"
-                      data-level={reply.naturalness.level}
-                      onToggle={(event) => {
-                        if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
-                      }}
-                    >
-                      <summary>
-                        <span className="chat-disclosure-icon" aria-hidden="true" />
-                        <span className="chat-naturalness-meter" aria-hidden="true">
-                          <span /><span /><span />
-                        </span>
-                        <span>{m.naturalnessLevels[reply.naturalness.level]}</span>
-                      </summary>
-                      <p>{naturalnessExplanation(reply.naturalness.explanation, reply.naturalness.level, m.naturalnessFallback)}</p>
-                      {reply.naturalness.betterChinese && (
-                        <div className="chat-better-sentence">
-                          <strong>{m.betterSentence}</strong>
-                          <p lang="zh-CN">{reply.naturalness.betterChinese}</p>
-                        </div>
-                      )}
-                    </details>
-                  )}
-                </div>
+                {(index > 0 || user !== m.startMessage) && (
+                  <div className="chat-learner">
+                    <p className="chat-user" dir="auto">
+                      {user}
+                    </p>
+                    {reply.naturalness && (
+                      <details
+                        className="chat-naturalness"
+                        data-level={reply.naturalness.level}
+                        onToggle={(event) => {
+                          if (event.currentTarget.open) revealInTranscript(transcriptRef.current, event.currentTarget);
+                        }}
+                      >
+                        <summary>
+                          <span className="chat-disclosure-icon" aria-hidden="true" />
+                          <span className="chat-naturalness-meter" aria-hidden="true">
+                            <span /><span /><span />
+                          </span>
+                          <span>{m.naturalnessLevels[reply.naturalness.level]}</span>
+                        </summary>
+                        <p>{naturalnessExplanation(reply.naturalness.explanation, reply.naturalness.level, m.naturalnessFallback)}</p>
+                        {reply.naturalness.betterChinese && (
+                          <div className="chat-better-sentence">
+                            <strong>{m.betterSentence}</strong>
+                            <p lang="zh-CN">{reply.naturalness.betterChinese}</p>
+                          </div>
+                        )}
+                      </details>
+                    )}
+                  </div>
+                )}
                 <article className="chat-reply" aria-label="Léi">
                   <span className="chat-speaker">Léi</span>
                   {reply.kind === "explanation" ? (
@@ -440,18 +649,6 @@ export default function Conversation({
                             ? chineseWithPinyin(reply.chinese, pinyinReader)
                             : reply.chinese}
                         </p>
-                        <button
-                          type="button"
-                          className="chat-listen"
-                          aria-label={m.listen}
-                          disabled={Boolean(listenUnavailable)}
-                          title={listenUnavailable ?? m.listen}
-                          onClick={() => speakChinese(reply.chinese)}
-                        >
-                          <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
-                          </svg>
-                        </button>
                       </div>
                       {reply.feedback && !reply.naturalness && (
                         <div className="chat-correction">
@@ -462,17 +659,38 @@ export default function Conversation({
                       <div className="chat-aids">
                         <button
                           type="button"
+                          className="chat-listen"
+                          aria-label={m.listen}
+                          disabled={Boolean(listenUnavailable)}
+                          title={listenUnavailable ?? m.listen}
+                          onClick={() => speakChinese(reply.chinese)}
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5v-13Z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
                           className="chat-pinyin-toggle"
+                          aria-label={revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
                           aria-expanded={revealedPinyin.has(index)}
                           onClick={() => void togglePinyin(index)}
                         >
-                          {revealedPinyin.has(index) ? m.hidePinyin : m.showPinyin}
+                          Pinyin
                         </button>
                         <button
                           type="button"
                           className="chat-aid-toggle"
                           aria-expanded={openAid[index] === "meaning"}
-                          aria-controls={openAid[index] === "meaning" ? `chat-aid-${index}` : undefined}
+                          aria-controls={
+                            openAid[index] === "meaning"
+                              ? `chat-aid-${index}`
+                              : undefined
+                          }
                           onClick={() => toggleAid(index, "meaning")}
                         >
                           {m.meaning}
@@ -480,16 +698,23 @@ export default function Conversation({
                         <button
                           type="button"
                           className="chat-aid-toggle"
+                          title={m.hint}
                           aria-expanded={openAid[index] === "hint"}
-                          aria-controls={openAid[index] === "hint" ? `chat-aid-${index}` : undefined}
+                          aria-controls={
+                            openAid[index] === "hint"
+                              ? `chat-aid-${index}`
+                              : undefined
+                          }
                           onClick={() => toggleAid(index, "hint")}
                         >
-                          {m.hint}
+                          {m.hintShort}
                         </button>
                       </div>
                       {openAid[index] && (
                         <p className="chat-aid-panel" id={`chat-aid-${index}`}>
-                          {openAid[index] === "meaning" ? reply.meaning : reply.hint}
+                          {openAid[index] === "meaning"
+                            ? reply.meaning
+                            : reply.hint}
                         </p>
                       )}
                     </>
@@ -502,13 +727,25 @@ export default function Conversation({
                 {m.thinking}
               </p>
             )}
-            <div ref={endRef} />
+            {error && (
+              <p className="inline-alert" role="alert">
+                {error}
+              </p>
+            )}
+            {!owner && remaining === 0 && (
+              <div className="chat-intro">
+                <p>{m.guestExhausted}</p>
+                <button
+                  className="button button-ink"
+                  type="button"
+                  onClick={onSignIn}
+                >
+                  {m.signIn}
+                </button>
+              </div>
+            )}
+            {storageFailed && <p role="status">{m.savedError}</p>}
           </div>
-          {error && (
-            <p className="inline-alert" role="alert">
-              {error}
-            </p>
-          )}
           {session.turns.length > 0 && (
             <form className="chat-composer" onSubmit={submit}>
               <label className="sr-only" htmlFor="chat-reply">
@@ -519,7 +756,7 @@ export default function Conversation({
                 ref={inputRef}
                 value={draft}
                 maxLength={CHAT_MAX_MESSAGE}
-                rows={2}
+                rows={1}
                 disabled={busy || (!owner && remaining === 0)}
                 placeholder={m.placeholder}
                 onChange={(event) => setDraft(event.target.value)}
@@ -547,58 +784,6 @@ export default function Conversation({
               </button>
             </form>
           )}
-          {!owner && remaining === 0 && (
-            <div className="chat-intro">
-              <p>{m.guestExhausted}</p>
-              <button className="button button-ink" type="button" onClick={onSignIn}>
-                {m.signIn}
-              </button>
-            </div>
-          )}
-          {practiced.length > 0 && (
-            <details className="chat-recap">
-              <summary>
-                <span className="chat-disclosure-icon" aria-hidden="true" />
-                {m.recap} · {practiced.length}
-              </summary>
-              <p>{m.recapNote}</p>
-              <div>{cardButtons(practiced)}</div>
-            </details>
-          )}
-          {storageFailed && <p role="status">{m.savedError}</p>}
-          <div className="chat-keyboard-help">
-            <button
-              type="button"
-              className="chat-keyboard-toggle"
-              aria-expanded={keyboardHelpOpen}
-              aria-controls={keyboardHelpOpen ? "chat-keyboard-guide" : undefined}
-              onClick={() => setKeyboardHelpOpen((open) => !open)}
-            >
-              <span className="chat-disclosure-icon" aria-hidden="true" />
-              {m.keyboardHelp.title}
-            </button>
-            {keyboardHelpOpen && (
-              <div className="chat-keyboard-guide" id="chat-keyboard-guide" ref={keyboardHelpRef}>
-                <p>{m.keyboardHelp.intro}</p>
-                <div className="chat-keyboard-platforms">
-                  {([
-                    ["Windows", m.keyboardHelp.windows, keyboardGuideUrls.windows],
-                    ["Mac", m.keyboardHelp.mac, keyboardGuideUrls.mac],
-                    ["iPhone / iPad", m.keyboardHelp.iphone, keyboardGuideUrls.iphone],
-                    ["Android (Gboard)", m.keyboardHelp.android, keyboardGuideUrls.android],
-                  ] as const).map(([platform, instructions, url]) => (
-                    <section key={platform}>
-                      <h3>{platform}</h3>
-                      <p>{instructions}</p>
-                      <a href={url} target="_blank" rel="noopener noreferrer">
-                        {m.keyboardHelp.official}
-                      </a>
-                    </section>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         </>
       )}
       <footer className="chat-footer">
@@ -607,14 +792,6 @@ export default function Conversation({
             {remaining} {owner ? m.remaining : m.guestRemaining}
           </p>
         )}
-        <p className="chat-model">
-          {m.model}{" "}
-          <span>{chatModelLabel(session.model ?? DEFAULT_CHAT_MODEL)}</span>
-        </p>
-        <details className="chat-privacy">
-          <summary><span className="chat-disclosure-icon" aria-hidden="true" />{m.privacyTitle}</summary>
-          <p>{m.privacy}</p>
-        </details>
       </footer>
     </main>
   );

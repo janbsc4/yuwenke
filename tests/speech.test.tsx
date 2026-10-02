@@ -382,7 +382,8 @@ describe("voice settings dialog", () => {
     const stub = stubSpeechApi([fakeVoice("zh-CN"), fakeVoice("zh-TW")]);
     await renderApp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú de cuenta" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
 
     const select = voiceSelect();
     const optionLabels = [...within(select).getAllByRole("option")].map((option) => option.textContent);
@@ -403,7 +404,8 @@ describe("voice settings dialog", () => {
     window.localStorage.setItem("yuwenke:tts-voice:v1", "zh-TW");
     await renderApp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú de cuenta" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
 
     expect(voiceSelect()).toHaveValue("zh-TW");
   });
@@ -412,7 +414,8 @@ describe("voice settings dialog", () => {
     stubSpeechApi([fakeVoice("zh-CN")]);
     await renderApp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú de cuenta" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
     await userEvent.click(screen.getByRole("checkbox", { name: "Silenciar pronunciación" }));
 
     expect(window.localStorage.getItem("yuwenke:tts-muted:v1")).toBe("1");
@@ -423,7 +426,8 @@ describe("voice settings dialog", () => {
     window.localStorage.setItem("yuwenke:tts-muted:v1", "1");
     await renderApp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú de cuenta" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
 
     expect(screen.getByRole("checkbox", { name: "Silenciar pronunciación" })).toBeChecked();
   });
@@ -432,7 +436,8 @@ describe("voice settings dialog", () => {
     stubSpeechApi([]);
     await renderApp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Elegir voz de pronunciación" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú de cuenta" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Este dispositivo todavía no tiene voces chinas instaladas.")).toBeInTheDocument();
@@ -448,8 +453,11 @@ describe("voice settings dialog", () => {
     stubSpeechApi([fakeVoice("zh-CN")]);
     await renderApp();
 
-    const trigger = screen.getByRole("button", { name: "Elegir voz de pronunciación" });
+    const trigger = screen.getByRole("button", { name: "Abrir menú de cuenta" });
+    expect(screen.queryByRole("button", { name: "Elegir voz de pronunciación" })).not.toBeInTheDocument();
     await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Elegir voz de pronunciación" }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     await userEvent.keyboard("{Escape}");
