@@ -111,6 +111,7 @@ export default function Conversation({
     readConversation(ownerKey, locale),
   );
   const [draft, setDraft] = useState("");
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [storageFailed, setStorageFailed] = useState(false);
@@ -233,6 +234,9 @@ export default function Conversation({
     sending.current = true;
     setBusy(true);
     setError("");
+    const showUserMessage = session.turns.length > 0 || content !== m.startMessage;
+    setPendingMessage(showUserMessage ? content : null);
+    setDraft("");
     try {
       const result = await sendConversation({
         sessionId: session.sessionId,
@@ -260,6 +264,7 @@ export default function Conversation({
       }
     } catch (cause) {
       if (!mounted.current) return;
+      if (showUserMessage) setDraft(content);
       const timedOut =
         cause !== null &&
         typeof cause === "object" &&
@@ -287,6 +292,7 @@ export default function Conversation({
     } finally {
       sending.current = false;
       if (mounted.current) {
+        setPendingMessage(null);
         setBusy(false);
         window.setTimeout(() => inputRef.current?.focus(), 0);
       }
@@ -722,6 +728,21 @@ export default function Conversation({
                 </article>
               </div>
             ))}
+            {pendingMessage !== null && (
+              <div className="chat-learner">
+                <p className="chat-user" dir="auto">{pendingMessage}</p>
+                <div
+                  className="chat-naturalness chat-naturalness--pending"
+                  role="status"
+                  aria-label={m.checkingNaturalness}
+                >
+                  <span className="sr-only">{m.checkingNaturalness}</span>
+                  <span className="chat-loading-dots" aria-hidden="true">
+                    <span /><span /><span />
+                  </span>
+                </div>
+              </div>
+            )}
             {busy && (
               <p className="chat-pending" role="status">
                 {m.thinking}

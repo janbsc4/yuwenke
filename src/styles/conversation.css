@@ -227,6 +227,34 @@
 .chat-naturalness[data-level="needs_work"] {
   --assessment-color: #ffd4d5;
 }
+.chat-naturalness--pending {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+}
+.chat-loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-loading-dots > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--assessment-color);
+  animation: chat-loading-pulse 1.2s ease-in-out infinite;
+}
+.chat-loading-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.chat-loading-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes chat-loading-pulse {
+  0%, 80%, 100% { opacity: 0.35; }
+  40% { opacity: 1; }
+}
 .chat-naturalness summary {
   display: flex;
   align-items: center;
@@ -503,6 +531,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .chat-loading-dots > span {
+    animation: none;
+  }
   .chat-naturalness[open] > p,
   .chat-naturalness[open] .chat-better-sentence,
   .chat-aid-panel {
@@ -527,18 +558,41 @@
   line-height: 1.6;
 }
 .chat-keyboard-help {
-  margin-top: 8px;
+  margin: 0;
 }
 .chat-keyboard-toggle {
-  min-height: 40px;
-  padding: 5px 0;
   border: 0;
   background: none;
-  color: var(--jade);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+}
+.chat-options-panel > details > summary,
+.chat-keyboard-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 0;
+  color: var(--ink);
+  font: 500 0.85rem/1.5 var(--font-ui);
+  text-align: left;
   cursor: pointer;
+}
+.chat-options-panel > details > summary .chat-disclosure-icon,
+.chat-keyboard-toggle .chat-disclosure-icon {
+  flex: none;
+  width: 16px;
+  margin: 0;
+  text-align: center;
+}
+.chat-options-panel > details + details,
+.chat-options-panel > details + .chat-keyboard-help {
+  border-top: 1px solid var(--border);
+}
+.chat-options-panel > details > summary:hover,
+.chat-options-panel > details[open] > summary,
+.chat-keyboard-toggle:hover,
+.chat-keyboard-toggle[aria-expanded="true"] {
+  color: var(--jade);
 }
 .chat-keyboard-toggle[aria-expanded="true"] .chat-disclosure-icon::before {
   content: "−";
@@ -604,9 +658,8 @@
   margin-left: 12px;
 }
 .chat-recap {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+  margin: 0;
+  padding: 0;
   font-size: 0.85rem;
 }
 .chat-recap p {

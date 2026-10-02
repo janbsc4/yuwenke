@@ -306,6 +306,54 @@ it("uses one provider session for a conversation and a new one after clearing", 
   );
 });
 
+it.each(["en", "es"] as const)("shows the learner's message before the response arrives in %s", async (locale) => {
+  saveConversation("alice", locale, {
+    version: 1, sessionId: crypto.randomUUID(), topic: "",
+    turns: [{ user: "Hello", reply: response.reply }], targetCardIds: [],
+  });
+  let resolve!: (value: ChatResponse) => void;
+  vi.mocked(sendConversation).mockImplementation(() => new Promise((done) => { resolve = done; }));
+  render(<Conversation {...props} locale={locale} />);
+  const input = screen.getByRole("textbox");
+  await userEvent.type(input, "我喜欢喝茶。");
+  await userEvent.click(screen.getByRole("button", { name: locale === "en" ? "Send" : "Enviar" }));
+  expect(screen.getByText("我喜欢喝茶。")).toBeVisible();
+  expect(input).toHaveValue("");
+  expect(input).toBeDisabled();
+  const checking = locale === "en" ? "Checking your sentence…" : "Comprobando tu frase…";
+  expect(screen.getByRole("status", { name: checking })).toBeVisible();
+  expect(readConversation("alice", locale).turns).toHaveLength(1);
+  resolve({ ...response, reply: { ...response.reply, naturalness: {
+    level: "natural", explanation: "Your sentence sounds natural.", betterChinese: "",
+  } } });
+  await waitFor(() => expect(input).toBeEnabled());
+  expect(screen.queryByRole("status", { name: checking })).not.toBeInTheDocument();
+  expect(screen.getAllByText("我喜欢喝茶。")).toHaveLength(1);
+  expect(screen.getByText("Natural")).toBeVisible();
+  expect(readConversation("alice", locale).turns).toHaveLength(2);
+});
+
+it("restores an immediately displayed message to the composer when sending fails", async () => {
+  saveConversation("alice", "en", {
+    version: 1, sessionId: crypto.randomUUID(), topic: "",
+    turns: [{ user: "Hello", reply: response.reply }], targetCardIds: [],
+  });
+  let reject!: (cause: Error) => void;
+  vi.mocked(sendConversation).mockImplementation(() => new Promise((_, fail) => { reject = fail; }));
+  render(<Conversation {...props} />);
+  const input = screen.getByRole("textbox");
+  await userEvent.type(input, "我喝茶。");
+  await userEvent.click(screen.getByRole("button", { name: "Send" }));
+  expect(screen.getByText("我喝茶。", { selector: ".chat-user" })).toBeVisible();
+  reject(new Error("Network failure"));
+  expect(await screen.findByRole("alert")).toHaveTextContent("couldn’t reply");
+  expect(input).toHaveValue("我喝茶。");
+  expect(input).toBeEnabled();
+  expect(screen.queryByText("我喝茶。", { selector: ".chat-user" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("status", { name: "Checking your sentence…" })).not.toBeInTheDocument();
+  expect(readConversation("alice", "en").turns).toHaveLength(1);
+});
+
 it("preserves the draft and prior turns after an exhausted quota", async () => {
   saveConversation("alice", "en", {
     version: 1,
