@@ -6,10 +6,10 @@ const header =
 describe("flashcard CSV", () => {
   it("loads and validates all class-note cards", () => {
     const cards = loadFlashcards();
-    expect(cards).toHaveLength(235);
-    expect(new Set(cards.map((card) => card.id)).size).toBe(235);
+    expect(cards).toHaveLength(246);
+    expect(new Set(cards.map((card) => card.id)).size).toBe(246);
     expect(cards.map((card) => card.id)).toEqual(
-      Array.from({ length: 235 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
+      Array.from({ length: 246 }, (_, index) => `FC${String(index + 1).padStart(3, "0")}`),
     );
     expect(cards.every((card) => card.hanzi && card.pinyin && card.espanol)).toBe(true);
     expect(cards.every((card) => card.ingles && card.explicacion_ingles && card.ejemplo_ingles && card.etiquetas_ingles)).toBe(true);

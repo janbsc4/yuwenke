@@ -22,7 +22,7 @@ describe("Chinese knowledge inventory", () => {
     ).trim().split(", ");
 
     expect(knowledge).toEqual(expected);
-    expect(knowledge).toHaveLength(340);
+    expect(knowledge).toHaveLength(358);
     expect(knowledge.every((entry) => !/\p{Script=Latin}/u.test(entry))).toBe(true);
   });
 });

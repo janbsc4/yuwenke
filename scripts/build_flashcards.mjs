@@ -253,6 +253,18 @@ const rows = [
   ["palabra", "fechas", "今年", "jīnnián", "este año", "Referencia temporal relativa al momento en que se habla.", "今年是二零二六年。", "Jīnnián shì èr líng èr liù nián.", "Este año es 2026.", "—", "fecha;calendario"],
   ["palabra", "fechas", "明年", "míngnián", "el año que viene", "Referencia temporal relativa al momento en que se habla.", "明年是二零二七年。", "Míngnián shì èr líng èr qī nián.", "El año que viene es 2027.", "—", "fecha;calendario"],
   ["palabra", "fechas", "去年", "qùnián", "el año pasado", "Referencia temporal relativa al momento en que se habla.", "去年是二零二五年。", "Qùnián shì èr líng èr wǔ nián.", "El año pasado fue 2025.", "—", "fecha;calendario"],
+
+  ["palabra", "personas", "小朋友", "xiǎopéngyou", "niño / niña", "Forma afectuosa de referirse a un niño o una niña; no indica el sexo.", "小朋友，你好！", "Xiǎopéngyou, nǐ hǎo!", "¡Hola, peque!", "—", "persona;infancia"],
+  ["palabra", "familia", "哥哥", "gēge", "hermano mayor", "Hermano de más edad que la persona de referencia.", "我哥哥", "wǒ gēge", "mi hermano mayor", "—", "familia;hermanos"],
+  ["palabra", "familia", "弟弟", "dìdi", "hermano menor", "Hermano de menos edad que la persona de referencia.", "我弟弟", "wǒ dìdi", "mi hermano menor", "—", "familia;hermanos"],
+  ["palabra", "familia", "姐姐", "jiějie", "hermana mayor", "Hermana de más edad que la persona de referencia.", "我姐姐", "wǒ jiějie", "mi hermana mayor", "—", "familia;hermanos"],
+  ["palabra", "familia", "妹妹", "mèimei", "hermana menor", "Hermana de menos edad que la persona de referencia.", "我妹妹", "wǒ mèimei", "mi hermana menor", "—", "familia;hermanos"],
+  ["palabra", "acciones", "住", "zhù", "vivir / residir", "Expresa dónde se vive; 住在 + lugar es una forma habitual.", "我住在巴塞罗那。", "Wǒ zhù zài Bāsàiluónà.", "Vivo en Barcelona.", "—", "verbo;residencia;lugar"],
+  ["frase", "lugares", "我住在巴塞罗那。", "Wǒ zhù zài Bāsàiluónà.", "Vivo en Barcelona.", "我 + 住在 + lugar expresa dónde vivo.", "我住在巴塞罗那。", "Wǒ zhù zài Bāsàiluónà.", "Vivo en Barcelona.", "—", "residencia;lugar;ciudad"],
+  ["frase", "movimiento", "我去看朋友。", "Wǒ qù kàn péngyou.", "Voy a visitar a mis amigos.", "去 + 看朋友 significa ir a visitar amigos; 看 aquí significa «visitar».", "我去看朋友。", "Wǒ qù kàn péngyou.", "Voy a visitar a mis amigos.", "—", "movimiento;amistad;visita"],
+  ["frase", "acciones", "看电视", "kàn diànshì", "ver la televisión", "看 significa «ver» y 电视 significa «televisión».", "我晚上看电视。", "Wǒ wǎnshang kàn diànshì.", "Veo la televisión por la noche.", "—", "verbo;rutina;ocio"],
+  ["frase", "acciones", "看电影", "kàn diànyǐng", "ver una película", "看 significa «ver» y 电影 significa «película».", "我和朋友看电影。", "Wǒ hé péngyou kàn diànyǐng.", "Veo una película con mis amigos.", "—", "verbo;ocio;pelicula"],
+  ["frase", "acciones", "看书", "kàn shū", "leer un libro", "看书 es una expresión habitual para leer libros; 书 significa «libro».", "我晚上看书。", "Wǒ wǎnshang kàn shū.", "Leo un libro por la noche.", "—", "verbo;rutina;lectura"],
 ];
 
 // Exact visible forms that should use the proper-name colour. Keeping this
@@ -310,6 +322,8 @@ const properNamesById = new Map([
   ["FC206", "中国;Zhōngguó;China"],
   ["FC207", "西班牙;Xībānyá;España;Spain"],
   ["FC209", "中国;Zhōngguó;China"],
+  ["FC241", "巴塞罗那;Bāsàiluónà;Barcelona"],
+  ["FC242", "巴塞罗那;Bāsàiluónà;Barcelona"],
 ]);
 
 const header = [

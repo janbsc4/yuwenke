@@ -12,7 +12,7 @@ The site is a static Astro app with one React study interface. It can be hosted 
 
 It includes:
 
-- 205 source cards and 387 study units;
+- 246 source cards and 464 study units;
 - a combined `Estudiar` queue for new and learning cards, plus `Dominadas` and `Favoritas` modes;
 - Mandarin → Spanish and Spanish → Mandarin prompts;
 - Spanish question-and-answer prompts for concept rules;
@@ -21,7 +21,7 @@ It includes:
 - shuffled sessions without repetition;
 - lilac highlighting for proper names across Hanzi, pinyin, and Spanish;
 - an in-app guide explaining the study flow and visual conventions;
-- ten editable card packs for progressive discovery;
+- eleven editable card packs for progressive discovery;
 - guest progress, favorites, and open packs in local storage;
 - optional Google sign-in and Firestore synchronization for study state.
 - an optional Converse mode with Léi, using each learner's vocabulary and a privately hosted inference key.

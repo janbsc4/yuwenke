@@ -74,13 +74,13 @@ describe("card pack authoring data", () => {
     ).toEqual({
       CP001: 51,
       CP002: 57,
-      CP003: 37,
+      CP003: 47,
       CP004: 41,
       CP005: 31,
       CP006: 45,
-      CP007: 29,
+      CP007: 35,
       CP008: 38,
-      CP009: 24,
+      CP009: 30,
       CP010: 44,
       CP011: 45,
     });
