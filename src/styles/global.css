@@ -1055,24 +1055,23 @@ kbd {
   text-align: center;
 }
 
-.modal-backdrop {
-  position: fixed;
-  z-index: 100;
-  inset: 0;
-  display: grid;
-  padding: 20px;
-  place-items: center;
-  overscroll-behavior: contain;
-  background: rgba(25, 28, 24, 0.54);
-  backdrop-filter: blur(3px);
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+.modal-dialog {
+  margin: auto;
+  max-width: calc(100% - 40px);
+  color: var(--ink);
   animation: fade-in 140ms ease-out both;
 }
 
-.pack-confirm-backdrop {
-  animation: none;
+.modal-dialog::backdrop {
+  background: rgba(25, 28, 24, 0.54);
+  backdrop-filter: blur(3px);
 }
 
-.pack-confirm-backdrop .pack-opening-dialog {
+.pack-opening-dialog {
   animation: reveal 140ms ease-out both;
 }
 
@@ -1970,7 +1969,10 @@ kbd {
   }
 
   .sheet {
-    position: absolute;
+    position: fixed;
+    top: auto;
+    margin: 0;
+    max-width: none;
     right: 0;
     bottom: 0;
     left: 0;
@@ -2404,13 +2406,14 @@ kbd {
     bottom: calc(164px + env(safe-area-inset-bottom));
   }
   .login-dialog {
-    align-self: end;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    margin: 0;
+    max-width: none;
     width: 100%;
     border-radius: 24px 24px 0 0;
     padding-bottom: max(28px, env(safe-area-inset-bottom));
-  }
-  .modal-backdrop:has(.login-dialog) {
-    padding: 0;
   }
 }
 @media (max-width: 600px) {

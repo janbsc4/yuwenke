@@ -19,12 +19,10 @@ import { localCardPacks } from "../lib/localCardPacks";
 import { localProgress } from "../lib/localProgress";
 import {
   canonicalProgressForCards,
-  mergeFavorites,
+  mergeCloudEntries,
   entriesAtResetBoundary,
   entriesWithResetBoundary,
-  mergeLocalFavorites,
-  mergeLocalProgress,
-  mergeProgress,
+  mergeLocalEntries,
   mergePackStates,
   mergeGuestOpenPacks,
   nextClientTimestamp,
@@ -43,9 +41,7 @@ export type ProgressSyncFirebaseClient = Pick<
   | "resetCloudStudyState"
   | "signInWithGoogle"
   | "signOutFromFirebase"
-  | "writeCloudFavorite"
   | "writeCloudFavoritesBatch"
-  | "writeCloudProgress"
   | "writeCloudProgressBatch"
 >;
 
@@ -308,19 +304,10 @@ export function useProgressSync(
   const flushOutboxes = useCallback(
     async (uid: string, generation: number) => {
       if (flushingRef.current || generation !== generationRef.current) return;
-      const storedPendingProgress = localProgress.readOutbox(uid).value;
-      let pendingProgress = canonicalProgressForCards(cards, storedPendingProgress);
-      if (
-        Object.keys(pendingProgress).length === 0 &&
-        Object.keys(storedPendingProgress).length > 0
-      ) {
-        localProgress.clearOutbox(uid);
-      }
-      let pendingFavorites = localFavorites.readOutbox(uid).value;
       const pendingCardPacks = localCardPacks.readOutbox(uid).value;
       if (
-        Object.keys(pendingProgress).length === 0 &&
-        Object.keys(pendingFavorites).length === 0 &&
+        Object.keys(localProgress.readOutbox(uid).value).length === 0 &&
+        Object.keys(localFavorites.readOutbox(uid).value).length === 0 &&
         !pendingCardPacks
       ) {
         settleSyncState(uid);
@@ -332,6 +319,7 @@ export function useProgressSync(
       let succeeded = false;
       try {
         const firebase = await loadFirebaseClientRef.current();
+        if (generation !== generationRef.current || userRef.current?.uid !== uid) return;
         firebaseClientRef.current = firebase;
         if (pendingCardPacks) {
           const merged = await firebase.mergeCloudCardPackState(
@@ -344,8 +332,6 @@ export function useProgressSync(
           if (generation !== generationRef.current || userRef.current?.uid !== uid) return;
           guestPackMergeRef.current.active = false;
           adoptPackState(merged, uid);
-          pendingProgress = entriesAtResetBoundary(pendingProgress, merged.resetAt);
-          pendingFavorites = entriesAtResetBoundary(pendingFavorites, merged.resetAt);
           const latest = localCardPacks.readOutbox(uid).value;
           if (latest && samePackState(latest, pendingCardPacks)) {
             localCardPacks.clearOutbox(uid);
@@ -353,8 +339,17 @@ export function useProgressSync(
           confirmedRef.current.cardPacks = true;
         }
         const activeResetAt = packStateRef.current?.resetAt ?? 0;
-        pendingProgress = entriesWithResetBoundary(
-          entriesAtResetBoundary(pendingProgress, activeResetAt),
+        // Pack transactions can wait on the network. Snapshot the outboxes
+        // afterward so changes queued during that wait are included.
+        const pendingProgress = entriesWithResetBoundary(
+          entriesAtResetBoundary(
+            canonicalProgressForCards(cards, localProgress.readOutbox(uid).value),
+            activeResetAt,
+          ),
+          activeResetAt,
+        );
+        const pendingFavorites = entriesAtResetBoundary(
+          localFavorites.readOutbox(uid).value,
           activeResetAt,
         );
         if (Object.keys(pendingProgress).length > 0) {
@@ -408,16 +403,13 @@ export function useProgressSync(
         }
       } finally {
         flushingRef.current = false;
-        if (
-          succeeded &&
-          generation === generationRef.current &&
-          userRef.current?.uid === uid
-        ) {
+        const currentUser = userRef.current;
+        if (currentUser && (succeeded || generation !== generationRef.current)) {
           const stillPending =
-            Object.keys(localProgress.readOutbox(uid).value).length > 0 ||
-            Object.keys(localFavorites.readOutbox(uid).value).length > 0 ||
-            localCardPacks.readOutbox(uid).value !== null;
-          if (stillPending) void flushOutboxesRef.current(uid, generation);
+            Object.keys(localProgress.readOutbox(currentUser.uid).value).length > 0 ||
+            Object.keys(localFavorites.readOutbox(currentUser.uid).value).length > 0 ||
+            localCardPacks.readOutbox(currentUser.uid).value !== null;
+          if (stillPending) void flushOutboxesRef.current(currentUser.uid, generationRef.current);
         }
       }
     },
@@ -504,12 +496,12 @@ export function useProgressSync(
 
             const guestProgress = localProgress.readGuest().value;
             const guestFavorites = localFavorites.readGuest().value;
-            const combinedProgress = mergeLocalProgress(
+            const combinedProgress = mergeLocalEntries(
               guestProgress,
               localProgress.readUser(nextUser.uid).value,
               localProgress.readOutbox(nextUser.uid).value,
             );
-            const combinedFavorites = mergeLocalFavorites(
+            const combinedFavorites = mergeLocalEntries(
               guestFavorites,
               localFavorites.readUser(nextUser.uid).value,
               localFavorites.readOutbox(nextUser.uid).value,
@@ -521,11 +513,11 @@ export function useProgressSync(
               guestProgress,
               guestFavorites,
             );
-            const accountProgress = mergeLocalProgress(
+            const accountProgress = mergeLocalEntries(
               localProgress.readUser(nextUser.uid).value,
               localProgress.readOutbox(nextUser.uid).value,
             );
-            const accountFavorites = mergeLocalFavorites(
+            const accountFavorites = mergeLocalEntries(
               localFavorites.readUser(nextUser.uid).value,
               localFavorites.readOutbox(nextUser.uid).value,
             );
@@ -564,14 +556,14 @@ export function useProgressSync(
             const progressMigration = entriesWithResetBoundary(
               canonicalProgressForCards(
                 cards,
-                mergeLocalProgress(
+                mergeLocalEntries(
                   localProgress.readOutbox(nextUser.uid).value,
                   localProgress.readGuest().value,
                 ),
               ),
               localPackState.resetAt,
             );
-            const favoriteMigration = entriesWithResetBoundary(mergeLocalFavorites(
+            const favoriteMigration = entriesWithResetBoundary(mergeLocalEntries(
               localFavorites.readOutbox(nextUser.uid).value,
               localFavorites.readGuest().value,
             ), localPackState.resetAt);
@@ -601,7 +593,7 @@ export function useProgressSync(
                   return;
                 }
                 const currentOutbox = localProgress.readOutbox(nextUser.uid).value;
-                const localState = mergeLocalProgress(
+                const localState = mergeLocalEntries(
                   progressRef.current,
                   currentOutbox,
                 );
@@ -609,11 +601,11 @@ export function useProgressSync(
                 const compatibleCloud = entriesAtResetBoundary(cloud, boundary);
                 const canonicalLocalState = canonicalProgressForCards(cards, localState);
                 const canonicalCloud = canonicalProgressForCards(cards, compatibleCloud);
-                const { merged: canonicalMerged, localWinners } = mergeProgress(
+                const { merged: canonicalMerged, localWinners } = mergeCloudEntries(
                   canonicalLocalState,
                   canonicalCloud,
                 );
-                const merged = mergeLocalProgress(
+                const merged = mergeLocalEntries(
                   localState,
                   compatibleCloud,
                   canonicalMerged,
@@ -635,7 +627,7 @@ export function useProgressSync(
                 const uploads = entriesWithResetBoundary(
                   canonicalProgressForCards(
                     cards,
-                    mergeLocalProgress(remaining, localWinners),
+                    mergeLocalEntries(remaining, localWinners),
                   ),
                   boundary,
                 );
@@ -667,13 +659,13 @@ export function useProgressSync(
                   return;
                 }
                 const currentOutbox = localFavorites.readOutbox(nextUser.uid).value;
-                const localState = mergeLocalFavorites(
+                const localState = mergeLocalEntries(
                   favoritesRef.current,
                   currentOutbox,
                 );
                 const boundary = packStateRef.current?.resetAt ?? 0;
                 const compatibleCloud = entriesAtResetBoundary(cloud, boundary);
-                const { merged, localWinners } = mergeFavorites(localState, compatibleCloud);
+                const { merged, localWinners } = mergeCloudEntries(localState, compatibleCloud);
                 replaceFavorites(merged);
                 localFavorites.writeUser(nextUser.uid, merged);
 
@@ -688,7 +680,7 @@ export function useProgressSync(
                   localFavorites.clearOutbox(nextUser.uid);
                 }
 
-                const uploads = mergeLocalFavorites(remaining, localWinners);
+                const uploads = mergeLocalEntries(remaining, localWinners);
                 if (serverHasAcknowledged && Object.keys(uploads).length > 0) {
                   localFavorites.writeOutbox(nextUser.uid, uploads);
                   void flushOutboxes(nextUser.uid, generation);
@@ -813,45 +805,9 @@ export function useProgressSync(
       localProgress.writeOutbox(currentUser.uid, outbox);
       confirmedRef.current.progress = false;
       setSyncState("syncing");
-      const generation = generationRef.current;
-      void loadFirebaseClientRef.current()
-        .then((firebase) => {
-          firebaseClientRef.current = firebase;
-          return firebase.writeCloudProgress(currentUser.uid, entry);
-        })
-        .then(() => {
-          if (
-            generation !== generationRef.current ||
-            userRef.current?.uid !== currentUser.uid
-          ) {
-            return;
-          }
-          const latest = localProgress.readOutbox(currentUser.uid).value;
-          if (latest[key]?.clientUpdatedAt === entry.clientUpdatedAt) {
-            const remaining = Object.fromEntries(
-              Object.entries(latest).filter(([entryKey]) => entryKey !== key),
-            );
-            if (Object.keys(remaining).length > 0) {
-              localProgress.writeOutbox(currentUser.uid, remaining);
-            } else {
-              localProgress.clearOutbox(currentUser.uid);
-            }
-          }
-          confirmedRef.current.progress = true;
-          settleSyncState(currentUser.uid);
-        })
-        .catch(() => {
-          if (generation === generationRef.current) {
-            setSyncState(
-              typeof navigator !== "undefined" && !navigator.onLine
-                ? "offline"
-                : "error",
-            );
-            setNotice("willSyncWhenOnline");
-          }
-        });
+      void flushOutboxes(currentUser.uid, generationRef.current);
     },
-    [replaceProgress, settleSyncState],
+    [flushOutboxes, replaceProgress],
   );
 
   const setFavorite = useCallback(
@@ -881,45 +837,9 @@ export function useProgressSync(
       localFavorites.writeOutbox(currentUser.uid, outbox);
       confirmedRef.current.favorites = false;
       setSyncState("syncing");
-      const generation = generationRef.current;
-      void loadFirebaseClientRef.current()
-        .then((firebase) => {
-          firebaseClientRef.current = firebase;
-          return firebase.writeCloudFavorite(currentUser.uid, entry);
-        })
-        .then(() => {
-          if (
-            generation !== generationRef.current ||
-            userRef.current?.uid !== currentUser.uid
-          ) {
-            return;
-          }
-          const latest = localFavorites.readOutbox(currentUser.uid).value;
-          if (latest[cardId]?.clientUpdatedAt === entry.clientUpdatedAt) {
-            const remaining = Object.fromEntries(
-              Object.entries(latest).filter(([entryKey]) => entryKey !== cardId),
-            );
-            if (Object.keys(remaining).length > 0) {
-              localFavorites.writeOutbox(currentUser.uid, remaining);
-            } else {
-              localFavorites.clearOutbox(currentUser.uid);
-            }
-          }
-          confirmedRef.current.favorites = true;
-          settleSyncState(currentUser.uid);
-        })
-        .catch(() => {
-          if (generation === generationRef.current) {
-            setSyncState(
-              typeof navigator !== "undefined" && !navigator.onLine
-                ? "offline"
-                : "error",
-            );
-            setNotice("willSyncWhenOnline");
-          }
-        });
+      void flushOutboxes(currentUser.uid, generationRef.current);
     },
-    [replaceFavorites, settleSyncState],
+    [flushOutboxes, replaceFavorites],
   );
 
   const openPack = useCallback(
@@ -1051,7 +971,6 @@ export function useProgressSync(
       localProgress.clearUser(currentUser.uid);
       localFavorites.clearUser(currentUser.uid);
       localCardPacks.clearUser(currentUser.uid);
-      localCardPacks.clearOutbox(currentUser.uid);
     }
     localProgress.clearGuest();
     localFavorites.clearGuest();

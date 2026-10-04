@@ -412,23 +412,6 @@ export async function resetCloudStudyState(
   return state;
 }
 
-export async function writeCloudProgress(uid: string, entry: ProgressEntry): Promise<void> {
-  const services = getFirebaseServices();
-  if (!services) throw new Error("Firebase no está configurado.");
-  await setDoc(progressDoc(services.db, uid, entry), firestoreData(entry));
-  await waitForPendingWrites(services.db);
-}
-
-export async function writeCloudFavorite(
-  uid: string,
-  entry: FavoriteEntry,
-): Promise<void> {
-  const services = getFirebaseServices();
-  if (!services) throw new Error("Firebase no está configurado.");
-  await setDoc(favoriteDoc(services.db, uid, entry), favoriteFirestoreData(entry));
-  await waitForPendingWrites(services.db);
-}
-
 export async function writeCloudProgressBatch(
   uid: string,
   progress: ProgressMap,

@@ -54,6 +54,7 @@ import {
 } from "../lib/speech";
 import { useProgressSync } from "../hooks/useProgressSync";
 import { AppIcon } from "./AppIcon";
+import { Modal } from "./Modal";
 import { StudyCard } from "./StudyCard";
 import { CardPackDialogs } from "./CardPackDialogs";
 import { CardPackBooster } from "./CardPackBooster";
@@ -211,17 +212,8 @@ export default function FlashcardApp({
   const searchRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLHeadingElement>(null);
   const answerRef = useRef<HTMLElement>(null);
-  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
-  const filterDialogRef = useRef<HTMLElement>(null);
-  const loginDialogRef = useRef<HTMLElement>(null);
-  const helpDialogRef = useRef<HTMLElement>(null);
-  const voiceDialogRef = useRef<HTMLElement>(null);
-  const packsDialogRef = useRef<HTMLElement>(null);
-  const packConfirmDialogRef = useRef<HTMLElement>(null);
-  const resetDialogRef = useRef<HTMLElement>(null);
-  const helpTriggerRef = useRef<HTMLButtonElement>(null);
   const studyProgress = useMemo(
     () => progressForStudyUnits(cards, progress),
     [cards, progress],
@@ -414,64 +406,11 @@ export default function FlashcardApp({
     if (revealed) answerRef.current?.focus();
   }, [revealed]);
 
-  const modalOpen = Boolean(
-    filterSheetOpen || helpOpen || loginOpen || packToConfirm || packsOpen || resetConfirmOpen || voiceOpen,
-  );
-
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(clearNotice, 6000);
     return () => window.clearTimeout(timeout);
   }, [clearNotice, notice]);
-
-  useEffect(() => {
-    if (!modalOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [modalOpen]);
-
-  useEffect(() => {
-    const dialog = packToConfirm
-      ? packConfirmDialogRef.current
-      : resetConfirmOpen
-        ? resetDialogRef.current
-        : packsOpen
-          ? packsDialogRef.current
-          : helpOpen
-            ? helpDialogRef.current
-      : loginOpen
-        ? loginDialogRef.current
-        : voiceOpen
-          ? voiceDialogRef.current
-          : filterSheetOpen
-            ? filterDialogRef.current
-            : null;
-    if (!dialog) return;
-    const focusable = Array.from(
-      dialog.querySelectorAll<HTMLElement>(
-        "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])",
-      ),
-    );
-    focusable[0]?.focus();
-
-    const trapFocus = (event: KeyboardEvent) => {
-      if (event.key !== "Tab" || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    dialog.addEventListener("keydown", trapFocus);
-    return () => dialog.removeEventListener("keydown", trapFocus);
-  }, [filterSheetOpen, helpOpen, loginOpen, packToConfirm, packsOpen, resetConfirmOpen, voiceOpen]);
 
   useEffect(() => {
     if (!accountOpen) return;
@@ -487,18 +426,15 @@ export default function FlashcardApp({
 
   const closeFilterSheet = useCallback(() => {
     setFilterSheetOpen(false);
-    window.setTimeout(() => filterButtonRef.current?.focus(), 0);
   }, []);
 
   const closeLogin = useCallback(() => {
     setLoginOpen(false);
-    window.setTimeout(() => accountButtonRef.current?.focus(), 0);
   }, []);
 
   const closeVoice = useCallback(() => {
     setVoiceOpen(false);
     setVoiceInstructionsOpen(false);
-    window.setTimeout(() => accountButtonRef.current?.focus(), 0);
   }, []);
 
   const changeSpeechMuted = useCallback((muted: boolean) => {
@@ -506,19 +442,8 @@ export default function FlashcardApp({
     setSpeechMutedState(muted);
   }, []);
 
-  const openHelp = useCallback((trigger: HTMLButtonElement) => {
-    helpTriggerRef.current = trigger;
-    setHelpOpen(true);
-  }, []);
-
-  const closeHelp = useCallback(() => {
-    setHelpOpen(false);
-    window.setTimeout(() => {
-      const trigger = helpTriggerRef.current;
-      if (trigger?.isConnected) trigger.focus();
-      else accountButtonRef.current?.focus();
-    }, 0);
-  }, []);
+  const openHelp = useCallback(() => setHelpOpen(true), []);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
 
   const changeLocale = useCallback(
     (next: Locale) => {
@@ -620,14 +545,7 @@ export default function FlashcardApp({
         target instanceof Element &&
         target.matches("input, select, textarea, button, [contenteditable='true']");
       if (event.key === "Escape") {
-        if (packToConfirm && !packOpening) setPackToConfirm(null);
-        else if (resetConfirmOpen) setResetConfirmOpen(false);
-        else if (voiceOpen) closeVoice();
-        else if (packsOpen) setPacksOpen(false);
-        else if (helpOpen) closeHelp();
-        else if (filterSheetOpen) closeFilterSheet();
-        else if (loginOpen) closeLogin();
-        else if (accountOpen) {
+        if (accountOpen) {
           setAccountOpen(false);
           accountButtonRef.current?.focus();
         }
@@ -669,17 +587,12 @@ export default function FlashcardApp({
     chatOpen,
     choosePrimary,
     chooseSecondary,
-    closeFilterSheet,
-    closeHelp,
-    closeLogin,
-    closeVoice,
     completed,
     current,
     filterSheetOpen,
     helpOpen,
     loginOpen,
     packToConfirm,
-    packOpening,
     packsOpen,
     revealed,
     resetConfirmOpen,
@@ -863,9 +776,9 @@ export default function FlashcardApp({
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={(event) => {
+                    onClick={() => {
                       setAccountOpen(false);
-                      openHelp(event.currentTarget);
+                      openHelp();
                     }}
                   >
                     {m.help.trigger}
@@ -998,7 +911,6 @@ export default function FlashcardApp({
             setDraftFilters(filters);
             setFilterSheetOpen(true);
           }}
-          ref={filterButtonRef}
           aria-haspopup="dialog"
           aria-expanded={filterSheetOpen}
         >
@@ -1125,9 +1037,6 @@ export default function FlashcardApp({
         resetOpen={resetConfirmOpen}
         resetting={resetting}
         authenticated={user !== null}
-        panelRef={packsDialogRef}
-        packConfirmRef={packConfirmDialogRef}
-        resetRef={resetDialogRef}
         onClosePanel={() => setPacksOpen(false)}
         onRequestOpen={requestOpenPack}
         onCancelOpen={() => {
@@ -1149,195 +1058,178 @@ export default function FlashcardApp({
       />
 
       {filterSheetOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={closeFilterSheet}>
-          <section
-            className="sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="filter-title"
-            ref={filterDialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="modal-heading">
-              <h2 id="filter-title">{m.filters.sheetTitle}</h2>
-              <button type="button" aria-label={m.filters.sheetCloseAria} onClick={closeFilterSheet}>×</button>
-            </div>
-            <label>
-              {m.filters.topicLabel}
-              <select
-                value={draftFilters.topic}
-                onChange={(event) => setDraftFilters((value) => ({ ...value, topic: event.target.value }))}
-              >
-                <option value="all">{m.filters.allTopics}</option>
-                {topics.map((topic) => (
-                  <option value={topic} key={topic}>{topicDisplayLabel(locale, topic)}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {m.filters.typeLabel}
-              <select
-                value={draftFilters.type}
-                onChange={(event) =>
-                  setDraftFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
-                }
-              >
-                <option value="all">{m.filters.allTypes}</option>
-                {(Object.keys(m.cardTypes) as CardType[]).map((type) => (
-                  <option value={type} key={type}>{m.cardTypes[type]}</option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="button button-primary" onClick={() => {
-              setFilters(draftFilters);
-              closeFilterSheet();
-            }}>
-              {m.filters.apply}
-            </button>
-            <button type="button" className="text-button" onClick={() => setDraftFilters(EMPTY_FILTERS)}>
-              {m.filters.clear}
-            </button>
-          </section>
-        </div>
+        <Modal
+          className="sheet"
+          labelledBy="filter-title"
+          onDismiss={closeFilterSheet}
+        >
+          <div className="modal-heading">
+            <h2 id="filter-title">{m.filters.sheetTitle}</h2>
+            <button type="button" aria-label={m.filters.sheetCloseAria} onClick={closeFilterSheet}>×</button>
+          </div>
+          <label>
+            {m.filters.topicLabel}
+            <select
+              value={draftFilters.topic}
+              onChange={(event) => setDraftFilters((value) => ({ ...value, topic: event.target.value }))}
+            >
+              <option value="all">{m.filters.allTopics}</option>
+              {topics.map((topic) => (
+                <option value={topic} key={topic}>{topicDisplayLabel(locale, topic)}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {m.filters.typeLabel}
+            <select
+              value={draftFilters.type}
+              onChange={(event) =>
+                setDraftFilters((value) => ({ ...value, type: event.target.value as Filters["type"] }))
+              }
+            >
+              <option value="all">{m.filters.allTypes}</option>
+              {(Object.keys(m.cardTypes) as CardType[]).map((type) => (
+                <option value={type} key={type}>{m.cardTypes[type]}</option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="button button-primary" onClick={() => {
+            setFilters(draftFilters);
+            closeFilterSheet();
+          }}>
+            {m.filters.apply}
+          </button>
+          <button type="button" className="text-button" onClick={() => setDraftFilters(EMPTY_FILTERS)}>
+            {m.filters.clear}
+          </button>
+        </Modal>
       ) : null}
 
       {helpOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={closeHelp}>
-          <section
-            className="help-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="help-title"
-            ref={helpDialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="modal-heading">
-              <h2 id="help-title">{m.help.title}</h2>
-              <button type="button" aria-label={m.help.closeAria} onClick={closeHelp}>×</button>
-            </div>
+        <Modal
+          className="help-dialog"
+          labelledBy="help-title"
+          onDismiss={closeHelp}
+          returnFocus={accountButtonRef}
+        >
+          <div className="modal-heading">
+            <h2 id="help-title">{m.help.title}</h2>
+            <button type="button" aria-label={m.help.closeAria} onClick={closeHelp}>×</button>
+          </div>
 
-            <ol className="help-steps">
-              {Object.values(m.help.steps).map((step) => (
-                <li key={step.title}>
-                  <strong>{step.title}</strong>
-                  <p>{step.body}</p>
-                </li>
-              ))}
-            </ol>
+          <ol className="help-steps">
+            {Object.values(m.help.steps).map((step) => (
+              <li key={step.title}>
+                <strong>{step.title}</strong>
+                <p>{step.body}</p>
+              </li>
+            ))}
+          </ol>
 
-            <div className="help-details">
-              <p>{m.help.detailsFlow}</p>
-              <p>
-                {m.help.properNames.before}
-                <span className="proper-name">{m.help.properNames.highlight}</span>
-                {m.help.properNames.after}
-              </p>
-              <p>{m.help.detailsAccount}</p>
-            </div>
-          </section>
-        </div>
+          <div className="help-details">
+            <p>{m.help.detailsFlow}</p>
+            <p>
+              {m.help.properNames.before}
+              <span className="proper-name">{m.help.properNames.highlight}</span>
+              {m.help.properNames.after}
+            </p>
+            <p>{m.help.detailsAccount}</p>
+          </div>
+        </Modal>
       ) : null}
 
       {loginOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={closeLogin}>
-          <section
-            className="login-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="login-title"
-            ref={loginDialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <h2 id="login-title">{m.login.title}</h2>
-            <p>{m.guestNote.body}</p>
-            <p>{m.login.body}</p>
-            {firebaseConfigured ? (
-              <button
-                type="button"
-                className="button button-primary google-button"
-                disabled={!firebaseReady}
-                onClick={() => {
-                  void signIn();
-                  setLoginOpen(false);
-                }}
-              >
-                <span aria-hidden="true">G</span>{" "}
-                {firebaseReady ? m.login.googleReady : m.login.googlePreparing}
-              </button>
-            ) : (
-              <p className="config-note">{m.login.configNote}</p>
-            )}
-            <button type="button" className="text-button" onClick={closeLogin}>{m.login.notNow}</button>
-          </section>
-        </div>
+        <Modal
+          className="login-dialog"
+          labelledBy="login-title"
+          onDismiss={closeLogin}
+          returnFocus={accountButtonRef}
+        >
+          <h2 id="login-title">{m.login.title}</h2>
+          <p>{m.guestNote.body}</p>
+          <p>{m.login.body}</p>
+          {firebaseConfigured ? (
+            <button
+              type="button"
+              className="button button-primary google-button"
+              disabled={!firebaseReady}
+              onClick={() => {
+                void signIn();
+                setLoginOpen(false);
+              }}
+            >
+              <span aria-hidden="true">G</span>{" "}
+              {firebaseReady ? m.login.googleReady : m.login.googlePreparing}
+            </button>
+          ) : (
+            <p className="config-note">{m.login.configNote}</p>
+          )}
+          <button type="button" className="text-button" onClick={closeLogin}>{m.login.notNow}</button>
+        </Modal>
       ) : null}
 
       {voiceOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={closeVoice}>
-          <section
-            className="voice-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="voice-title"
-            ref={voiceDialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="modal-heading">
-              <h2 id="voice-title">{m.voice.title}</h2>
-              <button type="button" aria-label={m.voice.closeAria} onClick={closeVoice}>×</button>
-            </div>
-            <label className="voice-mute">
-              <input
-                type="checkbox"
-                checked={speechMuted}
-                onChange={(event) => changeSpeechMuted(event.target.checked)}
-              />
-              <span>{m.voice.muteToggle}</span>
-            </label>
-            {voiceOptions.length > 0 ? (
-              <label className="voice-select-label">
-                {m.voice.label}
-                <select
-                  value={preferredVoice}
-                  onChange={(event) => {
-                    const uri = event.target.value;
-                    setPreferredVoice(uri || null);
-                    setPreferredVoiceState(uri);
-                    speakChinese(VOICE_SAMPLE_TEXT);
-                  }}
-                >
-                  <option value="">{m.voice.defaultOption}</option>
-                  {voiceOptions.map((option) => (
-                    <option key={option.uri} value={option.uri}>
-                      {option.name} ({option.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <p className="voice-empty">{m.voice.empty}</p>
-            )}
-            <button
-              type="button"
-              className="text-button"
-              aria-expanded={voiceInstructionsOpen}
-              onClick={() => setVoiceInstructionsOpen((value) => !value)}
-            >
-              {m.voice.instructionsToggle}
-            </button>
-            {voiceInstructionsOpen ? (
-              <div className="voice-instructions">
-                <h3>{m.voice.instructionsTitle}</h3>
-                {m.voice.instructions.map(({ platform, body }) => (
-                  <div key={platform} className="voice-instruction">
-                    <strong>{platform}</strong>
-                    <p>{body}</p>
-                  </div>
+        <Modal
+          className="voice-dialog"
+          labelledBy="voice-title"
+          onDismiss={closeVoice}
+          returnFocus={accountButtonRef}
+        >
+          <div className="modal-heading">
+            <h2 id="voice-title">{m.voice.title}</h2>
+            <button type="button" aria-label={m.voice.closeAria} onClick={closeVoice}>×</button>
+          </div>
+          <label className="voice-mute">
+            <input
+              type="checkbox"
+              checked={speechMuted}
+              onChange={(event) => changeSpeechMuted(event.target.checked)}
+            />
+            <span>{m.voice.muteToggle}</span>
+          </label>
+          {voiceOptions.length > 0 ? (
+            <label className="voice-select-label">
+              {m.voice.label}
+              <select
+                value={preferredVoice}
+                onChange={(event) => {
+                  const uri = event.target.value;
+                  setPreferredVoice(uri || null);
+                  setPreferredVoiceState(uri);
+                  speakChinese(VOICE_SAMPLE_TEXT);
+                }}
+              >
+                <option value="">{m.voice.defaultOption}</option>
+                {voiceOptions.map((option) => (
+                  <option key={option.uri} value={option.uri}>
+                    {option.name} ({option.lang})
+                  </option>
                 ))}
-              </div>
-            ) : null}
-          </section>
-        </div>
+              </select>
+            </label>
+          ) : (
+            <p className="voice-empty">{m.voice.empty}</p>
+          )}
+          <button
+            type="button"
+            className="text-button"
+            aria-expanded={voiceInstructionsOpen}
+            onClick={() => setVoiceInstructionsOpen((value) => !value)}
+          >
+            {m.voice.instructionsToggle}
+          </button>
+          {voiceInstructionsOpen ? (
+            <div className="voice-instructions">
+              <h3>{m.voice.instructionsTitle}</h3>
+              {m.voice.instructions.map(({ platform, body }) => (
+                <div key={platform} className="voice-instruction">
+                  <strong>{platform}</strong>
+                  <p>{body}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Modal>
       ) : null}
 
       <div className="sr-only" aria-live="polite" hidden={chatOpen}>

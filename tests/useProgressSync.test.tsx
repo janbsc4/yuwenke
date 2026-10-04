@@ -108,8 +108,6 @@ function firebaseAdapter(
     resetCloudStudyState: vi.fn(async () => packState(["CP001"], 100, 100)),
     signInWithGoogle: vi.fn(async () => user),
     signOutFromFirebase: vi.fn(async () => undefined),
-    writeCloudProgress: vi.fn(async () => undefined),
-    writeCloudFavorite: vi.fn(async () => undefined),
     writeCloudProgressBatch: vi.fn(async () => undefined),
     writeCloudFavoritesBatch: vi.fn(async () => undefined),
     ...overrides,
@@ -155,11 +153,12 @@ describe("authenticated progress synchronization", () => {
     expect(result.current.notice).toBeNull();
 
     let finishWrite: (() => void) | undefined;
-    vi.mocked(client.writeCloudProgress).mockImplementation(() => new Promise<void>((resolve) => {
+    vi.mocked(client.writeCloudProgressBatch).mockImplementation(() => new Promise<void>((resolve) => {
       finishWrite = resolve;
     }));
+    vi.mocked(client.writeCloudProgressBatch).mockClear();
     act(() => result.current.setStatus("FC001", "hanzi-meaning", "learning"));
-    await waitFor(() => expect(client.writeCloudProgress).toHaveBeenCalled());
+    await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalled());
     expect(result.current.syncState).toBe("syncing");
     expect(result.current.notice).toBeNull();
 
@@ -190,12 +189,13 @@ describe("authenticated progress synchronization", () => {
       { query: "", topic: "all", type: "all" }, {}, new Set(["CP001"]), options.packIdByCardId, "en");
     expect(queue.map((unit) => unit.key)).toEqual(["FC001::hanzi-meaning", "FC001::meaning-hanzi"]);
     expect(result.current.progress["FC001::meaning-hanzi"]).toBeUndefined();
-    expect(client.writeCloudProgress).not.toHaveBeenCalled();
     expect(client.writeCloudProgressBatch).not.toHaveBeenCalled();
     act(() => result.current.setStatus("FC001", "meaning-hanzi", "learning"));
-    await waitFor(() => expect(client.writeCloudProgress).toHaveBeenCalledWith("alice", expect.objectContaining({
-      cardId: "FC001", direction: "meaning-hanzi", status: "learning", schemaVersion: 2, resetAt: 0,
-    })));
+    await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalledWith("alice", {
+      "FC001::meaning-hanzi": expect.objectContaining({
+        cardId: "FC001", direction: "meaning-hanzi", status: "learning", schemaVersion: 2, resetAt: 0,
+      }),
+    }));
   });
 
   it("performs Pack-State Migration and unions guest packs on sign-in", async () => {
@@ -375,4 +375,96 @@ describe("authenticated progress synchronization", () => {
     expect(localProgress.readOutbox("alice").value).toEqual({});
     expect(result.current.notice).toBeNull();
   });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((finish) => { resolve = finish; });
+  return { promise, resolve };
+}
+
+it("uploads the latest progress and favorites queued during a delayed pack merge, retaining them on failure", async () => {
+  const merge = deferred<CardPackState>();
+  const { client } = firebaseAdapter({
+    mergeCloudCardPackState: vi.fn(() => merge.promise),
+    writeCloudProgressBatch: vi.fn(async () => { throw new Error("offline"); }),
+    writeCloudFavoritesBatch: vi.fn(async () => { throw new Error("offline"); }),
+  });
+  const { result } = renderAuthenticatedSync(client);
+  await waitFor(() => expect(client.mergeCloudCardPackState).toHaveBeenCalled());
+  act(() => {
+    result.current.setStatus("FC001", "hanzi-meaning", "learning");
+    result.current.setStatus("FC001", "hanzi-meaning", "known");
+    result.current.setFavorite("FC002", true);
+  });
+  await act(async () => merge.resolve(packState()));
+  await waitFor(() => expect(result.current.syncState).toBe("error"));
+  const progress = localProgress.readOutbox("alice").value;
+  const favorites = localFavorites.readOutbox("alice").value;
+  expect(progress["FC001::hanzi-meaning"].status).toBe("known");
+  expect(favorites.FC002.favorite).toBe(true);
+  expect(client.writeCloudProgressBatch).toHaveBeenCalledWith("alice", progress);
+  expect(client.writeCloudFavoritesBatch).toHaveBeenCalledWith("alice", favorites);
+
+  vi.mocked(client.writeCloudProgressBatch).mockResolvedValue(undefined);
+  vi.mocked(client.writeCloudFavoritesBatch).mockResolvedValue(undefined);
+  await act(async () => result.current.retry());
+  expect(localProgress.readOutbox("alice").value).toEqual({});
+  expect(localFavorites.readOutbox("alice").value).toEqual({});
+});
+
+it("keeps a newer decision queued while the preceding batch is being acknowledged", async () => {
+  const { client } = firebaseAdapter();
+  const { result } = renderAuthenticatedSync(client);
+  await waitFor(() => expect(localCardPacks.readOutbox("alice").value).toBeNull());
+  const write = deferred<undefined>();
+  vi.mocked(client.writeCloudProgressBatch).mockClear().mockImplementationOnce(() => write.promise);
+  act(() => result.current.setStatus("FC001", "hanzi-meaning", "learning"));
+  await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalledTimes(1));
+  act(() => result.current.setStatus("FC001", "hanzi-meaning", "known"));
+  const latest = localProgress.readOutbox("alice").value;
+  await act(async () => write.resolve(undefined));
+  await waitFor(() => expect(client.writeCloudProgressBatch).toHaveBeenCalledTimes(2));
+  expect(client.writeCloudProgressBatch).toHaveBeenLastCalledWith("alice", latest);
+  expect(latest["FC001::hanzi-meaning"].status).toBe("known");
+  expect(localProgress.readOutbox("alice").value).toEqual({});
+});
+
+it("preserves pending pack openings across sign-out and uploads them on the next sign-in", async () => {
+  const { client } = firebaseAdapter({
+    mergeCloudCardPackState: vi.fn(async () => { throw new Error("offline"); }),
+  });
+  const { result, unmount } = renderAuthenticatedSync(client);
+  await waitFor(() => expect(result.current.syncState).toBe("error"));
+  act(() => result.current.openPack("CP002"));
+  await waitFor(() => expect(result.current.syncState).toBe("error"));
+  await act(async () => result.current.signOut());
+  expect(result.current.openPackIds).toEqual(["CP001"]);
+  expect(localCardPacks.readOutbox("alice").value?.openPackIds).toContain("CP002");
+  unmount();
+
+  const reconnected = firebaseAdapter();
+  const next = renderAuthenticatedSync(reconnected.client);
+  await waitFor(() => expect(reconnected.client.mergeCloudCardPackState).toHaveBeenCalled());
+  expect(next.result.current.openPackIds).toContain("CP002");
+  await waitFor(() => expect(localCardPacks.readOutbox("alice").value).toBeNull());
+});
+
+it("keeps post-reset decisions made while a pack transaction is still pending", async () => {
+  const merge = deferred<CardPackState>();
+  const { client, publishPackState } = firebaseAdapter({
+    mergeCloudCardPackState: vi.fn(() => merge.promise),
+  });
+  const { result } = renderAuthenticatedSync(client);
+  await waitFor(() => expect(client.mergeCloudCardPackState).toHaveBeenCalled());
+  act(() => {
+    result.current.setStatus("FC001", "hanzi-meaning", "known");
+    publishPackState(packState(["CP001"], 100, 100));
+    result.current.setStatus("FC002", "hanzi-meaning", "learning");
+  });
+  await act(async () => merge.resolve(packState(["CP001"], 100, 100)));
+  expect(client.writeCloudProgressBatch).toHaveBeenCalledWith("alice", {
+    "FC002::hanzi-meaning": expect.objectContaining({ resetAt: 100, status: "learning" }),
+  });
+  expect(result.current.progress["FC001::hanzi-meaning"]).toBeUndefined();
 });

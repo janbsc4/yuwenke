@@ -97,3 +97,29 @@ describe("local progress", () => {
     expect(localProgress.readGuest()).toEqual({ value: {}, available: true });
   });
 });
+
+it("reads and clears saved progress even when storage is too full for new writes", () => {
+  localProgress.writeGuest({ [savedKey]: saved });
+  const writes = vi.spyOn(window.localStorage, "setItem").mockImplementation(() => {
+    throw new DOMException("Storage full", "QuotaExceededError");
+  });
+  try {
+    expect(localProgress.readGuest()).toEqual({ value: { [savedKey]: saved }, available: true });
+    expect(localProgress.writeGuest({})).toBe(false);
+    expect(localProgress.clearGuest()).toBe(true);
+    expect(localProgress.readGuest().value).toEqual({});
+  } finally {
+    writes.mockRestore();
+  }
+});
+
+it("reports unavailable storage when reading is blocked", () => {
+  const reads = vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
+    throw new DOMException("Storage blocked", "SecurityError");
+  });
+  try {
+    expect(localProgress.readGuest()).toEqual({ value: {}, available: false });
+  } finally {
+    reads.mockRestore();
+  }
+});

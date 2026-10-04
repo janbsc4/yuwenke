@@ -39,7 +39,6 @@ To enable conversation, follow [the backend and API key setup](docs/conversation
 - `src/` — the Astro page, React interface, study logic, and persistence services.
 - `firestore.rules` — owner-only validation rules for synchronized study state.
 - `tests/` — CSV, study-domain, component, storage, and Firestore rules tests.
-- `docs/flashcard-app-plan.md` — the historical v1 implementation plan.
 - `Notas Clase Chino Lei.pdf` — the original local notes, intentionally excluded from Git.
 
 ## Local development
@@ -72,7 +71,7 @@ npm install
 node scripts/build_flashcards.mjs
 ```
 
-The script preserves every existing `FC` identity because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
+Each authored row starts with its explicit `FC` ID. The generator rejects reordered, removed, or renumbered rows because saved progress uses those IDs. Existing cards must not be reordered or removed; append new rows at the end. A deliberate identity migration should update both the data and affected progress records.
 
 The `nombres_propios` column contains semicolon-separated literal forms that should be highlighted as proper names. The maintained annotations live in `properNamesById` inside the build script; the underlying study text stays unchanged so search and card identity remain stable.
 

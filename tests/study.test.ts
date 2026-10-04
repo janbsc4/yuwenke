@@ -3,11 +3,11 @@ import {
   canonicalProgressForCards,
   createStudyUnits,
   matchesFilters,
-  mergeFavorites,
+  mergeCloudEntries,
+  mergeLocalEntries,
   mergePackStates,
   mergeGuestOpenPacks,
   mergePackStatesWithGuest,
-  mergeProgress,
   nextClientTimestamp,
   inferOpenPacksForPackStateMigration,
   packOpeningThresholdReached,
@@ -462,10 +462,10 @@ describe("study domain", () => {
     const olderCloud = { [key]: entry(10, "known") };
     const tieCloud = { [key]: entry(20, "known") };
 
-    expect(mergeProgress(local, olderCloud).merged[key].status).toBe("learning");
-    expect(mergeProgress(local, olderCloud).localWinners).toEqual(local);
-    expect(mergeProgress(local, tieCloud).merged[key].status).toBe("known");
-    expect(mergeProgress(local, tieCloud).localWinners).toEqual({});
+    expect(mergeCloudEntries(local, olderCloud).merged[key].status).toBe("learning");
+    expect(mergeCloudEntries(local, olderCloud).localWinners).toEqual(local);
+    expect(mergeCloudEntries(local, tieCloud).merged[key].status).toBe("known");
+    expect(mergeCloudEntries(local, tieCloud).localWinners).toEqual({});
   });
 
   it("keeps local timestamps monotonic", () => {
@@ -477,9 +477,21 @@ describe("study domain", () => {
     const olderCloud = { FC001: favoriteEntry(10, true) };
     const tieCloud = { FC001: favoriteEntry(20, true) };
 
-    expect(mergeFavorites(local, olderCloud).merged.FC001.favorite).toBe(false);
-    expect(mergeFavorites(local, olderCloud).localWinners).toEqual(local);
-    expect(mergeFavorites(local, tieCloud).merged.FC001.favorite).toBe(true);
-    expect(mergeFavorites(local, tieCloud).localWinners).toEqual({});
+    expect(mergeCloudEntries(local, olderCloud).merged.FC001.favorite).toBe(false);
+    expect(mergeCloudEntries(local, olderCloud).localWinners).toEqual(local);
+    expect(mergeCloudEntries(local, tieCloud).merged.FC001.favorite).toBe(true);
+    expect(mergeCloudEntries(local, tieCloud).localWinners).toEqual({});
   });
+});
+
+it("merges local sources by timestamp with the later source winning exact ties", () => {
+  const key = unitKey("FC001", "hanzi-es");
+  const newest = entry(20, "known");
+  expect(mergeLocalEntries(
+    { [key]: entry(20) }, { [key]: entry(10) }, { [key]: newest },
+  )).toEqual({ [key]: newest });
+  const favorite = favoriteEntry(20, false);
+  expect(mergeLocalEntries(
+    { FC001: favoriteEntry(20) }, { FC001: favorite },
+  )).toEqual({ FC001: favorite });
 });

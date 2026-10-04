@@ -534,6 +534,19 @@ describe("FlashcardApp", () => {
     await waitFor(() => expect(filterButton).toHaveFocus());
   });
 
+  it("dismisses filters from the backdrop and returns focus to the filter control", async () => {
+    const user = userEvent.setup();
+    renderApp([card, secondCard]);
+    const filterButton = await screen.findByRole("button", { name: "Filtros" });
+    await user.click(filterButton);
+    const filters = screen.getByRole("dialog", { name: "Filtrar cartas" });
+
+    fireEvent.click(filters, { clientX: -1, clientY: -1 });
+
+    expect(filters).not.toBeInTheDocument();
+    expect(filterButton).toHaveFocus();
+  });
+
   it("keeps Packs beside the study heading and Skip on the card", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card, secondCard]);
@@ -635,7 +648,8 @@ describe("FlashcardApp", () => {
 
     await user.click(within(panel).getByRole("button", { name: /^Abrir Saludos:/ }));
     const confirmation = screen.getByRole("dialog", { name: "Abrir Saludos" });
-    expect(confirmation.parentElement).toHaveClass("pack-confirm-backdrop");
+    expect(confirmation.tagName).toBe("DIALOG");
+    expect(confirmation).toHaveAttribute("open");
     await user.click(
       within(confirmation).getByRole("button", { name: "Abrir «Saludos»" }),
     );
@@ -643,6 +657,7 @@ describe("FlashcardApp", () => {
     expect(confirmation).toHaveAttribute("aria-busy", "true");
     expect(within(confirmation).getByRole("button", { name: "Cancelar" })).toBeDisabled();
     fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.click(confirmation, { clientX: -1, clientY: -1 });
     expect(screen.getByRole("dialog", { name: "Abrir Saludos" })).toBeInTheDocument();
 
     await waitFor(() => {

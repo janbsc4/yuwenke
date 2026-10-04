@@ -311,77 +311,40 @@ export function nextClientTimestamp(
   return Math.max(now, (previous?.clientUpdatedAt ?? 0) + 1);
 }
 
-export function mergeProgress(
-  local: ProgressMap,
-  cloud: ProgressMap,
-): { merged: ProgressMap; localWinners: ProgressMap } {
-  const merged: ProgressMap = {};
-  const localWinners: ProgressMap = {};
+interface TimestampedEntry {
+  clientUpdatedAt: number;
+}
+
+export function mergeCloudEntries<T extends TimestampedEntry>(
+  local: Record<string, T>,
+  cloud: Record<string, T>,
+): { merged: Record<string, T>; localWinners: Record<string, T> } {
+  const merged: Record<string, T> = {};
+  const localWinners: Record<string, T> = {};
   const keys = new Set([...Object.keys(local), ...Object.keys(cloud)]);
 
   for (const key of keys) {
     const localEntry = local[key];
     const cloudEntry = cloud[key];
-
     if (!cloudEntry || (localEntry && localEntry.clientUpdatedAt > cloudEntry.clientUpdatedAt)) {
       if (localEntry) {
         merged[key] = localEntry;
         localWinners[key] = localEntry;
       }
-      continue;
+    } else {
+      merged[key] = cloudEntry;
     }
-
-    merged[key] = cloudEntry;
   }
-
   return { merged, localWinners };
 }
 
-export function mergeLocalProgress(...sources: ProgressMap[]): ProgressMap {
-  const merged: ProgressMap = {};
+export function mergeLocalEntries<T extends TimestampedEntry>(
+  ...sources: Array<Record<string, T>>
+): Record<string, T> {
+  const merged: Record<string, T> = {};
   for (const source of sources) {
     for (const [key, entry] of Object.entries(source)) {
-      const current = merged[key];
-      if (!current || entry.clientUpdatedAt >= current.clientUpdatedAt) {
-        merged[key] = entry;
-      }
-    }
-  }
-  return merged;
-}
-
-export function mergeFavorites(
-  local: FavoriteMap,
-  cloud: FavoriteMap,
-): { merged: FavoriteMap; localWinners: FavoriteMap } {
-  const merged: FavoriteMap = {};
-  const localWinners: FavoriteMap = {};
-  const keys = new Set([...Object.keys(local), ...Object.keys(cloud)]);
-
-  for (const key of keys) {
-    const localEntry = local[key];
-    const cloudEntry = cloud[key];
-
-    if (!cloudEntry || (localEntry && localEntry.clientUpdatedAt > cloudEntry.clientUpdatedAt)) {
-      if (localEntry) {
-        merged[key] = localEntry;
-        localWinners[key] = localEntry;
-      }
-      continue;
-    }
-
-    merged[key] = cloudEntry;
-  }
-
-  return { merged, localWinners };
-}
-
-export function mergeLocalFavorites(...sources: FavoriteMap[]): FavoriteMap {
-  const merged: FavoriteMap = {};
-  for (const source of sources) {
-    for (const [key, entry] of Object.entries(source)) {
-      const current = merged[key];
-      if (!current || entry.clientUpdatedAt >= current.clientUpdatedAt) {
+      if (!merged[key] || entry.clientUpdatedAt >= merged[key].clientUpdatedAt) {
         merged[key] = entry;
       }
     }

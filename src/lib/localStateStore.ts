@@ -31,9 +31,6 @@ export function isNonNegativeInt(value: unknown): value is number {
 function availableStorage(): Storage | null {
   if (typeof window === "undefined") return null;
   try {
-    const marker = "__yuwenke_storage_test__";
-    window.localStorage.setItem(marker, marker);
-    window.localStorage.removeItem(marker);
     return window.localStorage;
   } catch {
     return null;
@@ -51,9 +48,14 @@ export function createLocalStateStore<T>({
   const read = (key: string): StorageResult<T> => {
     const storage = availableStorage();
     if (!storage) return { value: emptyValue(), available: false };
+    let raw: string | null;
     try {
-      const raw = storage.getItem(key);
-      if (!raw) return { value: emptyValue(), available: true };
+      raw = storage.getItem(key);
+    } catch {
+      return { value: emptyValue(), available: false };
+    }
+    if (!raw) return { value: emptyValue(), available: true };
+    try {
       return {
         value: parse(JSON.parse(raw)) ?? emptyValue(),
         available: true,
