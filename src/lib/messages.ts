@@ -123,11 +123,9 @@ export interface Messages {
     skip: string;
   };
   decisions: {
-    keepLearning: string;
-    addToLearning: string;
-    staysMastered: string;
-    backToLearning: string;
-    alreadyKnow: string;
+    continue: string;
+    moveToStudy: string;
+    moveToMastered: string;
   };
   card: {
     promptEyebrow: string;
@@ -352,11 +350,9 @@ const es: Messages = {
     skip: "Saltar",
   },
   decisions: {
-    keepLearning: "Seguir aprendiendo",
-    addToLearning: "Añadir a aprendizaje",
-    staysMastered: "Sigue dominada",
-    backToLearning: "Volver a aprendizaje",
-    alreadyKnow: "Ya la sé",
+    continue: "Continuar",
+    moveToStudy: "Pasar a Estudiar",
+    moveToMastered: "Pasar a Dominadas",
   },
   card: {
     promptEyebrow: "Tu pregunta",
@@ -419,7 +415,7 @@ const es: Messages = {
           ? "Repaso de favoritas completado"
           : "Revisión completada",
     studyPrimary: (count) =>
-      count === 1 ? "sigue en aprendizaje" : "siguen en aprendizaje",
+      count === 1 ? "sigue en Estudiar" : "siguen en Estudiar",
     studySecondary: (count) =>
       count === 1 ? "pasó a Dominadas" : "pasaron a Dominadas",
     skipped: (count) => (count === 1 ? "saltada" : "saltadas"),
@@ -428,7 +424,7 @@ const es: Messages = {
     masteredPrimary: (count) =>
       count === 1 ? "sigue dominada" : "siguen dominadas",
     masteredSecondary: (count) =>
-      count === 1 ? "volvió a aprendizaje" : "volvieron a aprendizaje",
+      count === 1 ? "pasó a Estudiar" : "pasaron a Estudiar",
     studyRemaining: (count) =>
       plural(count, "carta disponible para seguir estudiando", "cartas disponibles para seguir estudiando"),
     suggestionEyebrow: "Siguiente sugerencia",
@@ -448,17 +444,17 @@ const es: Messages = {
       study: {
         title: "Estudiar",
         body:
-          "Practica cartas nuevas de tus packs abiertos junto con las que estás aprendiendo. Revela la respuesta, sigue aprendiendo, márcala como dominada o sáltala por ahora.",
+          "Practica cartas nuevas de tus packs abiertos junto con las que estás aprendiendo. Revela la respuesta y pulsa Continuar para seguir practicando o Pasar a Dominadas si ya la sabes. También puedes saltarla por ahora.",
       },
       mastered: {
         title: "Dominadas",
         body:
-          "Repasa lo que ya sabes y devuelve a Estudiar cualquier ficha que quieras reforzar.",
+          "Repasa lo que ya sabes. Continuar la mantiene en Dominadas; Pasar a Estudiar la devuelve a la práctica.",
       },
       favorites: {
         title: "Favoritas",
         body:
-          "Marca una carta con la estrella para tener sus cartas siempre disponibles en una cola personal.",
+          "Marca una carta con la estrella para tener sus cartas siempre disponibles en una cola personal. Añadirla a Favoritas no la quita de Estudiar ni de Dominadas. Continuar no la mueve entre Estudiar y Dominadas; el otro botón sí, sin quitarla de Favoritas.",
       },
       packs: {
         title: "Packs",
@@ -467,7 +463,7 @@ const es: Messages = {
       },
     },
     detailsFlow:
-      "Las palabras y frases se practican por separado en chino → español y español → chino. Los conceptos plantean una sola pregunta en español para recordar la regla. La búsqueda y los filtros solo cambian qué fichas ves en la cola actual.",
+      "Las palabras y frases se practican por separado en chino → español y español → chino. Cada sentido tiene su propio progreso: pasar uno a Dominadas no cambia el otro. Los conceptos plantean una sola pregunta en español para recordar la regla. La búsqueda y los filtros solo cambian qué fichas ves en la cola actual.",
     properNames: {
       before: "Los nombres propios se muestran en ",
       highlight: "lila",
@@ -669,11 +665,9 @@ const en: Messages = {
     skip: "Skip",
   },
   decisions: {
-    keepLearning: "Keep learning",
-    addToLearning: "Add to learning",
-    staysMastered: "Keep as mastered",
-    backToLearning: "Back to learning",
-    alreadyKnow: "I know this",
+    continue: "Continue",
+    moveToStudy: "Move to Study",
+    moveToMastered: "Move to Mastered",
   },
   card: {
     promptEyebrow: "Your question",
@@ -735,13 +729,13 @@ const en: Messages = {
         : view === "favorites"
           ? "Favorites review complete"
           : "Review complete",
-    studyPrimary: () => "kept in learning",
+    studyPrimary: () => "kept in Study",
     studySecondary: () => "moved to Mastered",
     skipped: () => "skipped",
     favoritesPracticed: (count) =>
       count === 1 ? "favorite card practiced" : "favorite cards practiced",
     masteredPrimary: () => "stayed mastered",
-    masteredSecondary: () => "returned to learning",
+    masteredSecondary: () => "moved to Study",
     studyRemaining: (count) =>
       plural(count, "card available to keep studying", "cards available to keep studying"),
     suggestionEyebrow: "Next suggestion",
@@ -761,17 +755,17 @@ const en: Messages = {
       study: {
         title: "Study",
         body:
-          "Practice new cards from your open packs alongside cards you are learning. Reveal the answer, keep learning, mark it as mastered, or skip it for now.",
+          "Practice new cards from your open packs alongside cards you are learning. Reveal the answer, then choose Continue to keep practicing or Move to Mastered if you know it. You can also skip it for now.",
       },
       mastered: {
         title: "Mastered",
         body:
-          "Review what you already know and send any card you want to reinforce back to Study.",
+          "Review what you already know. Continue keeps it in Mastered; Move to Study returns it to practice.",
       },
       favorites: {
         title: "Favorites",
         body:
-          "Mark a card with the star to keep its cards always available in a personal queue.",
+          "Mark a card with the star to keep its cards always available in a personal queue. Adding it to Favorites does not remove it from Study or Mastered. Continue does not move it between Study and Mastered; the other button does, without removing it from Favorites.",
       },
       packs: {
         title: "Packs",
@@ -780,7 +774,7 @@ const en: Messages = {
       },
     },
     detailsFlow:
-      "Words and phrases are practiced separately in Chinese → English and English → Chinese. Concepts ask a single question in English to recall the rule. Search and filters only change which cards you see in the current queue.",
+      "Words and phrases are practiced separately in Chinese → English and English → Chinese. Each direction has its own progress: moving one to Mastered does not change the other. Concepts ask a single question in English to recall the rule. Search and filters only change which cards you see in the current queue.",
     properNames: {
       before: "Proper names appear in ",
       highlight: "lilac",

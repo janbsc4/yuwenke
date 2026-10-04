@@ -7,13 +7,11 @@ body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(
 a { color: inherit; }
 button { font: inherit; cursor: pointer; }
 button, a, summary { -webkit-tap-highlight-color: transparent; }
-:where(button, a, summary):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 [hidden], html[data-lang="es"] .lang-en, html[data-lang="en"] .lang-es { display: none !important; }
 .lp-shell { width: min(1160px, calc(100% - 80px)); margin-inline: auto; }
 .lp-hanzi { font-family: var(--font-hanzi); }
-.lp-eyebrow { margin: 0; color: var(--jade); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
 h1, h2 { font-family: var(--font-ui); font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
-h2 { margin: 16px 0 0; font-size: clamp(1.9rem, 3.3vw, 2.65rem); line-height: 1.22; }
+h2 { margin: 0; font-size: clamp(1.9rem, 3.3vw, 2.65rem); line-height: 1.22; }
 h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.025em; }
 p { margin-top: 0; }
 .lp-dot { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); }
@@ -47,8 +45,7 @@ p { margin-top: 0; }
 
 /* A working card, framed like the current study app. */
 .lp-hero { display: grid; grid-template-columns: 1.13fr 1fr; gap: clamp(40px, 6vw, 92px); align-items: center; padding-block: 56px 52px; }
-.lp-hero-copy .lp-eyebrow { display: flex; gap: 10px; align-items: center; }
-.lp-hero h1 { font-size: clamp(2.7rem, 4.7vw, 3.8rem); line-height: 1.13; margin: 22px 0; }
+.lp-hero h1 { font-size: clamp(2.7rem, 4.7vw, 3.8rem); line-height: 1.13; margin: 0 0 22px; }
 .lp-hero h1 em { color: var(--jade); font-style: normal; }
 .lp-hero-sub { max-width: 31rem; margin-bottom: 28px; color: var(--muted); font-size: 1.09rem; line-height: 1.7; }
 .lp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
@@ -68,7 +65,7 @@ p { margin-top: 0; }
 .lp-preview-tabs .is-active { background: var(--surface); color: var(--jade); box-shadow: 0 1px 3px #23201b12; }
 .lp-demo-meta { display: flex; justify-content: space-between; margin: 16px 22px 10px; font-size: 0.66rem; color: var(--muted); }
 .lp-demo-card { margin: 0 18px 18px; padding: 18px 24px 16px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
-.lp-demo-card > .lp-eyebrow { text-align: center; color: var(--muted); font-size: 0.61rem; }
+.lp-demo-label { margin: 0; text-align: center; color: var(--muted); font-size: 0.61rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
 .lp-demo-hanzi { margin: 4px 0 8px; text-align: center; font-size: 5.3rem; font-weight: 600; line-height: 1.16; }
 .lp-demo-placeholder, .lp-demo-answer { min-height: 158px; }
 .lp-demo-placeholder { display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 0.87rem; line-height: 1.8; }
@@ -121,13 +118,14 @@ p { margin-top: 0; }
 /* Conversation is a second way to learn, not a second product. */
 .lp-lei { background: var(--jade); color: var(--surface); scroll-margin-top: 0; }
 .lp-lei-inner { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(40px, 7vw, 100px); align-items: center; padding-block: 78px; }
-.lp-lei .lp-eyebrow { color: var(--jade-soft); }
 .lp-lei h2 { margin-bottom: 22px; }
 .lp-lei h2 em { color: var(--jade-soft); font-style: normal; }
-.lp-lei-copy > p:not(.lp-eyebrow):not(.lp-lei-note) { font-size: 0.99rem; color: var(--jade-soft); line-height: 1.75; }
+.lp-lei-copy > p:not(.lp-lei-note) { font-size: 0.99rem; color: var(--jade-soft); line-height: 1.75; }
 .lp-lei-features { display: grid; gap: 15px; padding: 0; margin: 28px 0 32px; list-style: none; }
 .lp-lei-features li { display: flex; gap: 13px; font-size: 0.88rem; }
 .lp-lei-features li > span:first-child { color: var(--jade-soft); }
+.lp-lei-copy .lp-button-light:focus-visible,
+.lp-chat-answer summary:focus-visible { outline-color: var(--surface); }
 .lp-lei-copy > .lp-lei-note { max-width: 28rem; margin: 14px 0 0; font-size: 0.73rem; color: var(--jade-soft); }
 .lp-chat-example { margin: 0; padding: 24px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 .lp-chat-example figcaption { display: flex; gap: 11px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
@@ -168,7 +166,7 @@ p { margin-top: 0; }
 .lp-faq details p { margin: 13px 24px 0 0; color: var(--muted); font-size: 0.86rem; line-height: 1.75; }
 .lp-closing { display: flex; align-items: center; gap: 24px; padding: 34px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface-warm); }
 .lp-closing-mark { display: grid; flex: none; place-items: center; width: 64px; height: 68px; border: 1px solid var(--cinnabar); border-radius: 6px; color: var(--cinnabar); font-size: 2.5rem; transform: rotate(-5deg); }
-.lp-closing h2 { font-size: clamp(1.45rem, 2.4vw, 1.9rem); margin: 8px 0 0; }
+.lp-closing h2 { font-size: clamp(1.45rem, 2.4vw, 1.9rem); margin: 0; }
 .lp-closing .lp-button { margin-left: auto; flex: none; }
 .lp-footer { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 34px; margin-top: 40px; border-top: 1px solid var(--border); }
 .lp-footer .lp-brand { font-size: 0.95rem; }

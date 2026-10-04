@@ -38,8 +38,14 @@
   --proper-name: #75428f;
   --proper-name-soft: #eee3f4;
   --assessment-needs-work: #ffd4d5;
-  --focus: #1d4ed8;
+  --focus: var(--jade);
   --shadow: 0 6px 24px rgba(60, 40, 10, 0.045);
   --font-ui: "Hanken Grotesk", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-hanzi: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+
+/* Keep keyboard focus visible without giving pointer clicks a persistent ring. */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }

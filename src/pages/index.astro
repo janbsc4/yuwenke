@@ -74,7 +74,6 @@ const meta = messages.es.metadata;
     <main id="main">
       <section class="lp-hero lp-shell" aria-labelledby="hero-title">
         <div class="lp-hero-copy">
-          <p class="lp-eyebrow"><span class="lp-dot" aria-hidden="true"></span><span class="lang-es">Chino gratis. A tu ritmo.</span><span class="lang-en">Free Chinese practice. Your pace.</span></p>
           <h1 id="hero-title"><span class="lang-es">Más chino.<br /><em>Menos dramas con el búho.</em></span><span class="lang-en">More Chinese.<br /><em>Less owl-related guilt.</em></span></h1>
           <p class="lp-hero-sub"><span class="lang-es">Aprende palabras que sí vas a usar. Recuérdalas con cartas y úsalas en conversaciones con Léi, tu compañero con IA. Gratis y sin cuenta para empezar.</span><span class="lang-en">Learn words you’ll actually use. Remember them with flashcards, then use them in conversations with Léi, your AI partner. Free, with no account needed to start.</span></p>
           <div class="lp-actions">
@@ -92,7 +91,7 @@ const meta = messages.es.metadata;
             <div class="lp-preview-tabs" aria-hidden="true"><span class="is-active"><span class="lang-es">Estudiar</span><span class="lang-en">Study</span></span><span><span class="lang-es">Dominadas</span><span class="lang-en">Mastered</span></span><span><span class="lang-es">Favoritas</span><span class="lang-en">Favorites</span></span></div>
             <div class="lp-demo-meta"><span class="lang-es">Chino → Español</span><span class="lang-en">Chinese → English</span><span>{demoCard.id}</span></div>
             <article class="lp-demo-card">
-              <p class="lp-eyebrow"><span class="lang-es">{messages.es.card.promptEyebrow}</span><span class="lang-en">{messages.en.card.promptEyebrow}</span></p>
+              <p class="lp-demo-label"><span class="lang-es">{messages.es.card.promptEyebrow}</span><span class="lang-en">{messages.en.card.promptEyebrow}</span></p>
               <p class="lp-demo-hanzi lp-hanzi" lang="zh-Hans">{demoCard.hanzi}</p>
               <div class="lp-demo-placeholder" data-demo-placeholder><span class="lang-es">Piensa la respuesta.<br />Dila en voz alta. Comprueba.</span><span class="lang-en">Think it through.<br />Say it aloud. Then check.</span></div>
               <div class="lp-demo-answer" id="demo-answer" hidden aria-live="polite">
@@ -115,12 +114,12 @@ const meta = messages.es.metadata;
         <p><strong>{cards.length}</strong><span class="lang-es">palabras, frases y conceptos</span><span class="lang-en">words, phrases & concepts</span></p>
         <p><strong>{packs.length}</strong><span class="lang-es">packs para descubrir</span><span class="lang-en">packs to discover</span></p>
         <p><strong>ES / EN</strong><span class="lang-es">explicaciones en tu idioma</span><span class="lang-en">explanations in your language</span></p>
-        <p><strong class="lp-hanzi" lang="zh-Hans">中文 ⇄</strong><span class="lang-es">practica en ambos sentidos</span><span class="lang-en">practice both directions</span></p>
+        <p><strong><span class="lp-hanzi" lang="zh-Hans">中文</span> ⇄ <span class="lang-es">ES</span><span class="lang-en">EN</span></strong><span class="lang-es">practica en ambos sentidos</span><span class="lang-en">practice both directions</span></p>
       </div>
 
       <section class="lp-packs lp-shell lp-section" id="packs" aria-labelledby="packs-title">
         <div class="lp-section-heading">
-          <div><p class="lp-eyebrow"><span class="lang-es">01 / Descubre</span><span class="lang-en">01 / Discover</span></p><h2 id="packs-title"><span class="lang-es">Lo que quieres decir.<br />Un tema cada vez.</span><span class="lang-en">Things you want to say.<br />One topic at a time.</span></h2></div>
+          <div><h2 id="packs-title"><span class="lang-es">Lo que quieres decir.<br />Un tema cada vez.</span><span class="lang-en">Things you want to say.<br />One topic at a time.</span></h2></div>
           <p class="lp-section-intro"><span class="lang-es">Tu primer pack ya está abierto. Elige el siguiente cuando te apetezca: sus cartas se suman a las que estás aprendiendo.</span><span class="lang-en">Your first pack is already open. Choose the next whenever you’re ready: its cards join the ones you’re learning.</span></p>
         </div>
         <div class="lp-pack-grid">
@@ -138,7 +137,7 @@ const meta = messages.es.metadata;
       </section>
 
       <section class="lp-method lp-shell lp-section" aria-labelledby="method-title">
-        <div class="lp-section-heading"><div><p class="lp-eyebrow"><span class="lang-es">02 / Recuerda</span><span class="lang-en">02 / Remember</span></p><h2 id="method-title"><span class="lang-es">Menos ruido.<br />Más espacio para aprender.</span><span class="lang-en">Less noise.<br />More room to learn.</span></h2></div><p class="lp-section-intro"><span class="lang-es">Una carta cada vez. Sin rachas que salvar ni búhos que decepcionar. Tú decides qué sabes y qué quieres seguir practicando.</span><span class="lang-en">One card at a time. No streaks to save. No owls to disappoint. You decide what you know and what you want to keep practicing.</span></p></div>
+        <div class="lp-section-heading"><div><h2 id="method-title"><span class="lang-es">Menos ruido.<br />Más espacio para aprender.</span><span class="lang-en">Less noise.<br />More room to learn.</span></h2></div><p class="lp-section-intro"><span class="lang-es">Una carta cada vez. Sin rachas que salvar ni búhos que decepcionar. Tú decides qué sabes y qué quieres seguir practicando.</span><span class="lang-en">One card at a time. No streaks to save. No owls to disappoint. You decide what you know and what you want to keep practicing.</span></p></div>
         <div class="lp-method-grid">
           <article><span class="lp-feature-mark lp-hanzi" lang="zh-Hans" aria-hidden="true">忆</span><h3><span class="lang-es">Recuerda, no solo leas</span><span class="lang-en">Recall, don’t just read</span></h3><p><span class="lang-es">Piensa antes de revelar. Practica palabras y frases en ambos sentidos, y recuerda las reglas con cartas de conceptos.</span><span class="lang-en">Think before revealing. Practice words and phrases in both directions, and recall the rules with concept cards.</span></p></article>
           <article><span class="lp-feature-mark" aria-hidden="true">☆</span><h3><span class="lang-es">Haz tuya la colección</span><span class="lang-en">Make the collection yours</span></h3><p><span class="lang-es">Marca lo que ya sabes como Dominadas. Guarda Favoritas para volver a ellas y encuentra una carta con la búsqueda y los filtros.</span><span class="lang-en">Move what you know to Mastered. Save Favorites to revisit, and find a card with search and filters.</span></p></article>
@@ -149,7 +148,6 @@ const meta = messages.es.metadata;
       <section class="lp-lei" id="lei" aria-labelledby="lei-title">
         <div class="lp-shell lp-lei-inner">
           <div class="lp-lei-copy">
-            <p class="lp-eyebrow"><span class="lang-es">03 / Conversa</span><span class="lang-en">03 / Converse</span></p>
             <h2 id="lei-title"><span class="lang-es">No solo elijas la respuesta.<br /><em>Escribe la tuya.</em></span><span class="lang-en">Don’t just pick an answer.<br /><em>Write your own.</em></span></h2>
             <p><span class="lang-es">Pide un té. Habla de tu familia. Cuenta qué te gusta. Con Léi, tu compañero de conversación con IA, formas tus propias frases con las palabras que estás aprendiendo. Tú respondes y la conversación sigue.</span><span class="lang-en">Order tea. Talk about your family. Say what you like. With Léi, your AI conversation partner, you build your own sentences from the words you’re learning. You answer, and the conversation moves on.</span></p>
             <ul class="lp-lei-features">
@@ -172,7 +170,7 @@ const meta = messages.es.metadata;
       </section>
 
       <section class="lp-practical lp-shell lp-section" aria-labelledby="practical-title">
-        <div><p class="lp-eyebrow"><span class="lang-es">A tu ritmo, de verdad</span><span class="lang-en">Your pace, really</span></p><h2 id="practical-title"><span class="lang-es">Gratis para aprender.<br />Fácil para empezar.</span><span class="lang-en">Free to learn.<br />Easy to start.</span></h2><p class="lp-practical-benefit"><span class="lang-es">Abre la app y empieza con tu primera palabra. Estudia sin cuenta, guarda lo que te cuesta y vuelve cuando quieras. Tu progreso te espera; una notificación culpabilizadora, no.</span><span class="lang-en">Open the app and start with your first word. Study without an account, save the tricky bits, and come back whenever you like. Your progress will be waiting. A guilt-trip notification won’t.</span></p></div>
+        <div><h2 id="practical-title"><span class="lang-es">Gratis para aprender.<br />Fácil para empezar.</span><span class="lang-en">Free to learn.<br />Easy to start.</span></h2><p class="lp-practical-benefit"><span class="lang-es">Abre la app y empieza con tu primera palabra. Estudia sin cuenta, guarda lo que te cuesta y vuelve cuando quieras. Tu progreso te espera; una notificación culpabilizadora, no.</span><span class="lang-en">Open the app and start with your first word. Study without an account, save the tricky bits, and come back whenever you like. Your progress will be waiting. A guilt-trip notification won’t.</span></p></div>
         <div class="lp-faq">
           <details><summary><span class="lang-es">¿De verdad es gratis?</span><span class="lang-en">Really free?</span><span aria-hidden="true">+</span></summary><p><span class="lang-es">Sí. Las cartas y los packs son gratis, sin suscripción. Léi también es gratis, con límites de uso: prueba tres mensajes sin cuenta e inicia sesión con Google para continuar.</span><span class="lang-en">Yes. Cards and packs are free, with no subscription. Léi is free too, with usage limits: try three messages without an account, then sign in with Google to continue.</span></p></details>
           <details open><summary><span class="lang-es">¿Necesito una cuenta?</span><span class="lang-en">Do I need an account?</span><span aria-hidden="true">+</span></summary><p><span class="lang-es">No para estudiar. Tu progreso, favoritas y packs abiertos se guardan en este dispositivo. Inicia sesión con Google si quieres sincronizarlos entre dispositivos.</span><span class="lang-en">Not to study. Your progress, favorites, and open packs are saved on this device. Sign in with Google if you want to sync them across devices.</span></p></details>
@@ -181,7 +179,7 @@ const meta = messages.es.metadata;
         </div>
       </section>
 
-      <section class="lp-closing lp-shell" aria-labelledby="closing-title"><span class="lp-closing-mark lp-hanzi" lang="zh-Hans" aria-hidden="true">学</span><div><p class="lp-eyebrow"><span class="lang-es">Empieza por una palabra</span><span class="lang-en">Start with a word</span></p><h2 id="closing-title"><span class="lang-es">El resto viene con la práctica.</span><span class="lang-en">The rest comes with practice.</span></h2></div><a class="lp-button lp-button-primary lang-es" href={appUrl("es")}>Abrir Yuwenke <span aria-hidden="true">→</span></a><a class="lp-button lp-button-primary lang-en" href={appUrl("en")}>Open Yuwenke <span aria-hidden="true">→</span></a></section>
+      <section class="lp-closing lp-shell" aria-labelledby="closing-title"><span class="lp-closing-mark lp-hanzi" lang="zh-Hans" aria-hidden="true">学</span><div><h2 id="closing-title"><span class="lang-es">El resto viene con la práctica.</span><span class="lang-en">The rest comes with practice.</span></h2></div><a class="lp-button lp-button-primary lang-es" href={appUrl("es")}>Abrir Yuwenke <span aria-hidden="true">→</span></a><a class="lp-button lp-button-primary lang-en" href={appUrl("en")}>Open Yuwenke <span aria-hidden="true">→</span></a></section>
     </main>
     <footer class="lp-footer lp-shell"><a class="lp-brand" href={base}>Yuwenke <small lang="zh-Hans">语文课</small></a><p><span class="lang-es">Aprende palabras. Ten algo que decir.</span><span class="lang-en">Learn words. Have something to say.</span></p><a href="#main"><span class="lang-es">Volver arriba</span><span class="lang-en">Back to top</span> ↑</a></footer>
     <noscript><p class="lp-noscript"><span class="lang-es">Activa JavaScript para probar la carta. </span><span class="lang-en">Enable JavaScript to try the card. </span><a href={appUrl("es")}>Español</a> · <a href={appUrl("en")}>English</a></p></noscript>

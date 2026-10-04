@@ -113,6 +113,25 @@ describe("FlashcardApp", () => {
     }
   });
 
+  it("preserves screen-reader focus on the answer and next prompt during keyboard study", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card, secondCard]);
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    const answer = container.querySelector<HTMLElement>(".card-answer")!;
+    expect(answer).toHaveAttribute("tabindex", "-1");
+    expect(answer).toHaveAttribute("aria-labelledby", "answer-title");
+    await waitFor(() => expect(answer).toHaveFocus());
+
+    fireEvent.keyDown(answer, { code: "Space", key: " " });
+    const prompt = container.querySelector<HTMLHeadingElement>(".card-prompt h2")!;
+    expect(prompt).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(prompt).toHaveFocus());
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+
+    fireEvent.keyDown(prompt, { code: "Space", key: " " });
+    await waitFor(() => expect(container.querySelector(".card-answer")).toHaveFocus());
+  });
+
   it("uses one search clear control and returns focus after clearing", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card]);
@@ -161,7 +180,7 @@ describe("FlashcardApp", () => {
     const reveal = await screen.findByRole("button", { name: /Mostrar respuesta/ });
     await user.click(reveal);
     expect(screen.getByText("Un saludo básico.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
+    await user.click(screen.getByRole("button", { name: /Continuar/ }));
 
     await waitFor(() => {
       expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning");
@@ -270,9 +289,10 @@ describe("FlashcardApp", () => {
     renderApp([card]);
     for (let index = 0; index < 2; index += 1) {
       await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
-      await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
+      await user.click(screen.getByRole("button", { name: /Continuar/ }));
     }
     expect(await screen.findByText("Sesión completada")).toBeVisible();
+    expect(screen.getByText("siguen en Estudiar")).toBeVisible();
     expect(screen.getByText("2 cartas disponibles para seguir estudiando.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Nueva sesión" })).toBeVisible();
     const stored = JSON.parse(window.localStorage.getItem("yuwenke:guest-progress:v1")!);
@@ -295,6 +315,10 @@ describe("FlashcardApp", () => {
         '"favorite":true',
       );
     });
+    const studyTab = screen.getByRole("button", { name: /Estudiar/ });
+    expect(studyTab).toHaveAttribute("aria-current", "page");
+    expect(within(studyTab).getByText("2")).toBeInTheDocument();
+    expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toBeNull();
     const favoritesTab = screen.getByRole("button", { name: /Favoritas/ });
     expect(within(favoritesTab).getByText("2")).toBeInTheDocument();
     await user.click(favoritesTab);
@@ -330,6 +354,54 @@ describe("FlashcardApp", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
+  it.each([
+    ["study", undefined],
+    ["study", "learning"],
+    ["mastered", "known"],
+    ["favorites", undefined],
+    ["favorites", "learning"],
+    ["favorites", "known"],
+  ] as const)("labels Continue and the actual status change in %s with %s progress", async (view, status) => {
+    const user = userEvent.setup();
+    if (status) {
+      const entries = Object.fromEntries((["hanzi-meaning", "meaning-hanzi"] as const).map((direction) => [
+        unitKey(card.id, direction), savedProgress(direction, status),
+      ]));
+      window.localStorage.setItem("yuwenke:guest-progress:v1", JSON.stringify({ schemaVersion: 1, entries }));
+    }
+    window.localStorage.setItem("yuwenke:guest-favorites:v1", JSON.stringify({
+      schemaVersion: 1, entries: { FC001: savedFavorite() },
+    }));
+    window.localStorage.setItem("yuwenke:last-view:v1", view);
+    renderApp([card]);
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    const primary = screen.getByRole("button", { name: /Continuar/ });
+    expect(primary).toHaveTextContent("Espacio");
+    const secondaryLabel = status === "known" ? /Pasar a Estudiar/ : /Pasar a Dominadas/;
+    expect(screen.getByRole("button", { name: secondaryLabel })).toHaveTextContent("2");
+    await user.click(primary);
+    await waitFor(() => {
+      const stored: { entries: Record<string, ProgressEntry> } = JSON.parse(window.localStorage.getItem("yuwenke:guest-progress:v1")!);
+      const entries = Object.values(stored.entries);
+      expect(entries.length).toBeGreaterThan(0);
+      for (const item of entries) {
+        expect(item.status).toBe(status === "known" ? "known" : "learning");
+      }
+    });
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    expect(screen.getByRole("button", { name: /Continuar/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: secondaryLabel }));
+    const tabs = within(screen.getByRole("navigation", { name: "Modos de estudio" }));
+    await waitFor(() => {
+      expect(within(tabs.getByRole("button", { name: /Estudiar/ })).getByText("1")).toBeInTheDocument();
+      expect(within(tabs.getByRole("button", { name: /Dominadas/ })).getByText("1")).toBeInTheDocument();
+      expect(within(tabs.getByRole("button", { name: /Favoritas/ })).getByText("2")).toBeInTheDocument();
+    });
+    const favorites = JSON.parse(window.localStorage.getItem("yuwenke:guest-favorites:v1")!);
+    expect(favorites.entries.FC001.favorite).toBe(true);
+    if (view === "mastered") expect(screen.getByText("pasó a Estudiar")).toBeVisible();
+  });
+
   it("uses status-aware decisions while reviewing favorites", async () => {
     const user = userEvent.setup();
     const hanzi = savedProgress("hanzi-es", "known");
@@ -359,10 +431,10 @@ describe("FlashcardApp", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: /Sigue dominada/ }),
+      screen.getByRole("button", { name: /Continuar/ }),
     ).toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: /Volver a aprendizaje/ }),
+      screen.getByRole("button", { name: /Pasar a Estudiar/ }),
     );
     await waitFor(() => {
       expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain(
@@ -463,7 +535,7 @@ describe("FlashcardApp", () => {
         await screen.findByRole("button", { name: /Mostrar respuesta/ }),
       );
       await user.click(
-        screen.getByRole("button", { name: /Seguir aprendiendo/ }),
+        screen.getByRole("button", { name: /Continuar/ }),
       );
     }
 
@@ -482,11 +554,76 @@ describe("FlashcardApp", () => {
     });
   });
 
-  it("supports the global reveal keyboard shortcut", async () => {
-    renderApp([card]);
-    await screen.findByRole("button", { name: /Mostrar respuesta/ });
+  it("uses successive Space presses to reveal, continue practicing, and advance", async () => {
+    const { container } = renderApp([card, secondCard]);
+    const reveal = await screen.findByRole("button", { name: /Mostrar respuesta/ });
+    expect(reveal).toHaveAttribute("aria-keyshortcuts", "Space");
+
     fireEvent.keyDown(window, { code: "Space", key: " " });
-    expect(await screen.findByText("Un saludo básico.")).toBeInTheDocument();
+    const continueButton = await screen.findByRole("button", { name: /Continuar/ });
+    expect(continueButton).toHaveTextContent("Espacio");
+    expect(continueButton).toHaveAttribute("aria-keyshortcuts", "Space");
+    fireEvent.keyDown(window, { key: "1" });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+
+    fireEvent.keyDown(window, { code: "Space", key: " " });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning"));
+    await waitFor(() => expect(container.querySelector(".card-prompt h2")).toHaveFocus());
+
+    fireEvent.keyDown(document.activeElement!, { code: "Space", key: " " });
+    await waitFor(() => expect(container.querySelector(".card-answer")).toHaveFocus());
+    fireEvent.keyDown(document.activeElement!, { code: "Space", key: " " });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "3");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+  });
+
+  it("does not reveal or advance on held-Space repeats", async () => {
+    const { container } = renderApp([card, secondCard]);
+    await screen.findByRole("button", { name: /Mostrar respuesta/ });
+    const repeat = () => fireEvent.keyDown(window, { code: "Space", key: " ", repeat: true });
+    repeat();
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { code: "Space", key: " " });
+    expect(container.querySelector(".card-answer")).toBeInTheDocument();
+    repeat();
+    repeat();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+    expect(container.querySelector(".card-answer")).toBeInTheDocument();
+
+    fireEvent.keyUp(window, { code: "Space", key: " " });
+    fireEvent.keyDown(window, { code: "Space", key: " " });
+    repeat();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+  });
+
+  it("leaves modified Space, text entry, and focused buttons to their normal behavior", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card, secondCard]);
+    await screen.findByRole("button", { name: /Mostrar respuesta/ });
+    for (const modifier of ["altKey", "ctrlKey", "metaKey", "shiftKey"]) {
+      fireEvent.keyDown(window, { code: "Space", key: " ", [modifier]: true });
+    }
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+    const search = screen.getByRole("searchbox", { name: "Buscar en las cartas" });
+    await user.click(search);
+    await user.keyboard(" ");
+    expect(search).toHaveValue(" ");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+
+    const reveal = await screen.findByRole("button", { name: /Mostrar respuesta/ });
+    reveal.focus();
+    expect(reveal).toHaveFocus();
+    await user.keyboard(" ");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+    expect(container.querySelector(".card-answer")).toBeInTheDocument();
+    const primary = screen.getByRole("button", { name: /Continuar/ });
+    primary.focus();
+    await user.keyboard(" ");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
   });
 
   it("explains the study flow in an accessible dialog and restores focus", async () => {
@@ -748,7 +885,7 @@ describe("FlashcardApp", () => {
 
     for (let index = 0; index < 2; index += 1) {
       await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
-      await user.click(screen.getByRole("button", { name: /Ya la sé/ }));
+      await user.click(screen.getByRole("button", { name: /Pasar a Dominadas/ }));
     }
 
     expect(await screen.findByText("Sesión completada")).toBeInTheDocument();
@@ -836,7 +973,7 @@ describe("FlashcardApp", () => {
       />,
     );
     await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
-    await user.click(screen.getByRole("button", { name: /Seguir aprendiendo/ }));
+    await user.click(screen.getByRole("button", { name: /Continuar/ }));
     expect(window.localStorage.getItem("yuwenke:guest-progress:v1")).toContain("learning");
 
     await user.click(screen.getByRole("button", { name: "Packs" }));
@@ -896,6 +1033,29 @@ describe("FlashcardApp localization", () => {
     expect(screen.getByText("Hello!")).toBeInTheDocument();
     expect(screen.getByText("Explanation")).toBeInTheDocument();
     expect(screen.getByText("FC001 · Cards")).toBeInTheDocument();
+    const primary = screen.getByRole("button", { name: /Continue/ });
+    expect(primary).toHaveTextContent("Space");
+    expect(primary).toHaveAttribute("aria-keyshortcuts", "Space");
+    expect(screen.getByRole("button", { name: /Move to Mastered/ })).toHaveTextContent("2");
+  });
+
+  it("moves the card to Study without navigating away from Mastered in English", async () => {
+    const user = userEvent.setup();
+    const known = savedProgress("hanzi-meaning", "known");
+    window.localStorage.setItem("yuwenke:guest-progress:v1", JSON.stringify({
+      schemaVersion: 1, entries: { [unitKey(card.id, known.direction)]: known },
+    }));
+    window.localStorage.setItem("yuwenke:last-view:v1", "mastered");
+    renderLocalizedApp([bilingualCard], "en");
+    await user.click(await screen.findByRole("button", { name: /Show answer/ }));
+    expect(screen.getByRole("button", { name: /Continue/ })).toBeInTheDocument();
+    const secondary = screen.getByRole("button", { name: /Move to Study/ });
+    expect(secondary).toHaveTextContent("2");
+    await user.click(secondary);
+    expect(await screen.findByText("moved to Study")).toBeVisible();
+    expect(screen.getByRole("button", { name: /Mastered/ })).toHaveAttribute("aria-current", "page");
+    const stored = JSON.parse(window.localStorage.getItem("yuwenke:guest-progress:v1")!);
+    expect(stored.entries[unitKey(card.id, known.direction)].status).toBe("learning");
   });
 
   it("highlights English proper names in study content", async () => {

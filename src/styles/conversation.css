@@ -510,15 +510,8 @@
   color: var(--surface);
 }
 
-.chat-autoplay:focus-visible,
-.chat-keyboard-toggle:focus-visible,
-.chat-keyboard-close:focus-visible,
-.chat-listen:focus-visible,
-.chat-aid-toggle:focus-visible,
-.chat-pinyin-toggle:focus-visible,
-.conversation summary:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
+.chat-learner summary:focus-visible {
+  outline-color: var(--surface);
 }
 @keyframes chat-panel-in {
   from {

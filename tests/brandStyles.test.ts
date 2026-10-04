@@ -46,6 +46,47 @@ describe("shared visual identity", () => {
     }
   });
 
+  it("removes marketing eyebrows while keeping the sample card's actual prompt label", () => {
+    const page = readSource("src/pages/index.astro");
+    expect(page).not.toContain("lp-eyebrow");
+    expect(landing).not.toContain("lp-eyebrow");
+    expect(page).toContain('class="lp-demo-label"');
+    expect(page).toContain("messages.es.card.promptEyebrow");
+    expect(page).toContain("messages.en.card.promptEyebrow");
+  });
+
+  it("shares a visible jade keyboard ring across interactive controls", () => {
+    expect(brand).toContain("--focus: var(--jade)");
+    const rule = brand.match(/:where\(([^)]+)\):focus-visible\s*\{([^}]+)\}/);
+    for (const control of ["button", "a", "input", "select", "textarea", "summary", "[tabindex]"]) {
+      expect(rule?.[1].split(", ")).toContain(control);
+    }
+    expect(rule?.[2]).toContain("outline: 2px solid var(--focus)");
+    expect(rule?.[2]).toContain("outline-offset: 3px");
+    expect(brand).not.toContain("outline: none");
+    expect(landing).toContain(".lp-chat-answer summary:focus-visible { outline-color: var(--surface)");
+    expect(readSource("src/styles/conversation.css")).toContain(".chat-learner summary:focus-visible");
+    expect(app).toMatch(/\.card-prompt h2\[tabindex="-1"\]:focus,\s*\.card-answer\[tabindex="-1"\]:focus\s*\{\s*outline: none;/);
+  });
+
+  it("keeps the focus ring above 3:1 contrast on the app's light surfaces", () => {
+    function luminance(token: string): number {
+      const hex = brand.match(new RegExp(`${token}: #([a-f0-9]{6});`))?.[1];
+      expect(hex, `${token} must have an explicit color`).toBeDefined();
+      const channels = [0, 2, 4].map((offset) => {
+        const value = Number.parseInt(hex!.slice(offset, offset + 2), 16) / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    }
+    const ring = luminance("--jade");
+    for (const token of ["--paper", "--surface", "--surface-warm", "--jade-soft"]) {
+      const background = luminance(token);
+      const contrast = (Math.max(ring, background) + 0.05) / (Math.min(ring, background) + 0.05);
+      expect(contrast, `focus ring contrast against ${token}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it("uses the same pack tints and needs-work feedback color as the app", () => {
     for (const token of ["--cinnabar-soft", "--jade-soft", "--amber-soft", "--proper-name-soft"]) {
       expect(app).toContain(`--pack-soft: var(${token})`);

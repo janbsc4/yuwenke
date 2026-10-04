@@ -111,25 +111,15 @@ function writePreference(key: string, value: string): void {
   }
 }
 
-function primaryDecisionLabel(
-  m: Messages,
-  view: StudyView,
-  status: ProgressStatus | undefined,
-): string {
-  if (view === "study") return m.decisions.keepLearning;
-  if (view === "mastered" || status === "known") return m.decisions.staysMastered;
-  return status === "learning" ? m.decisions.keepLearning : m.decisions.addToLearning;
-}
-
 function secondaryDecisionLabel(
   m: Messages,
   view: StudyView,
   status: ProgressStatus | undefined,
 ): string {
   if (view === "mastered" || (view === "favorites" && status === "known")) {
-    return m.decisions.backToLearning;
+    return m.decisions.moveToStudy;
   }
-  return m.decisions.alreadyKnow;
+  return m.decisions.moveToMastered;
 }
 
 export default function FlashcardApp({
@@ -568,11 +558,13 @@ export default function FlashcardApp({
         return;
       }
       if (inField || completed || !current) return;
-      if (event.code === "Space" && !revealed) {
+      if (event.code === "Space" || event.key === " ") {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         event.preventDefault();
-        setRevealed(true);
-      } else if (event.key === "1" && revealed) {
-        choosePrimary();
+        // One action per press: holding Space must not reveal and advance repeatedly.
+        if (event.repeat) return;
+        if (revealed) choosePrimary();
+        else setRevealed(true);
       } else if (event.key === "2" && revealed) {
         chooseSecondary();
       } else if (event.key === "3" && activeView === "study") {
@@ -971,14 +963,14 @@ export default function FlashcardApp({
 
               <div className="decision-area">
                 {!revealed ? (
-                  <button type="button" className="button button-primary reveal-button" onClick={() => setRevealed(true)}>
+                  <button type="button" className="button button-primary reveal-button" aria-keyshortcuts="Space" onClick={() => setRevealed(true)}>
                     {m.session.reveal} <kbd>{m.session.spaceKey}</kbd>
                   </button>
                 ) : (
                   <div className="decision-buttons">
-                    <button type="button" className="button button-primary" onClick={choosePrimary}>
-                      {primaryDecisionLabel(m, activeView, currentStatus)}
-                      <kbd>1</kbd>
+                    <button type="button" className="button button-primary" aria-keyshortcuts="Space" onClick={choosePrimary}>
+                      {m.decisions.continue}
+                      <kbd>{m.session.spaceKey}</kbd>
                     </button>
                     <button type="button" className="button button-secondary" onClick={chooseSecondary}>
                       {secondaryDecisionLabel(m, activeView, currentStatus)}
