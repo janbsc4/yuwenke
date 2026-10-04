@@ -225,7 +225,7 @@
   --assessment-color: #ffe0a1;
 }
 .chat-naturalness[data-level="needs_work"] {
-  --assessment-color: #ffd4d5;
+  --assessment-color: var(--assessment-needs-work);
 }
 .chat-naturalness--pending {
   display: flex;

@@ -1,0 +1,45 @@
+/* Shared by the landing page and study app; keep brand definitions in one place. */
+@font-face {
+  font-family: "Hanken Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../../public/fonts/hanken-grotesk-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F;
+}
+
+@font-face {
+  font-family: "Hanken Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../../public/fonts/hanken-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #f6f2ea;
+  --surface: #fffdf8;
+  --surface-warm: #efe9de;
+  --ink: #23201b;
+  --ink-hover: #3d3932;
+  --muted: #746d62;
+  --border: #e4ddd0;
+  --border-dark: #bdb4a6;
+  --cinnabar: #9a3b2c;
+  --cinnabar-dark: #843027;
+  --cinnabar-soft: #f4e1dc;
+  --jade: #2f5a45;
+  --jade-dark: #244735;
+  --jade-soft: #e4ece5;
+  --amber: #8b5e1a;
+  --amber-soft: #f4e8ce;
+  --proper-name: #75428f;
+  --proper-name-soft: #eee3f4;
+  --assessment-needs-work: #ffd4d5;
+  --focus: #1d4ed8;
+  --shadow: 0 6px 24px rgba(60, 40, 10, 0.045);
+  --font-ui: "Hanken Grotesk", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-hanzi: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
