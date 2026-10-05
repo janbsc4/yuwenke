@@ -107,7 +107,8 @@ describe("FlashcardApp", () => {
       expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: /^Estudiar/ }));
       expect(window.location.hash).toBe("");
-      expect(await screen.findByRole("searchbox")).toBeVisible();
+      expect(await screen.findByRole("button", { name: "Buscar" })).toBeVisible();
+      expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     } finally {
       window.history.replaceState(null, "", "/yuwenke/");
     }
@@ -132,9 +133,106 @@ describe("FlashcardApp", () => {
     await waitFor(() => expect(container.querySelector(".card-answer")).toHaveFocus());
   });
 
+  it("expands search below the toolbar, focuses it, and toggles it closed", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card]);
+    const trigger = await screen.findByRole("button", { name: "Buscar" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-controls", "study-search");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+
+    await user.click(trigger);
+    const search = screen.getByRole("searchbox", { name: "Buscar en las cartas" });
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(search).toHaveFocus();
+    expect(container.querySelector("#study-search")).toContainElement(search);
+    expect(container.querySelector(".study-toolbar")).not.toContainElement(search);
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("toggles search with the keyboard without resetting the revealed card or queue position", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card, secondCard]);
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    await user.click(screen.getByRole("button", { name: /Continuar/ }));
+    await user.click(await screen.findByRole("button", { name: /Mostrar respuesta/ }));
+    const answer = container.querySelector(".card-answer");
+    const trigger = screen.getByRole("button", { name: "Buscar" });
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("searchbox")).toHaveFocus();
+    await user.keyboard("{Escape}");
+
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(container.querySelector(".card-answer")).toBe(answer);
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+  });
+
+  it("closes search with Escape without clearing its active query", async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp([card, secondCard]);
+    const trigger = await screen.findByRole("button", { name: "Buscar" });
+    await user.click(trigger);
+    const search = screen.getByRole("searchbox");
+    await user.type(search, "adiós");
+    await screen.findByText("Carta 1 de 2", { selector: ".session-progress span" });
+    await user.keyboard("{Escape}");
+
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveTextContent("Buscar · 1");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "2");
+    expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(search).toHaveValue("adiós");
+    expect(search).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Borrar búsqueda" }));
+    expect(trigger).toHaveTextContent(/^Buscar$/);
+    expect(search).toHaveFocus();
+  });
+
+  it("opens and refocuses search with / without entering the shortcut in the query", async () => {
+    const user = userEvent.setup();
+    renderApp([card]);
+    const trigger = await screen.findByRole("button", { name: "Buscar" });
+    expect(trigger).toHaveAttribute("aria-keyshortcuts", "/");
+    fireEvent.keyDown(window, { key: "/" });
+    const search = screen.getByRole("searchbox");
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue("");
+
+    document.querySelector<HTMLElement>(".card-prompt h2")!.focus();
+    fireEvent.keyDown(window, { key: "/" });
+    expect(search).toHaveFocus();
+    await user.keyboard("/");
+    expect(search).toHaveValue("/");
+  });
+
+  it("dismisses Filters with Escape without closing the expanded search", async () => {
+    const user = userEvent.setup();
+    renderApp([card]);
+    const trigger = await screen.findByRole("button", { name: "Buscar" });
+    await user.click(trigger);
+    const filters = screen.getByRole("button", { name: "Filtros" });
+    await user.click(filters);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(filters).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("searchbox")).toBeVisible();
+  });
+
   it("uses one search clear control and returns focus after clearing", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card]);
+    await user.click(await screen.findByRole("button", { name: "Buscar" }));
     const search = await screen.findByRole("searchbox", {
       name: "Buscar en las cartas",
     });
@@ -607,6 +705,7 @@ describe("FlashcardApp", () => {
       fireEvent.keyDown(window, { code: "Space", key: " ", [modifier]: true });
     }
     expect(container.querySelector(".card-answer")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Buscar" }));
     const search = screen.getByRole("searchbox", { name: "Buscar en las cartas" });
     await user.click(search);
     await user.keyboard(" ");
@@ -684,7 +783,7 @@ describe("FlashcardApp", () => {
     expect(filterButton).toHaveFocus();
   });
 
-  it("keeps Packs beside the study heading and Skip on the card", async () => {
+  it("keeps Packs left of grouped Search and Filters below the heading, and Skip on the card", async () => {
     const user = userEvent.setup();
     const { container } = renderApp([card, secondCard]);
     await screen.findByRole("button", { name: /Mostrar respuesta/ });
@@ -692,7 +791,15 @@ describe("FlashcardApp", () => {
     const studyCard = container.querySelector(".study-card")!;
     const decisions = container.querySelector(".decision-area")!;
 
-    expect(within(heading as HTMLElement).getByRole("button", { name: "Packs" })).toBeInTheDocument();
+    expect(within(heading as HTMLElement).queryByRole("button")).not.toBeInTheDocument();
+    const toolbar = container.querySelector<HTMLElement>(".study-toolbar")!;
+    expect(within(toolbar).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Packs", "Buscar", "Filtros",
+    ]);
+    const actions = container.querySelector<HTMLElement>(".study-toolbar-actions")!;
+    expect(within(actions).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Buscar", "Filtros",
+    ]);
     const skip = within(studyCard as HTMLElement).getByRole("button", { name: /Saltar/ });
     expect(within(decisions as HTMLElement).queryByRole("button", { name: /Saltar/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Mostrar respuesta/ }));
@@ -1024,7 +1131,9 @@ describe("FlashcardApp localization", () => {
 
     expect(await screen.findByText("Learn Lots of Chinese")).toBeInTheDocument();
     expect(screen.queryByText("Aprende Mucho Chino")).not.toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    expect(screen.getByRole("searchbox", { name: "Search the cards" })).toHaveFocus();
     expect(screen.getByRole("button", { name: /Show answer/ })).toBeInTheDocument();
     expect(document.querySelector(".direction-badge")?.textContent).toContain("English");
 
@@ -1119,6 +1228,7 @@ describe("FlashcardApp localization", () => {
   it("searches only the active locale's content", async () => {
     const user = userEvent.setup();
     renderLocalizedApp([bilingualCard], "en");
+    await user.click(await screen.findByRole("button", { name: "Search" }));
     const search = await screen.findByRole("searchbox", { name: "Search the cards" });
 
     await user.type(search, "hola");
@@ -1140,6 +1250,7 @@ describe("FlashcardApp localization", () => {
     const user = userEvent.setup();
     renderLocalizedApp([bilingualCard], "es");
 
+    await user.click(await screen.findByRole("button", { name: "Buscar" }));
     const search = await screen.findByRole("searchbox", { name: "Buscar en las cartas" });
     await user.type(search, "ni");
     const promptBeforeSwitch = document.querySelector(".card-prompt h2")?.textContent;
@@ -1172,13 +1283,14 @@ describe("FlashcardApp localization", () => {
     renderLocalizedApp([bilingualCard], "es");
 
     await user.click(await screen.findByRole("button", { name: "EN" }));
-    expect(await screen.findByRole("searchbox", { name: "Search the cards" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
 
     window.history.pushState(null, "", "/app/es/");
     fireEvent(window, new Event("popstate"));
 
     expect(
-      await screen.findByRole("searchbox", { name: "Buscar en las cartas" }),
+      await screen.findByRole("button", { name: "Buscar" }),
     ).toBeInTheDocument();
     expect(document.documentElement.lang).toBe("es");
     expect(window.localStorage.getItem("yuwenke:locale:v1")).toBe("es");

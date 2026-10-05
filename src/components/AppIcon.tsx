@@ -1,4 +1,4 @@
-type IconName = "study" | "mastered" | "favorites" | "chat" | "newChat" | "account" | "sound" | "muted" | "send" | "close";
+type IconName = "study" | "mastered" | "favorites" | "chat" | "newChat" | "account" | "sound" | "muted" | "send" | "close" | "packs" | "search" | "filters";
 
 const paths: Record<IconName, string> = {
   study: "M8 3h11a2 2 0 0 1 2 2v11M5 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z",
@@ -11,6 +11,9 @@ const paths: Record<IconName, string> = {
   muted: "M11 4 5 9H2v6h3l6 5ZM16 9l6 6m0-6-6 6",
   send: "M12 20V4m-7 7 7-7 7 7",
   close: "m6 6 12 12M6 18 18 6",
+  packs: "M8 4h8M9 11h6M7 7h10a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z",
+  search: "M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Zm-2 4.5 5 5",
+  filters: "M4 7h16M4 17h16M9 4v6M15 14v6",
 };
 
 export function AppIcon({ name }: { name: IconName }) {

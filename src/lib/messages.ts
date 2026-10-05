@@ -86,6 +86,8 @@ export interface Messages {
   storageWarning: string;
   toastCloseAria: string;
   search: {
+    trigger: string;
+    triggerWithQuery: string;
     aria: string;
     placeholder: string;
     clearAria: string;
@@ -313,6 +315,8 @@ const es: Messages = {
     "Tu progreso, favoritas y packs no se guardarán en este dispositivo.",
   toastCloseAria: "Cerrar aviso",
   search: {
+    trigger: "Buscar",
+    triggerWithQuery: "Buscar · 1",
     aria: "Buscar en las cartas",
     placeholder: "Buscar cartas…",
     clearAria: "Borrar búsqueda",
@@ -628,6 +632,8 @@ const en: Messages = {
     "Your progress, favorites, and packs won't be saved on this device.",
   toastCloseAria: "Close notice",
   search: {
+    trigger: "Search",
+    triggerWithQuery: "Search · 1",
     aria: "Search the cards",
     placeholder: "Search cards…",
     clearAria: "Clear search",

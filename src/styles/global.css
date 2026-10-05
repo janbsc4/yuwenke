@@ -331,11 +331,50 @@ a {
   padding-left: 0;
 }
 
-.search-row {
+.study-controls {
+  margin: 24px 0 28px;
+}
+
+.study-toolbar,
+.study-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 24px 0 28px;
+  gap: 8px;
+}
+
+.study-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.study-toolbar-actions {
+  margin-left: auto;
+}
+
+.study-toolbar .button {
+  min-width: 0;
+  gap: 8px;
+  padding-inline: 14px;
+}
+
+.study-toolbar .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.search-trigger.is-active {
+  border-color: var(--jade);
+  background: var(--jade-soft);
+  color: var(--jade);
+}
+
+.search-row {
+  display: flex;
+  margin-top: 12px;
+}
+
+.search-row[hidden] {
+  display: none;
 }
 
 .search-field {
@@ -348,7 +387,7 @@ a {
 
 .search-field input {
   width: 100%;
-  height: 46px;
+  height: 48px;
   padding: 0 48px 0 44px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -360,7 +399,7 @@ a {
 }
 
 .search-field input:focus {
-  border-color: var(--ink);
+  border-color: var(--jade);
   background: var(--surface);
 }
 
@@ -369,9 +408,8 @@ a {
   z-index: 1;
   left: 16px;
   color: var(--muted);
-  font-size: 1.45rem;
-  line-height: 1;
-  transform: rotate(-15deg);
+  display: flex;
+  pointer-events: none;
 }
 
 .search-field button {
@@ -2180,12 +2218,6 @@ html:has(dialog[open]) {
 .study-workspace[hidden] {
   display: none;
 }
-.study-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0 16px;
-}
 .study-heading h1 {
   margin: 0;
   font-size: 2rem;
@@ -2193,7 +2225,6 @@ html:has(dialog[open]) {
   letter-spacing: -0.04em;
 }
 .study-heading p {
-  grid-column: 1 / -1;
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
@@ -2390,14 +2421,14 @@ html:has(dialog[open]) {
   .header-tools {
     gap: 6px;
   }
-  .search-row {
-    flex-wrap: nowrap;
+  .study-controls {
     margin: 20px 0;
-    gap: 8px;
   }
-  .filter-trigger {
-    flex: none;
+  .study-toolbar .button {
     min-height: 46px;
+    padding-inline: 10px;
+    gap: 6px;
+    font-size: 0.875rem;
   }
   .study-card {
     min-height: 280px;
@@ -2438,6 +2469,15 @@ html:has(dialog[open]) {
   .locale-switcher button {
     min-width: 28px;
     padding-inline: 4px;
+  }
+  .study-toolbar .button {
+    padding-inline: 8px;
+    gap: 5px;
+    font-size: 0.78rem;
+  }
+  .study-toolbar .app-icon {
+    width: 16px;
+    height: 16px;
   }
 }
 

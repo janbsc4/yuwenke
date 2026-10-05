@@ -172,6 +172,7 @@ export default function FlashcardApp({
   const [activeView, setActiveView] = useState<StudyView>("study");
   const [initializedOwner, setInitializedOwner] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -200,6 +201,7 @@ export default function FlashcardApp({
   const previousOpenPackIdsRef = useRef(openPackIds);
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const promptRef = useRef<HTMLHeadingElement>(null);
   const answerRef = useRef<HTMLElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
@@ -528,17 +530,29 @@ export default function FlashcardApp({
     advance();
   }, [activeView, advance, current]);
 
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    searchRef.current?.focus();
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    searchButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen && !chatOpen) searchRef.current?.focus();
+  }, [searchOpen, chatOpen]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const inField =
         target instanceof Element &&
         target.matches("input, select, textarea, button, [contenteditable='true']");
-      if (event.key === "Escape") {
-        if (accountOpen) {
-          setAccountOpen(false);
-          accountButtonRef.current?.focus();
-        }
+      if (event.key === "Escape" && accountOpen) {
+        setAccountOpen(false);
+        accountButtonRef.current?.focus();
         return;
       }
       if (
@@ -552,9 +566,13 @@ export default function FlashcardApp({
         packToConfirm ||
         resetConfirmOpen
       ) return;
+      if (event.key === "Escape") {
+        if (searchOpen) closeSearch();
+        return;
+      }
       if (event.key === "/" && !inField) {
         event.preventDefault();
-        searchRef.current?.focus();
+        openSearch();
         return;
       }
       if (inField || completed || !current) return;
@@ -579,15 +597,18 @@ export default function FlashcardApp({
     chatOpen,
     choosePrimary,
     chooseSecondary,
+    closeSearch,
     completed,
     current,
     filterSheetOpen,
     helpOpen,
     loginOpen,
+    openSearch,
     packToConfirm,
     packsOpen,
     revealed,
     resetConfirmOpen,
+    searchOpen,
     skip,
     voiceOpen,
   ]);
@@ -860,54 +881,74 @@ export default function FlashcardApp({
             const cardUnits = units.filter((unit) => unit.cardId === id);
             changeView(cardUnits.some((unit) => studyProgress[unit.key]?.status === "learning") ? "study" : "mastered");
             setFilters({ ...EMPTY_FILTERS, query: card.hanzi });
+            setSearchOpen(true);
           }}
         />
       </Suspense>}
       <div className="study-workspace" hidden={chatOpen}>
       <div className="study-heading">
         <h1>{m.views[activeView]}</h1>
-        <PacksButton
-          open={packsOpen}
-          opening={packTriggerOpening}
-          onClick={requestPacksFromTrigger}
-          m={m}
-        />
         <p>{m.viewDescriptions[activeView]}</p>
       </div>
-      <div className="search-row">
-        <div className="search-field">
-          <span className="search-icon" aria-hidden="true">⌕</span>
-          <input
-            type="text"
-            role="searchbox"
-            aria-label={m.search.aria}
-            placeholder={m.search.placeholder}
-            value={filters.query}
-            onChange={changeQuery}
-            ref={searchRef}
+      <div className="study-controls">
+        <div className="study-toolbar">
+          <PacksButton
+            open={packsOpen}
+            opening={packTriggerOpening}
+            onClick={requestPacksFromTrigger}
+            m={m}
           />
-          {filters.query ? (
+          <div className="study-toolbar-actions">
             <button
               type="button"
-              aria-label={m.search.clearAria}
-              onClick={clearQuery}
+              className={`button search-trigger${searchOpen || filters.query.trim() ? " is-active" : ""}`}
+              aria-expanded={searchOpen}
+              aria-controls="study-search"
+              aria-keyshortcuts="/"
+              ref={searchButtonRef}
+              onClick={searchOpen ? closeSearch : openSearch}
             >
-              ×
+              <AppIcon name={searchOpen ? "close" : "search"} />
+              {filters.query.trim() ? m.search.triggerWithQuery : m.search.trigger}
             </button>
-          ) : null}
+            <button
+              type="button"
+              className="button filter-trigger"
+              onClick={() => {
+                setDraftFilters(filters);
+                setFilterSheetOpen(true);
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={filterSheetOpen}
+            >
+              <AppIcon name="filters" />
+              {filterCount > 0 ? m.filters.triggerWithCount(filterCount) : m.filters.trigger}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="button filter-trigger"
-          onClick={() => {
-            setDraftFilters(filters);
-            setFilterSheetOpen(true);
-          }}
-          aria-haspopup="dialog"
-          aria-expanded={filterSheetOpen}
-        >
-          {filterCount > 0 ? m.filters.triggerWithCount(filterCount) : m.filters.trigger}
-        </button>
+        <div className="search-row" id="study-search" hidden={!searchOpen}>
+          <div className="search-field">
+            <span className="search-icon"><AppIcon name="search" /></span>
+            <input
+              type="text"
+              role="searchbox"
+              aria-label={m.search.aria}
+              placeholder={m.search.placeholder}
+              value={filters.query}
+              onChange={changeQuery}
+              ref={searchRef}
+            />
+            {filters.query ? (
+              <button
+                type="button"
+                aria-label={m.search.clearAria}
+                onClick={clearQuery}
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <main className="study-layout">
@@ -1261,6 +1302,7 @@ function PacksButton({ open, opening, onClick, m }: PacksButtonProps) {
       disabled={opening}
       onClick={onClick}
     >
+      <AppIcon name="packs" />
       {m.packs.button}
     </button>
   );
